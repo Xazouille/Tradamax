@@ -593,8 +593,15 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-set{display:flex;flex-direction:column;gap:10px}
 .pg-addrow{display:flex;gap:var(--sp-2)}
 .pg-addrow .tx-input{flex:1}
-.pg-vals{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:var(--sp-3)}
-@media (max-width:480px){.pg-vals{grid-template-columns:1fr 1fr}.pg-vals>:first-child{grid-column:1/-1}}
+.pg-vals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3)}
+.pg-accrows{display:flex;flex-direction:column;gap:var(--sp-2)}
+.pg-accrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.2fr) minmax(0,.9fr) auto;gap:var(--sp-2);align-items:center}
+.pg-accrow .nm{display:flex;flex-direction:column;min-width:0;font-size:var(--fs-3);font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.pg-accrow .nm small{font-family:var(--f-mono);font-size:var(--fs-1);font-weight:400;color:var(--c-text-2)}
+.pg-accrow.is-new{padding-top:var(--sp-2);border-top:1px dashed var(--c-line-2)}
+@media (max-width:560px){.pg-accrow{grid-template-columns:minmax(0,1fr) minmax(0,.8fr) auto}.pg-accrow>:first-child{grid-column:1/-1}}
+.tx-gauge[hidden]+.tx-kv{margin-top:var(--sp-4)}
+.pg-acc.is-current{border-color:var(--c-accent-fill);box-shadow:0 0 0 3px var(--c-accent-soft)}
 .pg-shot-body{padding:var(--sp-3)}
 .pg-shot-body img{display:block;max-width:100%;margin:0 auto;border-radius:10px}
 
@@ -702,8 +709,8 @@ code{font-family:var(--f-mono);font-size:.92em}
       </div>
 
       <section class="tx-session" id="session" aria-label="Bandeau de séance">
-        <div><div class="tx-label">Drawdown</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
-        <div><div class="tx-label">Résultat du jour</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
+        <div><div class="tx-label">Drawdown SAS</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
+        <div><div class="tx-label">Résultat du jour SAS</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
         <div><div class="tx-label">Prochaine fenêtre</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
         <div><div class="tx-label">Annonce à risque</div><div class="v" id="ss-news">—</div><div class="h" id="ss-news-h"></div></div>
       </section>
@@ -734,12 +741,12 @@ code{font-family:var(--f-mono);font-size:.92em}
         <div class="tx-chart" id="eq-chart"></div>
       </div>
       <div class="tx-panel">
-        <div class="tx-label">Palier de drawdown (charte)</div>
+        <div class="tx-label" id="dd-title">Palier de drawdown (charte)</div>
         <div class="pg-row"><span class="tx-hero" id="dd-now">—</span><span class="tx-badge is-pos" id="dd-pill">Normal</span></div>
-        <div class="tx-sub">depuis le plus haut historique du capital</div>
+        <div class="tx-sub" id="dd-note">depuis le plus haut historique du capital</div>
         <div class="tx-gauge has-names is-ok" id="gauge" aria-hidden="true"><div class="fill" id="gauge-fill" style="width:0"></div></div>
         <dl class="tx-kv">
-          <dt>Capital de référence</dt><dd id="dd-cap">—</dd>
+          <dt>Capital de départ</dt><dd id="dd-cap">—</dd>
           <dt>Plus haut historique</dt><dd id="dd-peak">—</dd>
           <dt>Capital actuel</dt><dd id="dd-cur">—</dd>
           <dt>Drawdown maximal</dt><dd id="dd-max">—</dd>
@@ -748,6 +755,11 @@ code{font-family:var(--f-mono);font-size:.92em}
     </div>
 
     <section class="tx-stats" id="kpis" aria-label="Indicateurs clés"></section>
+
+    <section class="pg-section" id="others-sec" aria-labelledby="others-h">
+      <div class="pg-section-head"><h2 class="tx-title" id="others-h">Prop firms et comptes démo</h2><span class="tx-sub">Capital et résultat de chaque compte, séparés du compte de la SAS</span></div>
+      <div class="pg-accounts" id="others"></div>
+    </section>
 
     <div class="pg-grid pg-3">
       <div class="tx-panel"><h2 class="tx-title">Par marché</h2><div class="tx-sub pg-panel-sub">Résultat et taux de réussite</div><div class="pg-bars" id="by-market"></div></div>
@@ -1301,10 +1313,18 @@ code{font-family:var(--f-mono);font-size:.92em}
     <div class="tx-dialog-head"><div><h3 class="tx-title" id="set-title">Réglages</h3><div class="tx-sub">Partagés entre vous deux. Retirer un marché ou un compte ne supprime aucun trade.</div></div></div>
     <div class="tx-dialog-body is-flow">
       <div class="pg-set"><div class="tx-group tx-label">Marchés</div><div class="tx-chips" id="set-markets"></div><div class="pg-addrow"><input class="tx-input" id="set-market-in" maxlength="40" placeholder="Ex. US30, EURUSD" aria-label="Nouveau marché"><button class="tx-btn" id="set-market-add" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter</button></div></div>
-      <div class="pg-set"><div class="tx-group tx-label">Comptes du journal</div><div class="tx-chips" id="set-accounts"></div><div class="pg-addrow"><input class="tx-input" id="set-account-in" maxlength="40" placeholder="Ex. FTMO 50K n°2" aria-label="Nouveau compte"><button class="tx-btn" id="set-account-add" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter</button></div></div>
+      <div class="pg-set"><div class="tx-group tx-label">Comptes et capital</div>
+        <p class="tx-sub" style="margin:0">Le compte réel de la SAS sert au drawdown de la charte et au bandeau de séance. Les prop firms et les démos ont leur propre capital, suivi à part.</p>
+        <div class="pg-accrows" id="set-accounts"></div>
+        <div class="pg-accrow is-new">
+          <input class="tx-input" id="set-account-in" maxlength="40" placeholder="Nouveau compte (ex. FTMO 50K n°2)" aria-label="Nom du nouveau compte">
+          <select class="tx-input" id="set-account-type" aria-label="Type du nouveau compte"></select>
+          <input class="tx-input tx-num" id="set-account-cap" type="number" step="100" min="0" inputmode="decimal" placeholder="Capital (€)" aria-label="Capital de départ du nouveau compte">
+          <button class="tx-btn is-icon" id="set-account-add" type="button" aria-label="Ajouter ce compte" title="Ajouter ce compte"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg></button>
+        </div>
+      </div>
       <div class="pg-set"><div class="tx-group tx-label">Valeurs</div>
         <div class="pg-vals">
-          <div class="tx-field"><label for="set-capital">Capital de référence (€)</label><input class="tx-input tx-num" id="set-capital" type="number" step="100"></div>
           <div class="tx-field"><label for="set-rplan">R prévu par défaut</label><input class="tx-input tx-num" id="set-rplan" type="number" step="0.1" min="0.1"></div>
           <div class="tx-field"><label for="set-rate">1 € = x $</label><input class="tx-input tx-num" id="set-rate" type="number" step="0.001"></div>
         </div>

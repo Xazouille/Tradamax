@@ -45,7 +45,7 @@ Ensuite, chaque modification du dépôt republie le site automatiquement, et le 
 
 1. Dans l'ancien journal Tradamax (claude.ai) : bouton **Exporter** → fichier CSV.
 2. Dans le nouveau site : **Importer un CSV** → choisissez ce fichier → **Importer**.
-3. Ouvrez **Réglages** (en bas du menu de gauche, ou dans la barre du bas sur téléphone) pour vérifier marchés, comptes, capital de référence, R prévu et taux €/$.
+3. Ouvrez **Réglages** (en bas du menu de gauche, ou dans la barre du bas sur téléphone) pour vérifier les marchés, puis le type (réel SAS, prop firm ou démo) et le capital de départ de chaque compte, le R prévu et le taux €/$.
 
 Les captures d'écran de l'ancien journal ne sont pas transférées : rajoutez celles qui comptent, trade par trade.
 

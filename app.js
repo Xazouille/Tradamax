@@ -84,9 +84,13 @@ function demoCal() {
 /* ---------------- constantes ---------------- */
 var DEF = {
   markets: ["XAUUSD", "DAX", "Nasdaq"],
-  accounts: ["Compte SAS", "Challenge prop firm", "Prop firm financé"],
+  accounts: ["Compte SAS", "Challenge prop firm", "Prop firm financé", "Compte démo"],
+  /* type et capital de départ de chaque compte du journal (le compte SAS prend « capital » tant qu'il n'est pas réglé) */
+  accountsInfo: { "Challenge prop firm": { type: "prop", capital: 50000 }, "Prop firm financé": { type: "prop", capital: 50000 }, "Compte démo": { type: "demo", capital: null } },
   rPlanDefault: 2, capital: 15000, eurusd: 1.115
 };
+var ACC_TYPES = { sas: "Compte réel de la SAS", prop: "Prop firm", demo: "Démo" };
+var ACC_SHORT = { sas: "réel SAS", prop: "prop firm", demo: "démo" };
 var WINDOWS = [
   { id: "London", label: "Londres", ny: "3h–4h NY", paris: "9h–10h Paris", s: 180, e: 240 },
   { id: "NYAM", label: "NY AM", ny: "10h–11h NY", paris: "16h–17h Paris", s: 600, e: 660 },
@@ -111,7 +115,7 @@ var FIRMS_REF = [
 var S = {
   sb: null, user: null, loaded: false, trades: [], sample: [], useSample: false,
   set: JSON.parse(JSON.stringify(DEF)),
-  f: { period: "all", account: "all", market: "all" }, q: "", shown: 30, selSig: "",
+  f: { period: "all", account: null, market: "all" }, q: "", shown: 30, selSig: "",
   calY: null, calM: null, editing: null, shotFile: null, shotPath: null, signed: {},
   props: [], payouts: [], editingProp: null, importRows: null, tmpM: null, tmpA: null,
   cal: null, calUpdated: null, ecoDay: "today", tab: "journal"
@@ -203,27 +207,39 @@ function filtered() {
     return true;
   }).slice().sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); });
 }
-function stats(ts) {
-  var n = ts.length, gw = 0, gl = 0, w = 0, l = 0, rs = [], cum = 0, eq = [], cap = S.set.capital, peak = cap, maxdd = 0, maxddE = 0;
+/* comptes : type (réel SAS, prop firm, démo) et capital de départ ; sans capital connu, pas de drawdown */
+function accInfo(name) {
+  var i = (S.set.accountsInfo || {})[name]; if (i && ACC_TYPES[i.type]) return i;
+  var s = norm(name), type = /demo/.test(s) ? "demo" : /sas|reel/.test(s) ? "sas" : "prop";
+  return { type: type, capital: type === "sas" ? S.set.capital : null };
+}
+function accCap(name) { var c = Number(accInfo(name).capital); return c > 0 ? c : null; }
+function accList() { return withUsed(S.set.accounts, "account"); }
+function sasNames() { return accList().filter(function (a) { return accInfo(a).type === "sas"; }); }
+function viewCap() { return S.f.account === "all" || S.f.account == null ? null : accCap(S.f.account); }
+function byDT(a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); }
+function stats(ts, cap) {
+  var has = cap != null && cap > 0, n = ts.length, gw = 0, gl = 0, w = 0, l = 0, rs = [], cum = 0, eq = [], peak = has ? cap : null, maxdd = 0, maxddE = 0;
   ts.forEach(function (t, i) {
     var p = Number(t.pnl) || 0; if (p > 0) { gw += p; w++; } else if (p < 0) { gl += -p; l++; }
     var r = rOf(t); if (r != null) rs.push(r);
-    cum += p; var cur = cap + cum; if (cur > peak) peak = cur;
-    var dd = peak > 0 ? (peak - cur) / peak : 0; if (dd > maxdd) { maxdd = dd; maxddE = peak - cur; }
+    cum += p;
+    if (has) { var c = cap + cum; if (c > peak) peak = c; var dd = (peak - c) / peak; if (dd > maxdd) { maxdd = dd; maxddE = peak - c; } }
     eq.push({ i: i + 1, cum: cum, t: t });
   });
-  var cur = cap + cum;
+  var cur = has ? cap + cum : null;
   return { n: n, total: cum, w: w, l: l, wr: n ? w / n : null, pf: gl > 0 ? gw / gl : (gw > 0 ? Infinity : null), exp: n ? cum / n : null,
-    avgR: rs.length ? rs.reduce(function (a, b) { return a + b; }, 0) / rs.length : null, rs: rs, eq: eq, peak: peak, cur: cur,
-    ddNow: peak > 0 ? Math.max(0, (peak - cur) / peak) : 0, maxdd: maxdd, maxddE: maxddE, avgW: w ? gw / w : null, avgL: l ? gl / l : null };
+    avgR: rs.length ? rs.reduce(function (a, b) { return a + b; }, 0) / rs.length : null, rs: rs, eq: eq, cap: has ? cap : null, peak: peak, cur: cur,
+    ddNow: has ? Math.max(0, (peak - cur) / peak) : null, maxdd: has ? maxdd : null, maxddE: has ? maxddE : null, avgW: w ? gw / w : null, avgL: l ? gl / l : null };
 }
 
 /* ---------------- rendu du journal ---------------- */
 function renderJournal() {
+  if (S.f.account == null) S.f.account = sasNames()[0] || "all";
   refreshSelects();
-  var ts = filtered(), st = stats(ts);
+  var ts = filtered(), st = stats(ts, viewCap());
   $("banner").hidden = !S.useSample;
-  renderEquity(st); renderDD(st); renderKPIs(st);
+  renderEquity(st); renderDD(st); renderOthers(); renderKPIs(st);
   renderGroups($("by-market"), ts, function (t) { return t.market; }, S.set.markets, function () { return null; });
   renderGroups($("by-window"), ts, function (t) { return t.window || "Out"; }, WINDOWS.map(function (w) { return w.id; }),
     function (k) { var w = WINDOWS.find(function (x) { return x.id === k; }); return w && w.ny ? w.ny + " · " + w.paris : null; }, winLabel);
@@ -232,7 +248,7 @@ function renderJournal() {
 function niceTicks(mn, mx, n) { var span = mx - mn, step = Math.pow(10, Math.floor(Math.log10(span / n))), e = span / n / step; step *= e >= 5 ? 5 : e >= 2 ? 2 : 1; var out = []; for (var v = Math.ceil(mn / step) * step; v <= mx + 1e-9; v += step) out.push(Math.abs(v) < 1e-9 ? 0 : v); return out; }
 function renderEquity(st) {
   var tot = $("eq-total"); tot.textContent = st.n ? seur(st.total) : "—"; tot.className = "tx-hero " + cls(st.total);
-  $("eq-sub").textContent = st.n ? st.n + " trade" + (st.n > 1 ? "s" : "") + " · capital " + eur(st.cur) : "Aucun trade sur cette période";
+  $("eq-sub").textContent = st.n ? st.n + " trade" + (st.n > 1 ? "s" : "") + (st.cur != null ? " · capital " + eur(st.cur) : "") : "Aucun trade sur cette période";
   var box = $("eq-chart"); box.textContent = "";
   var W = Math.max(260, box.clientWidth || 600), H = W < 500 ? 190 : 240, pl = 2, pr = 56, pt = 14, pb = 26;
   var pts = [{ i: 0, cum: 0 }].concat(st.eq);
@@ -269,16 +285,45 @@ function renderEquity(st) {
   ov.addEventListener("pointerleave", function () { tip.classList.remove("on"); hl.setAttribute("opacity", 0); hd.setAttribute("opacity", 0); });
 }
 function ddState(dd) { var lvl = PALIERS.filter(function (p) { return dd >= p.p; }).pop(); return { lvl: lvl, k: !lvl ? "ok" : lvl.p < .2 ? "caution" : "stop" }; }
+/* Drawdown du compte affiché. Les paliers de la charte ne s'appliquent qu'au compte réel de la SAS. */
 function renderDD(st) {
-  var dd = st.ddNow, s = ddState(dd); $("dd-now").textContent = st.n ? "−" + pct(dd) : "—";
-  var pill = $("dd-pill"); pill.className = "tx-badge " + { ok: "is-pos", caution: "is-warn", stop: "is-neg" }[s.k];
+  var name = S.f.account, info = name === "all" ? null : accInfo(name), sas = !!info && info.type === "sas", has = st.cap != null;
+  $("dd-title").textContent = sas ? "Palier de drawdown (charte)" : "Drawdown du compte";
+  $("dd-note").textContent = !info ? "Choisissez un compte pour voir son capital et son drawdown." : !has ? "Indiquez le capital de départ de « " + name + " » dans les Réglages." :
+    sas ? name + " · depuis le plus haut historique du capital" : name + " · depuis le plus haut du compte. Les paliers de la charte ne concernent que le compte de la SAS.";
+  var dd = has ? st.ddNow : 0, s = ddState(dd), pill = $("dd-pill"), g = $("gauge");
+  $("dd-now").textContent = has && st.n ? "−" + pct(dd) : "—";
+  pill.hidden = !(has && sas); g.hidden = !(has && sas);
+  pill.className = "tx-badge " + { ok: "is-pos", caution: "is-warn", stop: "is-neg" }[s.k];
   pill.textContent = s.lvl ? "Palier −" + Math.round(s.lvl.p * 100) + " % · " + s.lvl.l : "Normal";
-  var g = $("gauge"); g.className = "tx-gauge has-names is-" + s.k;
+  g.className = "tx-gauge has-names is-" + s.k;
   $("gauge-fill").style.width = Math.min(100, dd / GAUGE_MAX * 100) + "%";
   g.querySelectorAll(".mark").forEach(function (m) { m.remove(); });
   PALIERS.forEach(function (p) { g.appendChild(el("div", { class: "mark", style: "left:" + (p.p / GAUGE_MAX * 100) + "%" }, [el("span", {}, ["−" + Math.round(p.p * 100) + " %", el("small", { text: p.l })])])); });
-  $("dd-cap").textContent = eur(S.set.capital); $("dd-peak").textContent = eur(st.peak); $("dd-cur").textContent = eur(st.cur);
-  $("dd-max").textContent = st.n ? "−" + pct(st.maxdd) + " (" + eur(st.maxddE) + ")" : "—";
+  $("dd-cap").textContent = has ? eur(st.cap) : "—"; $("dd-peak").textContent = has ? eur(st.peak) : "—"; $("dd-cur").textContent = has ? eur(st.cur) : "—";
+  $("dd-max").textContent = has && st.n ? "−" + pct(st.maxdd) + " (" + eur(st.maxddE) + ")" : "—";
+}
+/* Section « Prop firms et comptes démo » : un résumé par compte, toujours sur tout l'historique */
+function renderOthers() {
+  var box = $("others"), names = accList().filter(function (n) { return accInfo(n).type !== "sas"; }); box.textContent = "";
+  $("others-sec").hidden = !names.length;
+  names.forEach(function (name) {
+    var info = accInfo(name), cap = accCap(name), ts = source().filter(function (t) { return t.account === name; }).sort(byDT), st = stats(ts, cap), cur = S.f.account === name;
+    var card = el("article", { class: "tx-panel tx-account pg-acc" + (cur ? " is-current" : "") }, [
+      el("div", { class: "tx-account-head" }, [
+        el("div", { class: "tx-account-id" }, [el("span", { class: "tx-avatar", "aria-hidden": "true", text: initials(name) }),
+          el("div", { class: "pg-acc-name" }, [el("h3", { class: "tx-title", text: name }), el("div", { class: "tx-sub", text: ACC_TYPES[info.type] })])]),
+        el("span", { class: "tx-badge is-plain", text: info.type === "demo" ? "Démo" : "Prop firm" })]),
+      el("dl", { class: "tx-kv" }, [
+        el("dt", { text: "Capital de départ" }), el("dd", { text: cap ? eur(cap) : "À renseigner" }),
+        el("dt", { text: "Résultat" }), el("dd", { class: cls(st.total), text: st.n ? seur(st.total) : "—" }),
+        el("dt", { text: "Capital actuel" }), el("dd", { text: st.cur != null ? eur(st.cur) : "—" }),
+        el("dt", { text: "Drawdown actuel" }), el("dd", { text: st.ddNow != null && st.n ? "−" + pct(st.ddNow) : "—" })]),
+      el("div", { class: "tx-account-foot" }, [el("span", { class: "tx-dim", text: st.n + " trade" + (st.n > 1 ? "s" : "") }),
+        el("button", { class: "tx-btn is-ghost", type: "button", "aria-label": "Afficher le détail de " + name, text: cur ? "Affiché" : "Voir le détail" })])]);
+    card.addEventListener("click", function () { S.f.account = name; S.shown = 30; renderJournal(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    box.appendChild(card);
+  });
 }
 function kpi(box, label, val, c, hint) { box.appendChild(el("div", { class: "tx-stat" }, [el("div", { class: "tx-label", text: label }), el("div", { class: "v " + (c || ""), text: val }), el("div", { class: "h", text: hint || "" })])); }
 function renderKPIs(st) {
@@ -288,7 +333,7 @@ function renderKPIs(st) {
   kpi(k, "Profit factor", st.pf == null ? "—" : st.pf === Infinity ? "∞" : nf2.format(st.pf), st.pf == null ? "" : st.pf >= 1 ? "tx-pos" : "tx-neg", st.avgL ? "Perte moyenne " + eur(st.avgL) : "—");
   kpi(k, "Espérance / trade", st.exp == null ? "—" : seur(st.exp), cls(st.exp || 0), "Résultat moyen par trade");
   kpi(k, "R moyen", st.avgR == null ? "—" : rfmt(st.avgR), cls(st.avgR || 0), st.rs.length ? st.rs.length + " trades avec risque renseigné" : "Renseignez le risque");
-  kpi(k, "Drawdown max", st.n ? "−" + pct(st.maxdd) : "—", st.maxdd >= .2 ? "tx-neg" : "", st.n ? eur(st.maxddE) + " depuis un sommet" : "—");
+  kpi(k, "Drawdown max", st.n && st.maxdd != null ? "−" + pct(st.maxdd) : "—", st.maxdd >= .2 ? "tx-neg" : "", st.maxdd == null ? "Choisissez un compte avec capital" : st.n ? eur(st.maxddE) + " depuis un sommet" : "—");
 }
 function renderGroups(box, ts, key, order, subFn, labelFn) {
   box.textContent = ""; var g = {};
@@ -428,10 +473,10 @@ function fillSelect(sel, opts, all) { sel.textContent = ""; if (all) sel.appendC
 function ensureOpt(sel, v) { if (!v) return; for (var i = 0; i < sel.options.length; i++) if (sel.options[i].value === v) return; sel.appendChild(el("option", { value: v, text: v })); }
 function withUsed(base, key) { var out = base.slice(); source().forEach(function (t) { if (t[key] && out.indexOf(t[key]) < 0) out.push(t[key]); }); return out; }
 function refreshSelects() {
-  var fm = withUsed(S.set.markets, "market"), fa = withUsed(S.set.accounts, "account"), sig = JSON.stringify([fm, fa]);
-  if (sig === S.selSig) return; S.selSig = sig;
-  fillSelect($("f-account"), fa, "Tous les comptes"); fillSelect($("f-market"), fm, "Tous les marchés");
-  if (fa.indexOf(S.f.account) < 0) S.f.account = "all"; if (fm.indexOf(S.f.market) < 0) S.f.market = "all";
+  var fm = withUsed(S.set.markets, "market"), fa = accList(), sig = JSON.stringify([fm, fa, S.set.accountsInfo || null]);
+  if (sig !== S.selSig) { S.selSig = sig;
+    fillSelect($("f-account"), fa.map(function (n) { return { v: n, l: n + " · " + ACC_SHORT[accInfo(n).type] }; }), "Tous les comptes"); fillSelect($("f-market"), fm, "Tous les marchés"); }
+  if (S.f.account !== "all" && fa.indexOf(S.f.account) < 0) S.f.account = sasNames()[0] || "all"; if (fm.indexOf(S.f.market) < 0) S.f.market = "all";
   $("f-account").value = S.f.account; $("f-market").value = S.f.market;
 }
 fillSelect($("t-window"), WINDOWS.map(function (w) { return { v: w.id, l: w.label + (w.paris ? " (" + w.paris + ")" : "") }; }));
@@ -583,22 +628,52 @@ function drawChips(boxId, arr, key) {
     x.addEventListener("click", function () { if (arr.length <= 1) { setErr("Gardez au moins un élément."); return; } arr.splice(i, 1); drawSettings(); });
     box.appendChild(el("span", { class: "tx-chip" }, [v, n ? el("small", { text: n + " trade" + (n > 1 ? "s" : "") }) : null, x])); });
 }
-function drawSettings() { setErr(""); drawChips("set-markets", S.tmpM, "market"); drawChips("set-accounts", S.tmpA, "account"); }
+function typeOptions(sel) { Object.keys(ACC_TYPES).forEach(function (k) { sel.appendChild(el("option", { value: k, text: ACC_SHORT[k].charAt(0).toUpperCase() + ACC_SHORT[k].slice(1) })); }); }
+typeOptions($("set-account-type"));
+/* une ligne par compte : nom, type, capital de départ, bouton pour le retirer */
+function drawAccounts() {
+  var box = $("set-accounts"); box.textContent = "";
+  S.tmpA.forEach(function (a, i) {
+    var n = countUse("account", a.name), type = el("select", { class: "tx-input", "aria-label": "Type de " + a.name });
+    typeOptions(type); type.value = a.type; type.addEventListener("change", function () { a.type = type.value; });
+    var cap = el("input", { class: "tx-input tx-num", type: "number", step: "100", min: "0", inputmode: "decimal", placeholder: "Capital (€)", "aria-label": "Capital de départ de " + a.name });
+    cap.value = a.capital != null ? a.capital : ""; cap.addEventListener("input", function () { a.capital = num(cap.value); });
+    var x = el("button", { class: "tx-btn is-ghost is-icon", type: "button", "aria-label": "Retirer " + a.name, title: "Retirer" }, [icon("i-fermer")]);
+    x.addEventListener("click", function () { if (S.tmpA.length <= 1) { setErr("Gardez au moins un compte."); return; } S.tmpA.splice(i, 1); drawSettings(); });
+    box.appendChild(el("div", { class: "pg-accrow" }, [el("div", { class: "nm" }, [a.name, el("small", { text: n ? n + " trade" + (n > 1 ? "s" : "") : "aucun trade" })]), type, cap, x]));
+  });
+}
+function drawSettings() { setErr(""); drawChips("set-markets", S.tmpM, "market"); drawAccounts(); }
 function addItem(inId, arr) { var v = $(inId).value.replace(/\s+/g, " ").trim(); if (!v) return; if (arr.some(function (x) { return norm(x) === norm(v); })) { setErr("« " + v + " » existe déjà."); return; } arr.push(v); $(inId).value = ""; drawSettings(); }
-function openSettings() { S.tmpM = S.set.markets.slice(); S.tmpA = S.set.accounts.slice(); $("set-capital").value = S.set.capital; $("set-rplan").value = S.set.rPlanDefault; $("set-rate").value = S.set.eurusd; drawSettings(); show("ov-settings", true); }
+function addAccount() {
+  var v = $("set-account-in").value.replace(/\s+/g, " ").trim(); if (!v) return;
+  if (S.tmpA.some(function (a) { return norm(a.name) === norm(v); })) { setErr("« " + v + " » existe déjà."); return; }
+  S.tmpA.push({ name: v, type: $("set-account-type").value, capital: num($("set-account-cap").value) });
+  $("set-account-in").value = ""; $("set-account-cap").value = ""; drawSettings();
+}
+function openSettings() {
+  S.tmpM = S.set.markets.slice();
+  S.tmpA = S.set.accounts.map(function (n) { var i = accInfo(n); return { name: n, type: i.type, capital: i.capital }; });
+  $("set-rplan").value = S.set.rPlanDefault; $("set-rate").value = S.set.eurusd; drawSettings(); show("ov-settings", true);
+}
 $("btn-settings").addEventListener("click", openSettings);
 document.querySelectorAll('[data-open="settings"]').forEach(function (b) { b.addEventListener("click", openSettings); });
 $("set-market-add").addEventListener("click", function () { addItem("set-market-in", S.tmpM); });
-$("set-account-add").addEventListener("click", function () { addItem("set-account-in", S.tmpA); });
+$("set-account-add").addEventListener("click", addAccount);
 $("set-market-in").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addItem("set-market-in", S.tmpM); } });
-$("set-account-in").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addItem("set-account-in", S.tmpA); } });
+["set-account-in", "set-account-cap"].forEach(function (id) { $(id).addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addAccount(); } }); });
 $("set-cancel").addEventListener("click", function () { show("ov-settings", false); });
 $("ov-settings").addEventListener("click", function (e) { if (e.target === this) show("ov-settings", false); });
 $("set-save").addEventListener("click", function () {
-  var cap = num($("set-capital").value), rp = num($("set-rplan").value), rate = num($("set-rate").value);
-  if (!(cap >= 0) || !(rp > 0) || !(rate > 0)) { setErr("Vérifiez le capital, le R prévu et le taux de change."); return; }
+  var rp = num($("set-rplan").value), rate = num($("set-rate").value);
+  if (!(rp > 0) || !(rate > 0)) { setErr("Vérifiez le R prévu et le taux de change."); return; }
+  if (S.tmpA.some(function (a) { return a.capital != null && !(a.capital >= 0); })) { setErr("Un capital de départ n'est pas un nombre valide."); return; }
+  var sasA = S.tmpA.filter(function (a) { return a.type === "sas"; });
+  if (sasA.some(function (a) { return !(a.capital > 0); })) { setErr("Indiquez le capital de départ du compte réel de la SAS : il sert au drawdown de la charte."); return; }
+  var info = {}; S.tmpA.forEach(function (a) { info[a.name] = { type: a.type, capital: a.capital > 0 ? a.capital : null }; });
+  var sasCap = sasA.reduce(function (s, a) { return s + a.capital; }, 0);
   var b = this; b.disabled = true;
-  saveSettings({ markets: S.tmpM.slice(), accounts: S.tmpA.slice(), capital: cap, rPlanDefault: rp, eurusd: rate }).then(function (res) {
+  saveSettings({ markets: S.tmpM.slice(), accounts: S.tmpA.map(function (a) { return a.name; }), accountsInfo: info, capital: sasCap || S.set.capital, rPlanDefault: rp, eurusd: rate }).then(function (res) {
     b.disabled = false; if (res.error) { setErr("Enregistrement impossible."); return; }
     show("ov-settings", false); toast("Réglages enregistrés"); reload("reglages");
   });
@@ -607,7 +682,10 @@ $("set-save").addEventListener("click", function () {
 /* ---------------- prop firms ---------------- */
 function payoutsOf(id) { return S.payouts.filter(function (p) { return p.compte_id === id; }); }
 function stOf(s) { return s === "Compte financé" ? { c: "is-ok", b: "is-pos" } : s === "Challenge en cours" ? { c: "is-pause", b: "is-info" } : /échoué|perdu/.test(s) ? { c: "is-stop", b: "is-neg" } : { c: "", b: "" }; }
-function initials(name) { var s = String(name || "").trim(), caps = s.replace(/[^A-Z0-9]/g, ""); return (caps.length >= 2 ? caps.slice(0, 2) : s.slice(0, 2)).toUpperCase() || "—"; }
+function initials(name) {
+  var s = String(name || "").trim(), w = s.split(/\s+/).filter(Boolean), caps = (w[0] || "").replace(/[^A-Z0-9]/g, "");
+  return (caps.length >= 2 ? caps.slice(0, 2) : w.length >= 2 ? w[0].charAt(0) + w[1].charAt(0) : s.slice(0, 2)).toUpperCase() || "—";
+}
 function renderProps() {
   var k = $("prop-kpis"); k.textContent = "";
   var done = S.props.filter(function (p) { return p.statut === "Challenge échoué" || p.statut === "Compte financé" || p.statut === "Compte financé perdu"; });
@@ -814,7 +892,7 @@ try {
   ro = new ResizeObserver(function (entries) {
     var changed = false; entries.forEach(function (en) { var w = Math.round(en.contentRect.width); if (roW[en.target.id] !== w) { roW[en.target.id] = w; changed = true; } });
     if (!changed) return; clearTimeout(ro._t);
-    ro._t = setTimeout(function () { if (S.tab === "journal") { var st = stats(filtered()); renderEquity(st); renderHist(st.rs); } if (S.tab === "annonces") renderEco(); }, 80);
+    ro._t = setTimeout(function () { if (S.tab === "journal") { var st = stats(filtered(), viewCap()); renderEquity(st); renderHist(st.rs); } if (S.tab === "annonces") renderEco(); }, 80);
   });
   ro.observe($("eq-chart")); ro.observe($("r-hist")); ro.observe($("eco-recap"));
 } catch (e) {}
@@ -836,13 +914,18 @@ function nextWindow(now) {
 function waitText(min, d) { if (min < 60) return "dans " + min + " min"; if (min < 1440) return "dans " + Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0"); return fmtParisWeekday.format(d); }
 function setV(id, text, c, hint) { var v = $(id); v.textContent = text; v.className = "v" + (c ? " " + c : ""); $(id + "-h").textContent = hint || ""; }
 function renderSession() {
-  var all = S.trades.slice().sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); }), st = stats(all);
-  if (!all.length) setV("ss-dd", "—", "", S.loaded ? "Aucun trade enregistré" : "");
+  /* drawdown et résultat du jour : compte(s) réel(s) de la SAS uniquement, jamais les prop firms ni les démos */
+  var sas = sasNames(), capS = sas.reduce(function (a, n) { return a + (accCap(n) || 0); }, 0) || null;
+  var mine = S.trades.filter(function (t) { return sas.indexOf(t.account) >= 0; });
+  var all = mine.slice().sort(byDT), st = stats(all, capS);
+  if (!sas.length) setV("ss-dd", "—", "", "Aucun compte réel de la SAS");
+  else if (!all.length) setV("ss-dd", "—", "", S.loaded ? "Aucun trade sur le compte SAS" : "");
+  else if (st.ddNow == null) setV("ss-dd", "—", "", "Capital du compte SAS à renseigner");
   else {
     var dd = st.ddNow, s = ddState(dd), nxt = PALIERS.find(function (p) { return dd < p.p; }), gap = nxt ? nxt.p - dd : 0;
     setV("ss-dd", dd > 0 ? "−" + pct(dd) : pct(0), { ok: "", caution: "tx-warn", stop: "tx-neg" }[s.k], nxt ? "palier −" + Math.round(nxt.p * 100) + " % à " + pct(gap).replace(" %", "") + " point" + (gap >= .02 ? "s" : "") : "dernier palier dépassé");
   }
-  var today = todayISO(), td = S.trades.filter(function (t) { return t.date === today; }), sum = td.reduce(function (a, t) { return a + (Number(t.pnl) || 0); }, 0);
+  var today = todayISO(), td = mine.filter(function (t) { return t.date === today; }), sum = td.reduce(function (a, t) { return a + (Number(t.pnl) || 0); }, 0);
   var rs = td.map(rOf).filter(function (r) { return r != null; });
   setV("ss-day", td.length ? seur(sum) : "0 €", cls(sum), td.length ? td.length + " trade" + (td.length > 1 ? "s" : "") + (rs.length ? " · " + rfmt(rs.reduce(function (a, b) { return a + b; }, 0)) : "") : "Aucun trade aujourd'hui");
   var now = new Date(), nw = nextWindow(now);
