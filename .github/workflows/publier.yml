@@ -1,0 +1,35 @@
+name: Publier Tradamax
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Tous les jours à 4h UTC (5h ou 6h à Paris) : rafraîchit le calendrier économique.
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparer le site et le calendrier économique
+        run: bash build.sh
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploiement
+        uses: actions/deploy-pages@v4

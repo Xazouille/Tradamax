@@ -1,0 +1,1330 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tradamax</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap">
+<script>try{var t=localStorage.getItem("tradamax-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<style>
+html,body{margin:0}
+body{font-size:14px;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+img{max-width:100%}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* ===== Jetons du système de design « Salle des marchés » (règles dans DESIGN.md) ===== */
+:root{
+  /* couleurs : thème clair (papier chaud, encre, or) */
+  --c-bg:#F4F3EF; --c-panel:#FFFFFF; --c-panel-2:#F8F7F3; --c-raise:#FFFFFF; --c-hover:#F0EEE8; --c-inset:#ECEAE3; --c-field:#FDFCFA;
+  --c-line:#E7E4DC; --c-line-2:#D5D1C6; --c-ctl:#8C887B;
+  --c-text:#14171C; --c-text-2:#596170; --c-text-3:#626A79;
+  --c-accent:#7D570A; --c-accent-fill:#CFA03C; --c-accent-hi:#EDCF82; --c-accent-lo:#B5832A; --c-on-accent:#1A1304; --c-accent-soft:rgba(207,160,60,.17); --c-focus:#7D570A;
+  --c-pos:#0B7A57; --c-pos-soft:rgba(11,122,87,.10);
+  --c-neg:#C52D3E; --c-neg-soft:rgba(197,45,62,.09);
+  --c-warn:#A24C07; --c-warn-soft:rgba(190,96,12,.12);
+  --c-info:#1D5FAE; --c-info-soft:rgba(29,95,174,.09);
+  /* matière : or en dégradé, reflet des panneaux, lueurs et anneaux du fond, ombres */
+  --g-gold:linear-gradient(180deg,var(--c-accent-hi),var(--c-accent-fill) 58%,var(--c-accent-lo));
+  --g-sheen:none;
+  --glow-a:rgba(207,160,60,.20); --glow-b:rgba(96,134,196,.13); --ring:rgba(125,87,10,.075);
+  --shadow-1:0 1px 2px rgba(20,23,28,.05),0 1px 1px rgba(20,23,28,.03);
+  --shadow-2:0 1px 2px rgba(20,23,28,.05),0 14px 30px -16px rgba(20,23,28,.18);
+  --shadow-pop:0 2px 6px rgba(20,23,28,.08),0 28px 64px -16px rgba(20,23,28,.30);
+  --shadow-gold:inset 0 1px 0 rgba(255,255,255,.55),0 1px 2px rgba(125,87,10,.30),0 8px 18px -8px rgba(207,160,60,.65);
+  /* espacements, rayons, tailles de texte, polices, mouvement */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
+  --r-1:6px; --r-2:9px; --r-3:14px; --r-4:20px;
+  --fs-1:11px; --fs-2:12px; --fs-3:13px; --fs-4:15px; --fs-5:22px; --fs-6:34px;
+  --f-sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-title:"Instrument Serif","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+/* thème sombre (encre de nuit, or lumineux) : le même bloc sert au réglage du système et au bouton */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --c-bg:#080B10; --c-panel:#10151C; --c-panel-2:#141A23; --c-raise:#1A212C; --c-hover:#1B2330; --c-inset:#0A0E14; --c-field:#0B0F15;
+  --c-line:#1D2530; --c-line-2:#2A3442; --c-ctl:#586880;
+  --c-text:#EEF1F5; --c-text-2:#96A2B4; --c-text-3:#7F8CA0;
+  --c-accent:#E8C06A; --c-accent-fill:#E2B457; --c-accent-hi:#F5DC98; --c-accent-lo:#C28F36; --c-on-accent:#1A1304; --c-accent-soft:rgba(226,180,87,.13); --c-focus:#E2B457;
+  --c-pos:#41CF9F; --c-pos-soft:rgba(65,207,159,.13);
+  --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
+  --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
+  --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
+  --glow-a:rgba(226,180,87,.11); --glow-b:rgba(72,118,210,.14); --ring:rgba(226,180,87,.055);
+  --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
+  --shadow-2:inset 0 1px 0 rgba(255,255,255,.04),0 18px 36px -18px rgba(0,0,0,.8);
+  --shadow-pop:inset 0 1px 0 rgba(255,255,255,.06),0 30px 70px -14px rgba(0,0,0,.85);
+  --shadow-gold:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.5),0 8px 22px -8px rgba(226,180,87,.5);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --c-bg:#080B10; --c-panel:#10151C; --c-panel-2:#141A23; --c-raise:#1A212C; --c-hover:#1B2330; --c-inset:#0A0E14; --c-field:#0B0F15;
+  --c-line:#1D2530; --c-line-2:#2A3442; --c-ctl:#586880;
+  --c-text:#EEF1F5; --c-text-2:#96A2B4; --c-text-3:#7F8CA0;
+  --c-accent:#E8C06A; --c-accent-fill:#E2B457; --c-accent-hi:#F5DC98; --c-accent-lo:#C28F36; --c-on-accent:#1A1304; --c-accent-soft:rgba(226,180,87,.13); --c-focus:#E2B457;
+  --c-pos:#41CF9F; --c-pos-soft:rgba(65,207,159,.13);
+  --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
+  --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
+  --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
+  --glow-a:rgba(226,180,87,.11); --glow-b:rgba(72,118,210,.14); --ring:rgba(226,180,87,.055);
+  --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
+  --shadow-2:inset 0 1px 0 rgba(255,255,255,.04),0 18px 36px -18px rgba(0,0,0,.8);
+  --shadow-pop:inset 0 1px 0 rgba(255,255,255,.06),0 30px 70px -14px rgba(0,0,0,.85);
+  --shadow-gold:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.5),0 8px 22px -8px rgba(226,180,87,.5);
+  color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
+body{background:var(--c-bg);color:var(--c-text);font-family:var(--f-sans);font-size:14px;line-height:1.5;text-rendering:optimizeLegibility}
+/* fond : deux lueurs en haut de page et des anneaux gravés très discrets, fixes pendant le défilement */
+body::before,body::after{content:"";position:fixed;z-index:-1;pointer-events:none}
+body::before{inset:0;background:radial-gradient(1100px 520px at 6% -12%,var(--glow-a),transparent 62%),radial-gradient(900px 520px at 100% -16%,var(--glow-b),transparent 64%)}
+body::after{top:0;right:0;width:min(760px,100vw);height:620px;background:repeating-radial-gradient(circle at 100% 0,transparent 0 21px,var(--ring) 22px,transparent 23px);-webkit-mask-image:radial-gradient(circle at 100% 0,#000 0,transparent 68%);mask-image:radial-gradient(circle at 100% 0,#000 0,transparent 68%)}
+@media print{body::before,body::after{display:none}}
+/* ===== Composants du système de design (préfixe tx-, règles dans DESIGN.md) ===== */
+::selection{background:color-mix(in srgb,var(--c-accent-fill) 32%,transparent)}
+*{scrollbar-width:thin;scrollbar-color:var(--c-line-2) transparent}
+.tx-label{font-size:var(--fs-1);letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-2);font-weight:500}
+.tx-num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em}
+.tx-pos{color:var(--c-pos)} .tx-neg{color:var(--c-neg)} .tx-warn{color:var(--c-warn)} .tx-info{color:var(--c-info)} .tx-dim{color:var(--c-text-2)}
+.tx-ico{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* titres : le caractère à empattements est réservé au nom de la page et au titre d'une fenêtre */
+.tx-display{font-family:var(--f-title);font-weight:400;font-size:clamp(30px,22px + 2vw,44px);line-height:1.04;letter-spacing:-.012em;margin:0;text-wrap:balance}
+.tx-display em{font-style:italic;color:var(--c-accent)}
+.tx-eyebrow{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-1);letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--c-accent)}
+.tx-eyebrow::before{content:"";width:18px;height:1px;background:currentColor;opacity:.75}
+.tx-logo{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--g-gold);color:var(--c-on-accent);box-shadow:var(--shadow-gold);font-family:var(--f-title);font-size:25px;line-height:1}
+
+/* panneau */
+.tx-panel{position:relative;background-color:var(--c-panel);background-image:var(--g-sheen);border:1px solid var(--c-line);border-radius:var(--r-3);padding:var(--sp-4);min-width:0;box-shadow:var(--shadow-1)}
+.tx-panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.tx-title{font-family:var(--f-sans);font-size:var(--fs-4);font-weight:600;letter-spacing:-.01em;margin:0}
+.tx-sub{font-family:var(--f-sans);font-size:var(--fs-2);font-weight:400;color:var(--c-text-2);letter-spacing:0}
+/* liste libellé / valeur, avec des points de conduite comme dans un livre de comptes */
+.tx-kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--sp-2) 0;font-size:var(--fs-3);margin:0}
+.tx-kv dt{display:flex;align-items:baseline;gap:var(--sp-2);color:var(--c-text-2);min-width:0}
+.tx-kv dt::after{content:"";flex:1;min-width:12px;margin-right:var(--sp-2);border-bottom:1px dotted var(--c-line-2);transform:translateY(-3px)}
+.tx-kv dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* états : une classe is-* fixe la couleur --st pour le bandeau, la jauge, l'alerte, la carte de compte */
+.is-ok{--st:var(--c-pos);--st-soft:var(--c-pos-soft)}
+.is-caution{--st:var(--c-warn);--st-soft:var(--c-warn-soft)}
+.is-stop{--st:var(--c-neg);--st-soft:var(--c-neg-soft)}
+.is-pause{--st:var(--c-info);--st-soft:var(--c-info-soft)}
+
+/* boutons */
+.tx-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:0 14px;border:1px solid var(--c-line-2);background-color:var(--c-raise);background-image:var(--g-sheen);color:var(--c-text);border-radius:var(--r-2);font-family:var(--f-sans);font-size:var(--fs-3);font-weight:500;letter-spacing:-.005em;cursor:pointer;white-space:nowrap;text-decoration:none;box-shadow:var(--shadow-1);transition:background-color .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease),filter .15s var(--ease),transform .08s}
+.tx-btn:hover{background-color:var(--c-hover);border-color:var(--c-ctl)}
+.tx-btn:active{transform:translateY(1px)}
+.tx-btn .tx-ico{width:15px;height:15px}
+.tx-btn.is-primary{background:var(--g-gold);border-color:var(--c-accent-lo);color:var(--c-on-accent);font-weight:600;box-shadow:var(--shadow-gold)}
+.tx-btn.is-primary:hover{filter:brightness(1.06) saturate(1.06);border-color:var(--c-accent-lo)}
+.tx-btn.is-ghost{border-color:transparent;background:transparent;box-shadow:none;color:var(--c-text-2)}
+.tx-btn.is-ghost:hover{background:var(--c-hover);color:var(--c-text);border-color:transparent}
+.tx-btn.is-danger{color:var(--c-neg);border-color:color-mix(in srgb,var(--c-neg) 45%,var(--c-line-2))}
+.tx-btn.is-danger:hover{background:var(--c-neg-soft);border-color:var(--c-neg)}
+.tx-btn.is-icon{padding:0;width:34px}
+.tx-btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+@media (pointer:coarse){.tx-btn{min-height:42px}.tx-btn.is-icon{width:42px}}
+
+/* champs */
+.tx-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tx-field>label{font-size:var(--fs-2);color:var(--c-text-2);font-weight:500}
+.tx-input{height:36px;border:1px solid var(--c-ctl);background-color:var(--c-field);color:var(--c-text);border-radius:var(--r-2);padding:0 11px;width:100%;min-width:0;font-size:var(--fs-3);box-shadow:inset 0 1px 2px rgba(0,0,0,.05);transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.tx-input::placeholder{color:var(--c-text-3)}
+.tx-input:hover{border-color:var(--c-text-2)}
+.tx-input:focus-visible{outline:none;border-color:var(--c-focus);box-shadow:0 0 0 1px var(--c-focus),0 0 0 4px var(--c-accent-soft)}
+select.tx-input{-webkit-appearance:none;appearance:none;padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--c-text-2) 50%),linear-gradient(135deg,var(--c-text-2) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+textarea.tx-input{height:auto;min-height:72px;padding:9px 11px;resize:vertical;line-height:1.45}
+.tx-input.tx-num{text-align:right}
+.tx-input[aria-invalid="true"]{border-color:var(--c-neg);box-shadow:0 0 0 3px var(--c-neg-soft)}
+.tx-help{font-size:var(--fs-2);color:var(--c-text-2)}
+.tx-help.is-error{color:var(--c-neg)}
+.tx-check{display:inline-flex;gap:10px;align-items:center;font-size:var(--fs-3);cursor:pointer}
+.tx-check input{-webkit-appearance:none;appearance:none;width:18px;height:18px;margin:0;flex:none;display:grid;place-content:center;border:1px solid var(--c-ctl);border-radius:5px;background:var(--c-field);cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.tx-check input::after{content:"";width:10px;height:10px;background:var(--c-on-accent);clip-path:polygon(10% 50%,0 63%,37% 100%,100% 24%,88% 12%,36% 73%);transform:scale(0);transition:transform .16s cubic-bezier(.2,.9,.3,1.5)}
+.tx-check input:checked{background:var(--g-gold);border-color:var(--c-accent-lo)}
+.tx-check input:checked::after{transform:scale(1)}
+.tx-check:hover input{border-color:var(--c-text-2)}
+.tx-check:hover input:checked{border-color:var(--c-accent-lo)}
+.tx-seg{display:inline-flex;gap:2px;padding:3px;background:var(--c-inset);border:1px solid var(--c-line);border-radius:calc(var(--r-2) + 3px)}
+.tx-seg button{border:0;background:transparent;padding:0 12px;min-height:28px;border-radius:calc(var(--r-2) - 1px);color:var(--c-text-2);font-size:var(--fs-2);font-weight:500;cursor:pointer;white-space:nowrap;transition:color .15s var(--ease),background-color .15s var(--ease)}
+.tx-seg button:hover{color:var(--c-text)}
+.tx-seg button[aria-pressed="true"]{background-color:var(--c-raise);background-image:var(--g-sheen);color:var(--c-text);box-shadow:var(--shadow-1),0 0 0 1px var(--c-line-2)}
+@media (pointer:coarse){.tx-input{height:42px}.tx-seg button{min-height:36px}}
+
+/* pastilles de statut et étiquettes */
+.tx-badge{display:inline-flex;align-items:center;gap:7px;min-height:22px;padding:0 10px 0 9px;border-radius:999px;font-size:var(--fs-2);font-weight:500;border:1px solid var(--c-line);color:var(--c-text-2);background:var(--c-panel-2);white-space:nowrap}
+.tx-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 20%,transparent)}
+.tx-badge.is-plain{min-height:20px;padding:0 7px;border-radius:var(--r-1)}
+.tx-badge.is-plain::before{display:none}
+.tx-badge.is-pos{color:var(--c-pos);background:var(--c-pos-soft);border-color:color-mix(in srgb,var(--c-pos) 22%,transparent)}
+.tx-badge.is-neg{color:var(--c-neg);background:var(--c-neg-soft);border-color:color-mix(in srgb,var(--c-neg) 22%,transparent)}
+.tx-badge.is-warn{color:var(--c-warn);background:var(--c-warn-soft);border-color:color-mix(in srgb,var(--c-warn) 24%,transparent)}
+.tx-badge.is-info{color:var(--c-info);background:var(--c-info-soft);border-color:color-mix(in srgb,var(--c-info) 22%,transparent)}
+.tx-delta{display:inline-flex;align-items:center;min-height:20px;padding:0 8px;border-radius:999px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:var(--fs-2);font-weight:500;white-space:nowrap;color:var(--c-text-2);background:var(--c-panel-2)}
+.tx-delta.is-pos{color:var(--c-pos);background:var(--c-pos-soft)}
+.tx-delta.is-neg{color:var(--c-neg);background:var(--c-neg-soft)}
+
+/* navigation : rail latéral (ordinateur) et barre du bas (téléphone) */
+.tx-side{width:76px;flex:none;background-color:var(--c-panel);background-image:var(--g-sheen);border-right:1px solid var(--c-line);display:flex;flex-direction:column;padding:10px var(--sp-2);gap:var(--sp-1)}
+.tx-side .tx-logo{align-self:center;margin:2px 0 10px}
+.tx-tabbar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;padding:6px;background:color-mix(in srgb,var(--c-panel) 88%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border:1px solid var(--c-line);border-radius:18px;box-shadow:var(--shadow-2)}
+.tx-navitem{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--sp-1);padding:9px 2px 7px;border-radius:10px;color:var(--c-text-2);font-size:var(--fs-1);font-weight:500;background:transparent;border:0;cursor:pointer;text-decoration:none;min-width:0;transition:color .15s var(--ease),background-color .15s var(--ease)}
+.tx-navitem .tx-ico{width:20px;height:20px}
+.tx-navitem:hover{color:var(--c-text);background:var(--c-hover)}
+.tx-navitem[aria-current="page"]{color:var(--c-accent);background:var(--c-accent-soft)}
+.tx-navitem[aria-current="page"]::before{content:"";position:absolute;background:var(--g-gold);box-shadow:0 0 12px color-mix(in srgb,var(--c-accent-fill) 70%,transparent)}
+.tx-side .tx-navitem[aria-current="page"]::before{left:-8px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0}
+.tx-tabbar .tx-navitem{min-height:50px;justify-content:center}
+.tx-tabbar .tx-navitem[aria-current="page"]::before{top:-6px;left:50%;width:22px;height:3px;margin-left:-11px;border-radius:0 0 3px 3px}
+
+/* bandeau de séance (filet d'or en tête) et bandeau d'état du jour */
+.tx-session{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--c-line);border-radius:var(--r-3);background-color:var(--c-panel);background-image:var(--g-sheen);box-shadow:var(--shadow-1);overflow:hidden}
+.tx-session::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,var(--c-accent-fill) 28%,var(--c-accent-hi) 50%,var(--c-accent-fill) 72%,transparent);opacity:.8}
+.tx-session>div{display:flex;flex-direction:column;gap:2px;padding:var(--sp-3) 14px;border-right:1px solid var(--c-line);min-width:0}
+.tx-session .tx-label{letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-session>div:last-child{border-right:0}
+.tx-session .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:var(--fs-5);font-weight:400;letter-spacing:-.03em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-session .h{font-size:var(--fs-2);color:var(--c-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:720px){.tx-session{grid-template-columns:repeat(2,minmax(0,1fr))}.tx-session>div{padding:10px var(--sp-3)}.tx-session>div:nth-child(2n){border-right:0}.tx-session>div:nth-child(-n+2){border-bottom:1px solid var(--c-line)}.tx-session .v{font-size:19px}}
+.tx-state{display:flex;flex-wrap:wrap;align-items:center;gap:6px var(--sp-4);padding:10px var(--sp-4) 10px 10px;border-radius:var(--r-3);border:1px solid color-mix(in srgb,var(--st,var(--c-line-2)) 30%,var(--c-line));background:linear-gradient(90deg,var(--st-soft,transparent),transparent 64%),var(--c-panel);box-shadow:var(--shadow-1)}
+.tx-state-name{display:inline-flex;align-items:center;gap:10px;color:var(--st);font-weight:600;font-size:var(--fs-3);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.tx-state-name .tx-ico{box-sizing:content-box;padding:7px;border-radius:9px;background:var(--st-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--st,transparent) 26%,transparent)}
+.tx-state-why{font-size:var(--fs-3);color:var(--c-text-2)}
+
+/* tuiles de chiffres clés */
+.tx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--c-line);border:1px solid var(--c-line);border-radius:var(--r-3);overflow:hidden;box-shadow:var(--shadow-1)}
+.tx-stat{background-color:var(--c-panel);background-image:var(--g-sheen);padding:14px var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.tx-stat .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:var(--fs-5);font-weight:400;letter-spacing:-.03em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-stat .h{font-size:var(--fs-2);color:var(--c-text-2)}
+.tx-hero{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:var(--fs-6);font-weight:300;letter-spacing:-.045em;line-height:1.08;white-space:nowrap}
+
+/* jauge de limite avec seuils : la piste prend la teinte de l'état, le curseur marque la valeur */
+.tx-gauge-head{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-2);font-size:var(--fs-3)}
+.tx-gauge{position:relative;height:8px;border-radius:999px;background:var(--st-soft,var(--c-inset));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--st,var(--c-line-2)) 14%,transparent);margin:10px 0 24px}
+.tx-gauge .fill{position:absolute;inset:0 auto 0 0;max-width:100%;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--st,var(--c-text)) 45%,transparent),var(--st,var(--c-text)));box-shadow:0 0 14px -2px color-mix(in srgb,var(--st,transparent) 65%,transparent);animation:tx-grow .9s var(--ease) both}
+.tx-gauge .fill::after{content:"";position:absolute;right:-2px;top:50%;width:12px;height:12px;margin-top:-6px;box-sizing:border-box;border-radius:50%;background:var(--c-panel);border:2.5px solid var(--st,var(--c-text));box-shadow:0 0 0 3px color-mix(in srgb,var(--st,transparent) 22%,transparent)}
+.tx-gauge .mark{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;border-radius:1px;background:var(--c-text-2)}
+.tx-gauge .mark span{position:absolute;top:17px;left:50%;transform:translateX(-50%);font-family:var(--f-mono);font-size:var(--fs-1);color:var(--c-text-2);white-space:nowrap}
+.tx-gauge .mark.is-end span{left:auto;right:0;transform:none}
+@keyframes tx-grow{from{width:0}}
+
+/* tableau ; avec is-stack chaque ligne devient une fiche sous 640 px */
+.tx-table-wrap{overflow-x:auto}
+.tx-table{width:100%;min-width:0;border-collapse:separate;border-spacing:0;font-size:var(--fs-3)}
+.tx-table th{text-align:left;font-size:var(--fs-1);letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-2);font-weight:500;padding:9px var(--sp-3);background:var(--c-panel-2);border-block:1px solid var(--c-line);white-space:nowrap}
+.tx-table th:first-child{border-left:1px solid var(--c-line);border-radius:var(--r-2) 0 0 var(--r-2)}
+.tx-table th:last-child{border-right:1px solid var(--c-line);border-radius:0 var(--r-2) var(--r-2) 0}
+.tx-table td{padding:11px var(--sp-3);border-bottom:1px solid var(--c-line);white-space:nowrap;transition:background-color .12s var(--ease)}
+.tx-table tbody tr:last-child td{border-bottom:0}
+.tx-table .r{text-align:right}
+.tx-table tbody tr{cursor:default}
+.tx-table.is-click tbody tr{cursor:pointer}
+.tx-table tbody tr:hover td{background:var(--c-hover)}
+.tx-table tbody tr:hover td:first-child{border-radius:var(--r-2) 0 0 var(--r-2)}
+.tx-table tbody tr:hover td:last-child{border-radius:0 var(--r-2) var(--r-2) 0}
+@media (max-width:640px){
+  .tx-table.is-stack thead{display:none}
+  .tx-table.is-stack tr{display:block;padding:10px var(--sp-3);margin-bottom:var(--sp-2);border:1px solid var(--c-line);border-radius:10px;background:var(--c-panel-2)}
+  .tx-table.is-stack tr:last-child{margin-bottom:0}
+  .tx-table.is-stack td{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-3);padding:3px 0;border:0;border-radius:0!important;white-space:normal;text-align:right}
+  .tx-table.is-stack td[data-l]::before{content:attr(data-l);color:var(--c-text-2);font-family:var(--f-sans);letter-spacing:0;text-align:left}
+  .tx-table.is-stack tbody tr:hover td{background:transparent}
+}
+
+/* barres gain / perte, calendrier des résultats */
+.tx-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--sp-1) var(--sp-3);align-items:baseline;font-size:var(--fs-3)}
+.tx-bar+.tx-bar{margin-top:6px}
+.tx-bar .track{grid-column:1/-1;position:relative;height:8px;border-radius:999px;background:var(--c-inset)}
+.tx-bar .track::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--c-ctl)}
+.tx-bar .track i{position:absolute;top:0;bottom:0;animation:tx-grow .8s var(--ease) both}
+.tx-bar .track i.is-pos{left:50%;border-radius:0 4px 4px 0;background:linear-gradient(90deg,color-mix(in srgb,var(--c-pos) 55%,transparent),var(--c-pos))}
+.tx-bar .track i.is-neg{right:50%;border-radius:4px 0 0 4px;background:linear-gradient(270deg,color-mix(in srgb,var(--c-neg) 55%,transparent),var(--c-neg))}
+.tx-bar .meta{grid-column:1/-1;font-size:var(--fs-2);color:var(--c-text-2)}
+.tx-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--sp-1)}
+.tx-day{min-height:54px;padding:6px 7px;border-radius:var(--r-1);background:var(--c-panel-2);border:1px solid transparent;display:flex;flex-direction:column;justify-content:space-between;font-size:var(--fs-1);color:var(--c-text-2);min-width:0}
+.tx-day b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:var(--fs-2);font-weight:500;letter-spacing:-.02em;color:var(--c-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-day.is-pos{background:var(--c-pos-soft);border-color:color-mix(in srgb,var(--c-pos) 22%,transparent)}
+.tx-day.is-neg{background:var(--c-neg-soft);border-color:color-mix(in srgb,var(--c-neg) 22%,transparent)}
+.tx-day.is-today{border-color:var(--c-accent-fill);box-shadow:0 0 0 3px var(--c-accent-soft)}
+@media (max-width:520px){.tx-day{min-height:46px;padding:4px}.tx-day b{font-size:var(--fs-1);letter-spacing:-.04em}}
+
+/* carte de graphique : trait or de 2 px, voile sous la courbe, grille en retrait */
+.tx-chart{position:relative}
+.tx-chart svg{display:block;width:100%;height:auto;overflow:visible}
+.tx-chart text{font-family:var(--f-mono);font-size:11px;fill:var(--c-text-3)}
+.tx-chart .grid line{stroke:var(--c-line);stroke-width:1}
+.tx-chart .grid .zero{stroke:var(--c-line-2)}
+.tx-chart .limit{stroke:var(--c-neg);stroke-width:1;stroke-dasharray:5 4}
+.tx-chart .area{fill:url(#tx-area);animation:tx-fade 1.2s ease-out both}
+.tx-chart .line{fill:none;stroke:var(--c-accent-fill);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;filter:drop-shadow(0 5px 8px color-mix(in srgb,var(--c-accent-fill) 32%,transparent))}
+.tx-chart .line[pathLength="1"]{stroke-dasharray:1;animation:tx-draw 1.3s var(--ease) both}
+.tx-chart .cross{stroke:var(--c-ctl);stroke-width:1}
+.tx-chart .dot{fill:var(--c-accent-fill);stroke:var(--c-panel);stroke-width:2}
+.tx-chart .halo{fill:var(--c-accent-fill);opacity:.2}
+@keyframes tx-draw{from{stroke-dashoffset:1}}
+@keyframes tx-fade{from{opacity:0}}
+.tx-legend{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4);font-size:var(--fs-2);color:var(--c-text-2);margin-top:var(--sp-3)}
+.tx-legend span{display:inline-flex;align-items:center;gap:var(--sp-2)}
+.tx-legend i{width:14px;height:2px;border-radius:2px;background:currentColor}
+.tx-legend i.is-dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px)}
+.tx-tip{position:absolute;background:color-mix(in srgb,var(--c-raise) 86%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--c-text);border:1px solid var(--c-line-2);box-shadow:var(--shadow-2);font-size:var(--fs-2);line-height:1.45;padding:var(--sp-2) 10px;border-radius:10px;white-space:nowrap;pointer-events:none}
+
+/* checklist avec score */
+.tx-checklist{list-style:none;margin:0;padding:0}
+.tx-checklist li{padding:9px 0;border-bottom:1px solid var(--c-line)}
+.tx-checklist li:last-child{border-bottom:0;padding-bottom:0}
+.tx-checklist li.grp{padding:var(--sp-4) 0 var(--sp-1);border:0}
+.tx-score{display:flex;align-items:baseline;gap:var(--sp-2)}
+.tx-score-bar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;margin-top:var(--sp-2)}
+.tx-score-bar i{height:6px;border-radius:3px;background:var(--c-inset);box-shadow:inset 0 0 0 1px var(--c-line)}
+.tx-score-bar i.on{background:var(--st,var(--c-pos));box-shadow:0 0 10px -2px color-mix(in srgb,var(--st,var(--c-pos)) 60%,transparent)}
+
+/* calculateur compact : le résultat à passer est la seule zone teintée d'or */
+.tx-calc{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:var(--sp-4)}
+.tx-calc-in{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3);align-content:start}
+.tx-calc-out{border-radius:12px;padding:var(--sp-4);display:flex;flex-direction:column;justify-content:center;gap:var(--sp-1);min-width:0;background:linear-gradient(155deg,var(--c-accent-soft),transparent 60%),var(--c-panel-2);border:1px solid color-mix(in srgb,var(--c-accent-fill) 30%,var(--c-line))}
+@media (max-width:640px){.tx-calc{grid-template-columns:minmax(0,1fr)}}
+
+/* carte de compte prop firm : un trait de la couleur du statut en tête */
+.tx-account{display:flex;flex-direction:column;gap:var(--sp-4)}
+.tx-account::before{content:"";position:absolute;top:-1px;left:var(--sp-4);width:44px;height:3px;border-radius:0 0 3px 3px;background:var(--st,var(--c-line-2))}
+.tx-account-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--sp-2)}
+.tx-account-id{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.tx-avatar{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;font-family:var(--f-mono);font-size:var(--fs-2);font-weight:500;color:var(--c-text);background:var(--c-panel-2);border:1px solid var(--c-line-2);box-shadow:var(--shadow-1)}
+.tx-account-foot{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-2);padding-top:var(--sp-3);border-top:1px solid var(--c-line);font-size:var(--fs-3)}
+
+/* alerte persistante, message court, fenêtre de saisie */
+.tx-alert{display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--sp-3);border-radius:var(--r-3);border:1px solid color-mix(in srgb,var(--st,var(--c-line-2)) 32%,var(--c-line));background:linear-gradient(90deg,var(--st-soft,transparent),transparent 72%),var(--c-panel);font-size:var(--fs-3);box-shadow:var(--shadow-1)}
+.tx-alert>.tx-ico{box-sizing:content-box;color:var(--st);padding:7px;border-radius:9px;background:var(--st-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--st,transparent) 26%,transparent)}
+.tx-alert-body{flex:1;min-width:0;padding-top:1px;color:var(--c-text-2)}
+.tx-alert-body b{display:block;font-weight:600;color:var(--c-text)}
+.tx-toast{display:inline-flex;align-items:center;gap:var(--sp-2);background:var(--c-text);color:var(--c-bg);padding:9px var(--sp-4) 9px var(--sp-3);border-radius:999px;font-size:var(--fs-3);font-weight:500;box-shadow:var(--shadow-pop)}
+.tx-dialog{background-color:var(--c-panel);background-image:var(--g-sheen);border:1px solid var(--c-line-2);border-radius:var(--r-4);box-shadow:var(--shadow-pop);width:100%;max-width:520px;overflow:hidden}
+.tx-dialog-head,.tx-dialog-foot{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2)}
+.tx-dialog-head{padding:var(--sp-4) var(--sp-3) var(--sp-3) 20px;border-bottom:1px solid var(--c-line)}
+.tx-dialog-head .tx-title{font-family:var(--f-title);font-size:24px;font-weight:400;letter-spacing:-.005em;line-height:1.1}
+.tx-dialog-foot{padding:var(--sp-3) var(--sp-4);border-top:1px solid var(--c-line);background:var(--c-panel-2);flex-wrap:wrap}
+.tx-dialog-body{padding:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3) var(--sp-4)}
+.tx-dialog-body .full{grid-column:1/-1}
+.tx-group{grid-column:1/-1;display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-2)}
+.tx-group:first-child{margin-top:0}
+.tx-group::after{content:"";flex:1;height:1px;background:var(--c-line)}
+@media (max-width:480px){.tx-dialog-body{grid-template-columns:minmax(0,1fr)}}
+
+/* états vide, chargement, erreur */
+.tx-empty{padding:var(--sp-5) var(--sp-4);text-align:center;color:var(--c-text-2);border:1px dashed var(--c-line-2);border-radius:var(--r-3);font-size:var(--fs-3)}
+.tx-empty>.tx-ico{box-sizing:content-box;width:18px;height:18px;padding:9px;margin-bottom:var(--sp-2);border-radius:11px;color:var(--c-accent);background:var(--c-accent-soft)}
+.tx-empty b{display:block;color:var(--c-text);font-weight:600;margin-bottom:2px}
+.tx-skel{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--c-hover) 25%,var(--c-line-2) 37%,var(--c-hover) 63%);background-size:400% 100%;animation:tx-shimmer 1.5s ease infinite}
+@keyframes tx-shimmer{from{background-position:100% 0}to{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* rapport imprimable (A4) : toujours noir sur blanc, quel que soit le thème */
+.tx-report{background:#fff;color:#111;border:1px solid var(--c-line-2);border-radius:var(--r-1);box-shadow:var(--shadow-2);padding:var(--sp-6) var(--sp-5);max-width:794px;font-size:12px;line-height:1.45}
+.tx-report h4{font-family:var(--f-title);font-size:28px;font-weight:400;line-height:1.1;margin:0 0 2px}
+.tx-report .tx-table th{color:#444;background:transparent;border:0;border-bottom:1px solid #111;border-radius:0;white-space:normal;padding-left:0}
+.tx-report .tx-table td{border-bottom-color:#ccc;white-space:normal;padding-left:0}
+.tx-report .tx-table tbody tr:last-child td{border-bottom:1px solid #ccc}
+.tx-report .tx-table tbody tr:hover td{background:transparent;border-radius:0}
+.tx-report-head{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-3);padding-bottom:var(--sp-3);border-bottom:2px solid #111;margin-bottom:var(--sp-3)}
+.tx-report-sign{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5);margin-top:var(--sp-6)}
+.tx-report-sign div{border-top:1px solid #111;padding-top:var(--sp-1)}
+@page{size:A4;margin:16mm}
+@media print{
+  :root[data-print="report"] body *{visibility:hidden}
+  :root[data-print="report"] .tx-report,:root[data-print="report"] .tx-report *{visibility:visible}
+  :root[data-print="report"] .tx-report{position:absolute;left:0;top:0;width:100%;max-width:none;border:0;border-radius:0;box-shadow:none;padding:0}
+}
+
+/* compléments utilisés par les écrans : jauge à paliers nommés, calendrier avec semaine, graphique en barres,
+   info-bulle qui suit le pointeur, puces, superposition des fenêtres, bloc de code, choix de fichier */
+.tx-gauge.has-names{margin-bottom:56px}
+.tx-gauge .mark small{display:block;width:84px;margin-top:3px;font-family:var(--f-sans);font-size:var(--fs-1);line-height:1.25;color:var(--c-text-3);white-space:normal;text-align:center}
+.tx-cal.has-week{grid-template-columns:repeat(7,minmax(0,1fr)) minmax(0,1.15fr)}
+.tx-cal .dh{padding:0 4px 2px;font-size:var(--fs-1);letter-spacing:.08em;text-transform:uppercase;color:var(--c-text-2);font-weight:500}
+.tx-day.is-off{background:transparent;border-color:transparent}
+.tx-day.is-we{opacity:.62}
+.tx-day.is-click{cursor:pointer;transition:border-color .15s var(--ease)}
+.tx-day.is-click:hover{border-color:var(--c-line-2)}
+.tx-day .c{font-size:var(--fs-1);color:var(--c-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-week{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;padding:6px 7px;border:1px dashed var(--c-line-2);border-radius:var(--r-1);font-size:var(--fs-1);color:var(--c-text-2)}
+.tx-week b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:var(--fs-2);font-weight:500;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:520px){.tx-day .c{display:none}.tx-week{padding:4px}.tx-week b{font-size:var(--fs-1);letter-spacing:-.04em}.tx-cal .dh{padding-inline:2px;letter-spacing:.04em}.tx-cal .dh.is-week{font-size:0}.tx-cal .dh.is-week::after{content:attr(data-short);font-size:var(--fs-1)}}
+.tx-bar .lab{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx-bar .lab small{margin-left:var(--sp-2);font-size:var(--fs-2);font-weight:400;color:var(--c-text-2)}
+.tx-chart .bar.is-pos{fill:var(--c-pos)} .tx-chart .bar.is-neg{fill:var(--c-neg)}
+.tx-chart .bar{transition:opacity .15s var(--ease)} .tx-chart .bar:hover{opacity:.78}
+.tx-chart .base{stroke:var(--c-line-2)}
+.tx-chart text.val{fill:var(--c-text);font-weight:500}
+.tx-chart text.cat{font-family:var(--f-sans);fill:var(--c-text-2)}
+.tx-chart text.empty{font-family:var(--f-sans);font-size:13px;fill:var(--c-text-2)}
+.tx-tip.is-float{transform:translate(-50%,calc(-100% - 14px));opacity:0;transition:opacity .12s var(--ease);z-index:2}
+.tx-tip.is-float.on{opacity:1}
+.tx-legend i.is-dot{width:8px;height:8px;border-radius:50%}
+.tx-legend i.is-box{width:14px;height:10px;border-radius:3px;background:var(--c-inset);box-shadow:inset 0 0 0 1px var(--c-line-2)}
+.tx-help.is-ok{color:var(--c-pos)}
+.tx-empty.is-compact{padding:var(--sp-4) var(--sp-3);border:0}
+.tx-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.tx-chip{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:0 4px 0 12px;border:1px solid var(--c-line-2);border-radius:999px;background:var(--c-panel-2);font-size:var(--fs-3);font-weight:500}
+.tx-chip small{font-family:var(--f-mono);font-size:var(--fs-1);font-weight:400;color:var(--c-text-2)}
+.tx-chip button{display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--c-text-2);cursor:pointer}
+.tx-chip button:hover{background:var(--c-neg-soft);color:var(--c-neg)}
+.tx-chip button .tx-ico{width:13px;height:13px}
+@media (pointer:coarse){.tx-chip{min-height:36px}.tx-chip button{width:30px;height:30px}}
+.tx-code{font-family:var(--f-mono);font-size:var(--fs-2);background:var(--c-inset);border:1px solid var(--c-line);border-radius:var(--r-2);padding:10px var(--sp-3);overflow-x:auto;white-space:nowrap}
+.tx-file{max-width:100%;font-size:var(--fs-3);color:var(--c-text-2)}
+.tx-file::file-selector-button{margin-right:var(--sp-3);height:34px;padding:0 14px;border:1px solid var(--c-line-2);border-radius:var(--r-2);background:var(--c-raise);color:var(--c-text);font:500 13px var(--f-sans);cursor:pointer}
+.tx-file::file-selector-button:hover{background:var(--c-hover)}
+.tx-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:max(32px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(32px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:rgba(6,8,12,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:tx-fade .2s ease-out}
+.tx-overlay>.tx-dialog{animation:tx-rise .28s var(--ease)}
+@keyframes tx-rise{from{opacity:0;transform:translateY(12px) scale(.99)}}
+.tx-dialog.is-wide{max-width:680px}
+.tx-dialog.is-media{max-width:980px}
+.tx-dialog-head .tx-sub{margin-top:4px}
+.tx-dialog-body.is-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tx-dialog-body.is-flow{display:flex;flex-direction:column;gap:var(--sp-5)}
+.tx-dialog-body .c2{grid-column:span 2}
+.tx-dialog-body .c4{grid-column:1/-1}
+@media (max-width:560px){.tx-dialog-body.is-4{grid-template-columns:repeat(2,minmax(0,1fr))}.tx-dialog-head{padding-left:var(--sp-4)}.tx-dialog-body{padding:var(--sp-4)}}
+
+/* page #styleguide */
+#tab-styleguide{counter-reset:sg;gap:var(--sp-5)}
+.sg-hero{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:var(--sp-4);padding-top:var(--sp-2)}
+.sg-hero p{margin:10px 0 0;max-width:60ch;color:var(--c-text-2);font-size:var(--fs-3)}
+.sg-sec{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
+.sg-sec>h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;font-family:var(--f-title);font-size:24px;font-weight:400;letter-spacing:-.005em;line-height:1.15;padding-bottom:var(--sp-2);border-bottom:1px solid var(--c-line)}
+.sg-sec>h3::before{counter-increment:sg;content:counter(sg,decimal-leading-zero);font-family:var(--f-mono);font-size:var(--fs-1);letter-spacing:.06em;color:var(--c-accent)}
+.sg-row{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center}
+.sg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:var(--sp-4);align-items:start}
+.sg-col{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.sg-sw{display:flex;align-items:center;gap:10px;font-size:var(--fs-2);min-width:164px}
+.sg-sw i{width:36px;height:36px;border-radius:10px;border:1px solid var(--c-line-2);box-shadow:var(--shadow-1);flex:none}
+.sg-sw code{display:block;font-family:var(--f-mono);font-size:var(--fs-1);color:var(--c-text-2)}
+.sg-frame{display:flex;border:1px solid var(--c-line);border-radius:var(--r-3);overflow:hidden;background:var(--c-bg);min-height:270px}
+.sg-app{display:flex;border:1px solid var(--c-line-2);border-radius:18px;overflow:hidden;background:var(--c-bg);box-shadow:var(--shadow-2)}
+.sg-app-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;padding:22px;background:radial-gradient(640px 280px at 0 0,var(--glow-a),transparent 62%),radial-gradient(560px 280px at 100% 0,var(--glow-b),transparent 62%)}
+.sg-app-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:var(--sp-3);margin-bottom:2px}
+.sg-app-grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:14px}
+.sg-tip{right:calc(31.25% + 14px);top:46%}
+@media (max-width:560px){.sg-tip{right:auto;left:0;top:44%}#tab-styleguide .tx-chart text{font-size:21px}}
+@media (max-width:860px){.sg-app-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.sg-app>.tx-side{display:none}.sg-app-main{padding:14px}}
+/* ===== Écrans de l'application (préfixe pg- : mise en page propre à Tradamax, règles dans DESIGN.md) ===== */
+:focus-visible{outline:2px solid var(--c-focus);outline-offset:2px}
+button,select,input,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+code{font-family:var(--f-mono);font-size:.92em}
+
+/* coquille : rail à gauche sur ordinateur, barre flottante en bas sur téléphone */
+.pg-app{display:flex;align-items:flex-start;min-height:100vh;min-height:100dvh}
+.pg-rail{position:sticky;top:0;height:100vh;height:100dvh;padding-top:14px;padding-bottom:14px}
+.pg-rail>.tx-logo{align-self:center;margin:0 0 16px}
+.pg-rail-nav{display:flex;flex-direction:column;gap:var(--sp-1)}
+.pg-rail-end{margin-top:auto}
+.pg-main{flex:1;min-width:0;padding:14px max(24px,env(safe-area-inset-right,0px)) 56px max(24px,env(safe-area-inset-left,0px))}
+.pg-in{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:var(--sp-4)}
+.pg-tabs{display:block;min-width:0}
+.tab{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
+.tab>*{min-width:0}
+.tx-tabbar.pg-tabbar{display:none}
+.pg-top{display:flex;align-items:center;gap:var(--sp-3);min-height:36px}
+.pg-brand{display:none;align-items:center;gap:10px;min-width:0}
+.pg-brand .tx-logo{width:32px;height:32px;border-radius:9px;font-size:22px}
+.pg-brand-name{font-family:var(--f-title);font-size:26px;line-height:1;letter-spacing:-.01em}
+.pg-clocks{display:flex;gap:var(--sp-5);font-size:var(--fs-2);color:var(--c-text-2)}
+.pg-clocks b{margin-left:7px;font-family:var(--f-mono);font-weight:500;color:var(--c-text);font-variant-numeric:tabular-nums}
+.pg-who{display:flex;align-items:center;gap:var(--sp-1);min-width:0;margin-left:auto}
+.pg-who #who{margin-right:var(--sp-2);max-width:30ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pg-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:var(--sp-3) var(--sp-4);padding-top:var(--sp-1)}
+.pg-head .tx-eyebrow{margin-bottom:8px}
+.pg-actions{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.pg-intro{margin:-6px 0 0}
+@media (max-width:899px){
+  .pg-rail{display:none}
+  .tx-tabbar.pg-tabbar{display:grid;position:fixed;z-index:40;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px))}
+  .pg-main{padding:10px max(16px,env(safe-area-inset-right,0px)) calc(104px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .pg-brand{display:flex}
+  .pg-clocks{display:none}
+}
+@media (max-width:560px){
+  .pg-hide-sm{display:none}
+  .pg-who #who{max-width:36vw;margin-right:0}
+  .pg-logout{padding:0;width:34px}
+  .pg-actions{width:100%}
+  .pg-actions .is-primary{flex:1}
+}
+@media (max-width:560px) and (pointer:coarse){.pg-logout{width:42px}}
+
+/* barre de filtres */
+.pg-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) 10px}
+.pg-toolbar>.tx-input{width:auto;min-width:170px}
+.pg-toolbar-end{margin-left:auto}
+@media (max-width:560px){.pg-toolbar>.tx-seg{width:100%}.pg-toolbar>.tx-seg button{flex:1}.pg-toolbar>.tx-input{flex:1 1 140px;min-width:0}.pg-toolbar-end{margin-left:0}}
+
+/* grilles de panneaux */
+.pg-grid{display:grid;gap:var(--sp-4)}
+.pg-hero{grid-template-columns:minmax(0,1.75fr) minmax(0,1fr)}
+.pg-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pg-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:1060px){.pg-3{grid-template-columns:repeat(2,minmax(0,1fr))}.pg-3>:last-child{grid-column:1/-1}}
+@media (max-width:860px){.pg-hero{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:700px){.pg-2,.pg-3{grid-template-columns:minmax(0,1fr)}.pg-3>:last-child{grid-column:auto}}
+.pg-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:var(--sp-1)}
+.pg-panel-sub{margin:2px 0 var(--sp-3)}
+.pg-bars{display:flex;flex-direction:column;gap:var(--sp-4)}
+.pg-bars>.tx-bar{margin:0}
+
+/* discipline, état d'esprit, R prévu */
+.pg-ring{display:flex;align-items:center;gap:var(--sp-4);margin:var(--sp-2) 0 var(--sp-4)}
+.pg-ring svg{flex:none}
+.pg-ring-track{stroke:var(--c-inset)}
+.pg-ring-val.is-pos{stroke:var(--c-pos)} .pg-ring-val.is-warn{stroke:var(--c-warn)} .pg-ring-val.is-neg{stroke:var(--c-neg)}
+.pg-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pg-mini{display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px var(--sp-3);border:1px solid var(--c-line);border-radius:10px;background:var(--c-panel-2)}
+.pg-mini .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:19px;letter-spacing:-.03em;white-space:nowrap}
+.pg-list{display:flex;flex-direction:column}
+.pg-list .it{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--sp-3);align-items:baseline;padding:10px 0;border-bottom:1px solid var(--c-line);font-size:var(--fs-3)}
+.pg-list .it:last-child{border-bottom:0}
+.pg-list .it>span:last-child{min-width:76px;text-align:right}
+.pg-stack{display:flex;gap:2px;height:8px;margin:var(--sp-4) 0 var(--sp-3);border-radius:999px;background:var(--c-inset)}
+.pg-stack i{display:block;height:100%;border-radius:999px}
+.pg-legend{display:flex;flex-direction:column;gap:8px;font-size:var(--fs-3)}
+.pg-legend .lg{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--sp-2);align-items:center}
+.pg-legend .sw{width:10px;height:10px;border-radius:3px}
+.pg-kv-gap{margin-top:var(--sp-4)}
+
+/* calendrier */
+.pg-cal-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:var(--sp-3)}
+.pg-cal-nav{display:flex;align-items:center;gap:2px}
+.pg-cal-nav span{min-width:124px;text-align:center;font-weight:600;font-size:var(--fs-4);text-transform:capitalize}
+
+/* journal des trades : tableau sur ordinateur, fiche compacte sur téléphone */
+.pg-search{position:relative;display:block;width:280px;max-width:100%}
+.pg-search>.tx-ico{position:absolute;left:11px;top:50%;margin-top:-8px;color:var(--c-text-3);pointer-events:none}
+.pg-search>.tx-input{padding-left:34px}
+.pg-log{min-width:880px}
+.pg-rsub{margin-left:4px;color:var(--c-text-3);font-size:11px}
+.thumb{width:28px;height:20px;border-radius:5px;object-fit:cover;vertical-align:middle;border:1px solid var(--c-line-2);cursor:zoom-in}
+.pg-more{display:flex;justify-content:center;margin-top:var(--sp-3)}
+.c-empty{white-space:normal!important}
+@media (max-width:640px){
+  .pg-search{width:100%}
+  .pg-log{min-width:0}
+  .pg-log thead{display:none}
+  .pg-log,.pg-log tbody{display:block}
+  .pg-log tr{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"mk side shot pnl" "date time win r" "acc acc risk plan";align-items:center;gap:6px 10px;padding:12px var(--sp-3);margin-bottom:var(--sp-2);border:1px solid var(--c-line);border-radius:12px;background:var(--c-panel-2)}
+  .pg-log tr:last-child{margin-bottom:0}
+  .pg-log td{display:block;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;min-width:0}
+  .pg-log .c-mk{grid-area:mk}.pg-log .c-side{grid-area:side}.pg-log .c-pnl{grid-area:pnl;font-size:16px}
+  .pg-log .c-date{grid-area:date}.pg-log .c-time{grid-area:time}.pg-log .c-risk{grid-area:risk}.pg-log .c-r{grid-area:r}
+  .pg-log .c-acc{grid-area:acc;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-2)}.pg-log .c-win{grid-area:win;font-size:var(--fs-2);color:var(--c-text-2);overflow:hidden;text-overflow:ellipsis}
+  .pg-log .c-risk{text-align:left}.pg-log .c-r,.pg-log .c-pnl{text-align:right}
+  .pg-log .c-plan{grid-area:plan;justify-self:end}.pg-log .c-shot{grid-area:shot;justify-self:end}
+  .pg-log .c-empty{grid-column:1/-1}
+}
+
+/* prop firms */
+.pg-section{display:flex;flex-direction:column;gap:var(--sp-3)}
+.pg-section-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}
+.pg-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:var(--sp-4)}
+.pg-acc{cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease),transform .15s var(--ease)}
+.pg-acc:hover{border-color:var(--c-line-2);box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.pg-acc-name{min-width:0}
+.pg-acc .tx-account-foot{align-items:center}
+.pg-acc .tx-account-foot b{margin-left:var(--sp-2);font-weight:500}
+.pg-ref td{white-space:normal}
+.pg-ref td:first-child{white-space:nowrap}
+
+/* annonces : compte rendu, frise de la journée, liste */
+.pg-recap{display:flex;flex-direction:column;gap:var(--sp-4)}
+.pg-recap-title{font-family:var(--f-title);font-weight:400;font-size:32px;line-height:1.08;letter-spacing:-.01em;margin:8px 0 6px}
+.pg-line .band{fill:var(--c-inset);stroke:var(--c-line-2)}
+.pg-line text.band-l{font-family:var(--f-sans);fill:var(--c-text-2);font-weight:500}
+.pg-line .axis,.pg-line .tick{stroke:var(--c-line-2)}
+.pg-line .ev{stroke:var(--c-panel);stroke-width:2}
+.pg-line .ev.is-high{fill:var(--c-neg)} .pg-line .ev.is-medium{fill:var(--c-warn)}
+.pg-line .now{stroke:var(--c-text);stroke-dasharray:3 3}
+.pg-line .now-dot{fill:var(--c-text)}
+.pg-line .tx-legend{margin-top:var(--sp-2)}
+.pg-events{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pg-ev{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:4px var(--sp-4);align-items:center;padding:12px 0;border-top:1px solid var(--c-line)}
+.pg-ev .t{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:18px;letter-spacing:-.03em}
+.pg-ev .n{font-weight:600;font-size:14px}
+.pg-ev .m{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-top:2px;font-size:var(--fs-2);color:var(--c-text-2)}
+.pg-ev>.tx-badge{justify-self:end}
+@media (max-width:640px){.pg-ev{grid-template-columns:50px minmax(0,1fr)}.pg-ev .t{font-size:15px}.pg-ev>.tx-badge{grid-column:2;justify-self:start;white-space:normal;padding-block:2px}}
+.pg-imp{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:500;color:var(--c-text)}
+.pg-imp i{width:8px;height:8px;border-radius:2px;background:var(--c-text-3)}
+.pg-imp.is-high i{background:var(--c-neg)} .pg-imp.is-medium i{background:var(--c-warn)} .pg-imp.is-holiday i{background:var(--c-info)}
+.pg-eco .c-title{white-space:normal;min-width:240px}
+.pg-eco .c-title .tx-badge{margin-left:var(--sp-2)}
+.pg-day td{background:var(--c-panel-2);font-weight:600;padding-top:9px;padding-bottom:9px}
+.pg-source{margin:var(--sp-3) 0 0}
+@media (max-width:640px){
+  .pg-eco .c-title{min-width:0;flex-wrap:wrap;justify-content:flex-end}
+  .pg-eco .c-title .tx-badge{margin-left:auto}
+  .tx-table.is-stack tr.pg-day{padding:var(--sp-3) 0 var(--sp-1);border:0;background:transparent}
+  .tx-table.is-stack tr.pg-day td{background:transparent;justify-content:flex-start;text-align:left;font-size:var(--fs-4)}
+}
+
+/* fenêtres de saisie */
+.pg-err{margin:0;padding:0 20px var(--sp-3)}
+.pg-foot-l,.pg-foot-r{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2)}
+.pg-foot-r{margin-left:auto}
+.pg-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);color:var(--c-neg);font-size:var(--fs-3)}
+.pg-lbl{font-size:var(--fs-2);color:var(--c-text-2);font-weight:500}
+.pg-sens{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pg-sens label{position:relative;display:flex;align-items:center;justify-content:center;height:36px;border:1px solid var(--c-ctl);border-radius:var(--r-2);background:var(--c-field);color:var(--c-text-2);font-weight:600;font-size:var(--fs-3);cursor:pointer;transition:background-color .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease)}
+.pg-sens input{position:absolute;opacity:0;pointer-events:none}
+.pg-sens label:has(input:focus-visible){outline:2px solid var(--c-focus);outline-offset:2px}
+.pg-sens label:has(input[value="Long"]:checked){background:var(--c-pos-soft);color:var(--c-pos);border-color:color-mix(in srgb,var(--c-pos) 55%,var(--c-line))}
+.pg-sens label:has(input[value="Short"]:checked){background:var(--c-neg-soft);color:var(--c-neg);border-color:color-mix(in srgb,var(--c-neg) 55%,var(--c-line))}
+@media (pointer:coarse){.pg-sens label{height:42px}}
+.pg-check-field{justify-content:flex-end;padding-bottom:8px}
+.pg-rprev{font-size:var(--fs-3)}
+.pg-rprev:empty{display:none}
+.pg-shot-prev{max-height:150px;max-width:100%;align-self:flex-start;border-radius:10px;border:1px solid var(--c-line-2);margin-top:var(--sp-2)}
+.pg-set{display:flex;flex-direction:column;gap:10px}
+.pg-addrow{display:flex;gap:var(--sp-2)}
+.pg-addrow .tx-input{flex:1}
+.pg-vals{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:var(--sp-3)}
+@media (max-width:480px){.pg-vals{grid-template-columns:1fr 1fr}.pg-vals>:first-child{grid-column:1/-1}}
+.pg-shot-body{padding:var(--sp-3)}
+.pg-shot-body img{display:block;max-width:100%;margin:0 auto;border-radius:10px}
+
+/* connexion et configuration manquante */
+.pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-left,0px))}
+.pg-auth-card{width:100%;max-width:410px;padding:34px 30px 26px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
+.pg-auth-brand{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:26px;text-align:center}
+.pg-auth-brand>.tx-logo{width:54px;height:54px;border-radius:15px;font-size:36px}
+.pg-auth-title{font-size:44px}
+.pg-auth-brand .tx-label{margin-top:6px}
+.pg-auth-form{display:flex;flex-direction:column;gap:var(--sp-4)}
+.pg-auth-form>.tx-btn{width:100%}
+.pg-auth-form>.tx-btn.is-primary{min-height:40px;margin-top:var(--sp-1)}
+.pg-auth-form>.tx-help{margin:-4px 0}
+.pg-auth-note{margin:var(--sp-5) 0 0;padding-top:var(--sp-4);border-top:1px solid var(--c-line);text-align:center}
+.pg-cfg{max-width:640px;margin:80px auto;padding:0 16px}
+
+/* message court, fixé en bas de l'écran */
+.pg-toast{position:fixed;left:50%;bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 16px));transform:translateX(-50%);z-index:60;max-width:calc(100vw - 32px)}
+.pg-toast::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c-accent-fill);flex:none}
+@media (max-width:899px){.pg-toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="tx-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--c-accent-fill);stop-opacity:.24"/><stop offset="1" style="stop-color:var(--c-accent-fill);stop-opacity:0"/></linearGradient></defs>
+  <symbol id="i-journal" viewBox="0 0 24 24"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-comptes" viewBox="0 0 24 24"><path d="M3 20h18M5 10v7M10 10v7M14 10v7M19 10v7M12 3l9 5H3z"/></symbol>
+  <symbol id="i-annonces" viewBox="0 0 24 24"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-reglages" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"/></symbol>
+  <symbol id="i-seance" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 7v5l3 2"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM8 12l3 3l5-6"/></symbol>
+  <symbol id="i-prudence" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8zM9 9l6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM10 9v6M14 9v6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 11v5M12 8v.5"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 3v18M12 7l5 0M12 12h9M12 17h7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-fermer" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-sortie" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/></symbol>
+  <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></symbol>
+  <symbol id="i-recherche" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14zM20 20l-4-4"/></symbol>
+  <symbol id="i-gauche" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-droite" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-versement" viewBox="0 0 24 24"><path d="M3 7h18v10H3zM12 10a2 2 0 1 0 0 4a2 2 0 0 0 0-4zM6.5 10v4M17.5 10v4"/></symbol>
+</svg>
+<div class="pg-cfg" id="cfg-err" hidden>
+  <div class="tx-alert is-stop" role="alert"><svg class="tx-ico" aria-hidden="true"><use href="#i-stop"/></svg><div class="tx-alert-body"><b>Configuration manquante</b>Renseignez l'adresse et la clé de votre projet Supabase dans le fichier <code>config.js</code>, puis republiez le site (voir le guide README).</div></div>
+</div>
+
+<!-- ================= CONNEXION ================= -->
+<div class="pg-auth" id="auth" hidden>
+  <div class="tx-panel pg-auth-card">
+    <div class="pg-auth-brand">
+      <span class="tx-logo" aria-hidden="true">T</span>
+      <div><h1 class="tx-display pg-auth-title">Tradamax</h1><div class="tx-label">Journal</div></div>
+    </div>
+    <form class="pg-auth-form" id="login-form" novalidate>
+      <div class="tx-field"><label for="login-email">E-mail</label><input class="tx-input" id="login-email" type="email" autocomplete="username" required></div>
+      <div class="tx-field"><label for="login-pass">Mot de passe</label><input class="tx-input" id="login-pass" type="password" autocomplete="current-password"></div>
+      <p class="tx-help is-error" id="login-err" role="status" hidden></p>
+      <button class="tx-btn is-primary" type="submit" id="login-go">Se connecter</button>
+      <button class="tx-btn is-ghost" type="button" id="login-magic">Recevoir un lien par e-mail</button>
+    </form>
+    <p class="tx-sub pg-auth-note">Accès réservé aux associés de la SAS.</p>
+  </div>
+</div>
+
+<!-- ================= APPLICATION ================= -->
+<div class="pg-app" id="app" hidden>
+  <aside class="tx-side pg-rail">
+    <span class="tx-logo" aria-hidden="true">T</span>
+    <nav class="pg-rail-nav" aria-label="Sections">
+      <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
+      <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
+      <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
+    </nav>
+    <button class="tx-navitem pg-rail-end" type="button" id="btn-settings"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</button>
+  </aside>
+
+  <div class="pg-main">
+    <div class="pg-in">
+      <header class="pg-top">
+        <div class="pg-brand"><span class="tx-logo" aria-hidden="true">T</span><span class="pg-brand-name">Tradamax</span></div>
+        <div class="pg-clocks" id="clocks"></div>
+        <div class="pg-who">
+          <span class="tx-sub" id="who"></span>
+          <button class="tx-btn is-ghost is-icon" type="button" data-action="theme" aria-label="Basculer entre thème clair et thème sombre" title="Thème clair ou sombre"><svg class="tx-ico" aria-hidden="true"><use href="#i-theme"/></svg></button>
+          <button class="tx-btn is-ghost pg-logout" id="btn-logout" type="button" aria-label="Se déconnecter" title="Se déconnecter"><svg class="tx-ico" aria-hidden="true"><use href="#i-sortie"/></svg><span class="pg-hide-sm">Se déconnecter</span></button>
+        </div>
+      </header>
+
+      <div class="pg-head" id="page-head">
+        <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de séance</h1></div>
+        <div class="pg-actions" data-for="journal">
+          <button class="tx-btn" id="btn-import" type="button" aria-label="Importer un CSV" title="Importer un CSV"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg><span class="pg-hide-sm">Importer un CSV</span></button>
+          <button class="tx-btn" id="btn-export" type="button" aria-label="Exporter" title="Exporter"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg><span class="pg-hide-sm">Exporter</span></button>
+          <button class="tx-btn is-primary" id="btn-add" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau trade</button>
+        </div>
+        <div class="pg-actions" data-for="propfirms" hidden>
+          <button class="tx-btn" id="btn-add-payout" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-versement"/></svg>Versement reçu</button>
+          <button class="tx-btn is-primary" id="btn-add-prop" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau compte</button>
+        </div>
+      </div>
+
+      <section class="tx-session" id="session" aria-label="Bandeau de séance">
+        <div><div class="tx-label">Drawdown</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
+        <div><div class="tx-label">Résultat du jour</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
+        <div><div class="tx-label">Prochaine fenêtre</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
+        <div><div class="tx-label">Annonce à risque</div><div class="v" id="ss-news">—</div><div class="h" id="ss-news-h"></div></div>
+      </section>
+
+      <main class="pg-tabs">
+  <!-- ================= JOURNAL ================= -->
+  <section id="tab-journal" class="tab">
+    <div class="pg-toolbar" role="group" aria-label="Filtres">
+      <div class="tx-seg" id="f-period" role="group" aria-label="Période">
+        <button type="button" data-v="all" aria-pressed="true">Tout</button>
+        <button type="button" data-v="30" aria-pressed="false">30 j</button>
+        <button type="button" data-v="90" aria-pressed="false">90 j</button>
+        <button type="button" data-v="ytd" aria-pressed="false">Cette année</button>
+      </div>
+      <select class="tx-input" id="f-account" aria-label="Compte"></select>
+      <select class="tx-input" id="f-market" aria-label="Marché"></select>
+      <span class="tx-sub" id="status"></span>
+    </div>
+
+    <div class="tx-alert is-pause" id="banner" hidden><svg class="tx-ico" aria-hidden="true"><use href="#i-info"/></svg><div class="tx-alert-body"><b>Aperçu avec des trades d'exemple.</b>Ils ne sont pas enregistrés et disparaissent dès votre premier trade ou votre premier import.</div></div>
+
+    <div class="pg-grid pg-hero">
+      <div class="tx-panel">
+        <div class="tx-panel-head">
+          <div><div class="tx-label">Courbe de capital</div><div class="pg-row"><span class="tx-hero" id="eq-total">—</span></div></div>
+          <div class="tx-sub" id="eq-sub"></div>
+        </div>
+        <div class="tx-chart" id="eq-chart"></div>
+      </div>
+      <div class="tx-panel">
+        <div class="tx-label">Palier de drawdown (charte)</div>
+        <div class="pg-row"><span class="tx-hero" id="dd-now">—</span><span class="tx-badge is-pos" id="dd-pill">Normal</span></div>
+        <div class="tx-sub">depuis le plus haut historique du capital</div>
+        <div class="tx-gauge has-names is-ok" id="gauge" aria-hidden="true"><div class="fill" id="gauge-fill" style="width:0"></div></div>
+        <dl class="tx-kv">
+          <dt>Capital de référence</dt><dd id="dd-cap">—</dd>
+          <dt>Plus haut historique</dt><dd id="dd-peak">—</dd>
+          <dt>Capital actuel</dt><dd id="dd-cur">—</dd>
+          <dt>Drawdown maximal</dt><dd id="dd-max">—</dd>
+        </dl>
+      </div>
+    </div>
+
+    <section class="tx-stats" id="kpis" aria-label="Indicateurs clés"></section>
+
+    <div class="pg-grid pg-3">
+      <div class="tx-panel"><h2 class="tx-title">Par marché</h2><div class="tx-sub pg-panel-sub">Résultat et taux de réussite</div><div class="pg-bars" id="by-market"></div></div>
+      <div class="tx-panel"><h2 class="tx-title">Par fenêtre Silver Bullet</h2><div class="tx-sub pg-panel-sub">Heures de New York · équivalent Paris</div><div class="pg-bars" id="by-window"></div></div>
+      <div class="tx-panel"><h2 class="tx-title">Distribution des R</h2><div class="tx-sub pg-panel-sub">Résultat de chaque trade en multiple du risque</div><div class="tx-chart" id="r-hist"></div></div>
+    </div>
+
+    <div class="pg-grid pg-2">
+      <div class="tx-panel">
+        <h2 class="tx-title">Discipline</h2><div class="tx-sub">Trades où le plan a été respecté, ou non</div>
+        <div class="pg-ring"><svg id="plan-ring" width="74" height="74" viewBox="0 0 74 74" aria-hidden="true"></svg><div><div class="tx-hero" id="plan-pct">—</div><div class="tx-sub">des trades conformes au plan</div></div></div>
+        <div class="pg-split">
+          <div class="pg-mini"><div class="tx-sub">Plan respecté</div><div class="v" id="plan-yes">—</div><div class="tx-sub" id="plan-yes-n"></div></div>
+          <div class="pg-mini"><div class="tx-sub">Plan non respecté</div><div class="v" id="plan-no">—</div><div class="tx-sub" id="plan-no-n"></div></div>
+        </div>
+      </div>
+      <div class="tx-panel"><h2 class="tx-title">État d'esprit</h2><div class="tx-sub pg-panel-sub">Résultat selon l'émotion notée au moment du trade</div><div class="pg-list" id="emotions"></div></div>
+    </div>
+
+    <div class="pg-grid pg-hero">
+      <div class="tx-panel">
+        <div class="pg-cal-head">
+          <div><h2 class="tx-title">Calendrier des résultats</h2><div class="tx-sub" id="cal-sub"></div></div>
+          <div class="pg-cal-nav"><button class="tx-btn is-ghost is-icon" type="button" id="cal-prev" aria-label="Mois précédent"><svg class="tx-ico" aria-hidden="true"><use href="#i-gauche"/></svg></button><span id="cal-month"></span><button class="tx-btn is-ghost is-icon" type="button" id="cal-next" aria-label="Mois suivant"><svg class="tx-ico" aria-hidden="true"><use href="#i-droite"/></svg></button></div>
+        </div>
+        <div class="tx-cal has-week" id="cal"></div>
+      </div>
+      <div class="tx-panel">
+        <h2 class="tx-title">R prévu contre R réalisé</h2>
+        <div class="tx-sub" id="rp-sub"></div>
+        <div class="pg-row" style="margin-top:var(--sp-3)"><span class="tx-hero" id="rp-real">—</span><span class="tx-sub" id="rp-vs"></span></div>
+        <div class="tx-sub">R moyen des trades gagnants</div>
+        <div class="pg-stack" id="rp-stack" aria-hidden="true"></div>
+        <div class="pg-legend" id="rp-legend"></div>
+        <dl class="tx-kv pg-kv-gap"><dt>Gain laissé sur la table</dt><dd id="rp-left">—</dd><dt>Trades au-delà de l'objectif</dt><dd id="rp-over">—</dd></dl>
+      </div>
+    </div>
+
+    <section class="tx-panel" id="log">
+      <div class="tx-panel-head">
+        <div><h2 class="tx-title">Journal des trades</h2><div class="tx-sub" id="log-count"></div></div>
+        <label class="pg-search"><svg class="tx-ico" aria-hidden="true"><use href="#i-recherche"/></svg><input class="tx-input" id="search" type="search" placeholder="Rechercher (note, marché, émotion…)" aria-label="Rechercher dans le journal"></label>
+      </div>
+      <div class="tx-table-wrap">
+        <table class="tx-table is-click pg-log">
+          <thead><tr><th>Date</th><th>Heure</th><th>Marché</th><th>Compte</th><th>Sens</th><th>Fenêtre</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th><th></th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pg-more" id="more" hidden><button class="tx-btn" id="btn-more" type="button">Afficher plus</button></div>
+    </section>
+  </section>
+
+  <!-- ================= PROP FIRMS ================= -->
+  <section id="tab-propfirms" class="tab" hidden>
+    <p class="tx-sub pg-intro">Challenges achetés, comptes financés et versements reçus · montants convertis en euros au taux des Réglages</p>
+    <section class="tx-stats" id="prop-kpis" aria-label="Indicateurs prop firm"></section>
+    <section class="pg-section" aria-labelledby="prop-h">
+      <div class="pg-section-head"><h2 class="tx-title" id="prop-h">Comptes</h2><span class="tx-sub" id="prop-count"></span></div>
+      <div class="pg-accounts" id="prop-tbody"></div>
+    </section>
+    <section class="tx-panel">
+      <div class="tx-panel-head"><h2 class="tx-title">Versements reçus</h2></div>
+      <div class="tx-table-wrap"><table class="tx-table is-stack">
+        <thead><tr><th>Date</th><th>Compte</th><th class="r">Montant</th><th>Note</th><th></th></tr></thead>
+        <tbody id="payout-tbody"></tbody>
+      </table></div>
+    </section>
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div><h2 class="tx-title">Repères du comparatif</h2><div class="tx-sub">Relevé le 10/11/2026 · prix et règles à revérifier avant chaque achat</div></div></div>
+      <div class="tx-table-wrap"><table class="tx-table is-stack pg-ref">
+        <thead><tr><th>Firme</th><th>Challenge 50 000</th><th>Compte au nom de la SAS</th><th>Commission sur l'or</th><th>À retenir</th></tr></thead>
+        <tbody id="ref-tbody"></tbody>
+      </table></div>
+    </section>
+  </section>
+
+  <!-- ================= ANNONCES ================= -->
+  <section id="tab-annonces" class="tab" hidden>
+    <div class="pg-toolbar">
+      <div class="tx-seg" id="eco-day" role="group" aria-label="Jour">
+        <button type="button" data-v="today" aria-pressed="true">Aujourd'hui</button>
+        <button type="button" data-v="tomorrow" aria-pressed="false">Demain</button>
+        <button type="button" data-v="week" aria-pressed="false">Semaine</button>
+      </div>
+      <select class="tx-input" id="eco-impact" aria-label="Impact">
+        <option value="high">Impact fort</option>
+        <option value="medium" selected>Impact fort et moyen</option>
+        <option value="all">Tous les impacts</option>
+      </select>
+      <select class="tx-input" id="eco-cur" aria-label="Devises">
+        <option value="mine" selected>USD et EUR (vos marchés)</option>
+        <option value="all">Toutes les devises</option>
+      </select>
+      <span class="tx-sub pg-toolbar-end" id="eco-updated"></span>
+    </div>
+    <section class="tx-panel pg-recap" id="eco-recap"></section>
+    <section class="tx-panel">
+      <div class="tx-table-wrap"><table class="tx-table is-stack pg-eco">
+        <thead><tr><th>Heure Paris</th><th>Heure NY</th><th>Devise</th><th>Impact</th><th>Annonce</th><th class="r">Prévision</th><th class="r">Précédent</th><th>Vos marchés</th></tr></thead>
+        <tbody id="eco-tbody"></tbody>
+      </table></div>
+      <p class="tx-sub pg-source">Source : calendrier Forex Factory, mis à jour chaque jour par le site. Les chiffres publiés (« actual ») n'y figurent pas.</p>
+    </section>
+  </section>
+  <!-- ================= GUIDE DE STYLE (page cachée #styleguide, données fictives) ================= -->
+  <section id="tab-styleguide" class="tab" hidden>
+    <div class="sg-hero">
+      <div>
+        <span class="tx-eyebrow">Système de design</span>
+        <h2 class="tx-display">Salle des <em>marchés</em></h2>
+        <p>Tous les composants de Tradamax, avec des données fictives. Les règles d'emploi sont dans DESIGN.md.</p>
+      </div>
+      <div class="sg-row"><a class="tx-btn" href="#journal">Retour au journal</a><button class="tx-btn" type="button" data-action="theme"><svg class="tx-ico" aria-hidden="true"><use href="#i-theme"/></svg>Clair / sombre</button></div>
+    </div>
+
+    <div class="sg-sec"><h3>Aperçu d'un écran <span class="tx-sub">(les composants assemblés)</span></h3>
+      <div class="sg-app">
+        <nav class="tx-side" aria-label="Exemple de navigation">
+          <span class="tx-logo" aria-hidden="true">T</span>
+          <a class="tx-navitem" href="#styleguide" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</a>
+          <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Comptes</a>
+          <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</a>
+          <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</a>
+        </nav>
+        <div class="sg-app-main">
+          <div class="sg-app-head">
+            <div><span class="tx-eyebrow">Mardi 10 novembre 2026</span><div class="tx-display" style="font-size:clamp(28px,20px + 1.6vw,38px)">Journal de séance</div></div>
+            <div class="sg-row"><button class="tx-btn" type="button">Exporter</button><button class="tx-btn is-primary" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau trade</button></div>
+          </div>
+          <div class="tx-state is-ok"><span class="tx-state-name"><svg class="tx-ico" aria-hidden="true"><use href="#i-ok"/></svg>Autorisé</span><span class="tx-state-why">Aucune limite atteinte. 2 trades restants aujourd'hui.</span></div>
+          <div class="tx-session">
+            <div><div class="tx-label">Drawdown</div><div class="v">−3,2 %</div><div class="h">palier −10 % à 6,8 points</div></div>
+            <div><div class="tx-label">Résultat du jour</div><div class="v tx-pos">+150 €</div><div class="h">1 trade · +1,00 R</div></div>
+            <div><div class="tx-label">Prochaine fenêtre</div><div class="v">16h00</div><div class="h">NY AM · dans 42 min</div></div>
+            <div><div class="tx-label">Annonce à risque</div><div class="v tx-warn">14h30</div><div class="h">CPI États-Unis</div></div>
+          </div>
+          <div class="sg-app-grid">
+            <div class="tx-panel">
+              <div class="tx-panel-head">
+                <div><div class="tx-label">Courbe de capital</div><div class="sg-row" style="gap:10px;margin-top:4px"><span class="tx-hero">15 480 €</span><span class="tx-delta is-pos">+480 € · +3,2 %</span></div></div>
+                <div class="tx-sub">48 trades depuis le 02/09/26</div>
+              </div>
+              <div class="tx-chart">
+                <svg viewBox="0 0 640 200" role="img" aria-label="Exemple de courbe de capital : résultat cumulé de +480 € sur 48 trades, au-dessus du palier de drawdown">
+                  <g class="grid"><line x1="0" x2="584" y1="30" y2="30"/><line x1="0" x2="584" y1="70" y2="70"/><line class="zero" x1="0" x2="584" y1="110" y2="110"/><line x1="0" x2="584" y1="150" y2="150"/></g>
+                  <line class="limit" x1="0" x2="584" y1="166" y2="166"/>
+                  <text x="594" y="34">+800</text><text x="594" y="74">+400</text><text x="594" y="114">0</text><text x="594" y="170">−10 %</text>
+                  <path class="area" d="M0,110 40,96 80,104 120,82 160,92 200,70 240,84 280,60 320,72 360,50 400,66 440,44 480,58 520,54 584,62V110Z"/>
+                  <polyline class="line" pathLength="1" points="0,110 40,96 80,104 120,82 160,92 200,70 240,84 280,60 320,72 360,50 400,66 440,44 480,58 520,54 584,62"/>
+                  <circle class="halo" cx="584" cy="62" r="10"/><circle class="dot" cx="584" cy="62" r="5"/>
+                  <text x="0" y="192">02/09/26</text><text x="584" y="192" text-anchor="end">10/11/26</text>
+                </svg>
+              </div>
+            </div>
+            <div class="tx-panel is-ok">
+              <div class="tx-label">Drawdown</div>
+              <div class="sg-row" style="gap:10px;margin-top:4px"><span class="tx-hero">−3,2 %</span><span class="tx-badge is-pos">Normal</span></div>
+              <div class="tx-sub">depuis le plus haut historique du capital</div>
+              <div class="tx-gauge" style="margin-top:18px" role="img" aria-label="Drawdown de 3,2 %, premier palier à 10 %"><div class="fill" style="width:9.1%"></div><div class="mark" style="left:28.6%"><span>−10 %</span></div><div class="mark" style="left:57.1%"><span>−20 %</span></div><div class="mark" style="left:85.7%"><span>−30 %</span></div></div>
+              <dl class="tx-kv"><dt>Capital de référence</dt><dd>15 000 €</dd><dt>Plus haut historique</dt><dd>15 990 €</dd><dt>Capital actuel</dt><dd>15 480 €</dd></dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Couleurs</h3>
+      <div class="sg-row">
+        <div class="sg-sw"><i style="background:var(--c-bg)"></i><div>Fond<code>--c-bg</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-panel)"></i><div>Panneau<code>--c-panel</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-panel-2)"></i><div>Panneau discret<code>--c-panel-2</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-line)"></i><div>Filet<code>--c-line</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-text)"></i><div>Texte<code>--c-text</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-text-2)"></i><div>Texte secondaire<code>--c-text-2</code></div></div>
+      </div>
+      <div class="sg-row">
+        <div class="sg-sw"><i style="background:var(--g-gold)"></i><div>Or (marque, action)<code>--g-gold</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-pos)"></i><div>Gain, autorisé<code>--c-pos</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-neg)"></i><div>Perte, stop<code>--c-neg</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-warn)"></i><div>Alerte, prudence<code>--c-warn</code></div></div>
+        <div class="sg-sw"><i style="background:var(--c-info)"></i><div>Information, pause<code>--c-info</code></div></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Typographie</h3>
+      <div class="sg-grid">
+        <div class="sg-col">
+          <div class="tx-display" style="font-size:34px">Titre de page</div>
+          <div class="tx-sub">Instrument Serif · nom de la page et titre d'une fenêtre, rien d'autre</div>
+          <div class="tx-title" style="margin-top:var(--sp-2)">Titre de panneau · 15 px</div>
+          <div style="font-size:var(--fs-3)">Texte courant · 13 px · Geist</div>
+          <div style="font-size:var(--fs-2)" class="tx-dim">Texte d'appoint · 12 px</div>
+          <div class="tx-label">Étiquette · 11 px</div>
+        </div>
+        <div class="sg-col">
+          <div class="tx-hero tx-pos">+480 € <span class="tx-sub">chiffre principal · 34 px</span></div>
+          <div class="tx-num" style="font-size:var(--fs-5);letter-spacing:-.03em">15 480 € <span class="tx-sub">chiffre clé · 22 px</span></div>
+          <div class="tx-num" style="font-size:var(--fs-3)">+150 € · −1,00 R · 2 650,50</div>
+          <div class="tx-sub">IBM Plex Mono · tous les chiffres</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Boutons</h3>
+      <div class="sg-row">
+        <button class="tx-btn is-primary" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau trade</button>
+        <button class="tx-btn" type="button">Exporter</button>
+        <button class="tx-btn is-ghost" type="button">Annuler</button>
+        <button class="tx-btn is-danger" type="button">Supprimer</button>
+        <button class="tx-btn" type="button" disabled>Indisponible</button>
+        <button class="tx-btn is-icon" type="button" aria-label="Fermer"><svg class="tx-ico" aria-hidden="true"><use href="#i-fermer"/></svg></button>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Champs et sélecteurs</h3>
+      <div class="sg-grid">
+        <div class="tx-field"><label for="sg-in1">Marché</label><select class="tx-input" id="sg-in1"><option>XAUUSD</option><option>DAX</option><option>Nasdaq</option></select></div>
+        <div class="tx-field"><label for="sg-in2">Risque engagé (€)</label><input class="tx-input tx-num" id="sg-in2" value="150" inputmode="decimal"><span class="tx-help">1 % du capital de référence</span></div>
+        <div class="tx-field"><label for="sg-in3">Résultat net (€)</label><input class="tx-input tx-num" id="sg-in3" aria-invalid="true" aria-describedby="sg-in3-e"><span class="tx-help is-error" id="sg-in3-e">Le résultat est obligatoire.</span></div>
+        <div class="tx-field"><label for="sg-in4">Note</label><textarea class="tx-input" id="sg-in4" placeholder="Contexte, liquidité prise, FVG…"></textarea></div>
+      </div>
+      <div class="sg-row">
+        <div class="tx-seg" role="group" aria-label="Période"><button type="button" aria-pressed="true">Tout</button><button type="button" aria-pressed="false">30 j</button><button type="button" aria-pressed="false">90 j</button><button type="button" aria-pressed="false">Cette année</button></div>
+        <label class="tx-check"><input type="checkbox" checked> Plan respecté</label>
+        <label class="tx-check"><input type="checkbox"> Capture jointe</label>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Pastilles de statut et étiquettes</h3>
+      <div class="sg-row">
+        <span class="tx-badge is-pos">Compte financé</span>
+        <span class="tx-badge is-info">Challenge en cours</span>
+        <span class="tx-badge is-warn">Marge faible</span>
+        <span class="tx-badge is-neg">Challenge échoué</span>
+        <span class="tx-badge">Clôturé</span>
+        <span class="tx-badge is-plain is-pos">Long</span>
+        <span class="tx-badge is-plain is-neg">Short</span>
+        <span class="tx-badge is-plain">NY AM</span>
+        <span class="tx-delta is-pos">+3,2 %</span>
+        <span class="tx-delta is-neg">−1,00 R</span>
+      </div>
+      <div class="tx-chips"><span class="tx-chip">XAUUSD<small>21 trades</small><button type="button" aria-label="Retirer XAUUSD"><svg class="tx-ico" aria-hidden="true"><use href="#i-fermer"/></svg></button></span><span class="tx-chip">Compte SAS<button type="button" aria-label="Retirer Compte SAS"><svg class="tx-ico" aria-hidden="true"><use href="#i-fermer"/></svg></button></span></div>
+    </div>
+
+    <div class="sg-sec"><h3>Navigation</h3>
+      <div class="sg-grid">
+        <div class="sg-col"><div class="tx-sub">Rail latéral, à partir de 900 px</div>
+          <div class="sg-frame"><nav class="tx-side" aria-label="Exemple de rail latéral">
+            <span class="tx-logo" aria-hidden="true">T</span>
+            <a class="tx-navitem" href="#styleguide" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</a>
+            <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Comptes</a>
+            <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</a>
+            <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</a>
+          </nav><div style="padding:var(--sp-4)" class="tx-sub">Contenu de la page</div></div>
+        </div>
+        <div class="sg-col"><div class="tx-sub">Barre du bas, sur téléphone (flottante, fond translucide)</div>
+          <nav class="tx-tabbar" aria-label="Exemple de barre du bas" style="margin-top:var(--sp-2)">
+            <a class="tx-navitem" href="#styleguide" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</a>
+            <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Comptes</a>
+            <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</a>
+            <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Bandeau de séance</h3>
+      <div class="tx-session">
+        <div><div class="tx-label">Drawdown</div><div class="v">−3,2 %</div><div class="h">palier −10 % à 6,8 points</div></div>
+        <div><div class="tx-label">Résultat du jour</div><div class="v tx-pos">+150 €</div><div class="h">1 trade · +1,00 R</div></div>
+        <div><div class="tx-label">Prochaine fenêtre</div><div class="v">16h00</div><div class="h">NY AM · dans 42 min</div></div>
+        <div><div class="tx-label">Annonce à risque</div><div class="v tx-warn">14h30</div><div class="h">CPI États-Unis</div></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Bandeau d'état du jour <span class="tx-sub">(phase 1)</span></h3>
+      <div class="tx-state is-ok"><span class="tx-state-name"><svg class="tx-ico" aria-hidden="true"><use href="#i-ok"/></svg>Autorisé</span><span class="tx-state-why">Aucune limite atteinte. 2 trades restants aujourd'hui.</span></div>
+      <div class="tx-state is-caution"><span class="tx-state-name"><svg class="tx-ico" aria-hidden="true"><use href="#i-prudence"/></svg>Prudence</span><span class="tx-state-why">Une perte aujourd'hui : la prochaine arrête la journée.</span></div>
+      <div class="tx-state is-stop"><span class="tx-state-name"><svg class="tx-ico" aria-hidden="true"><use href="#i-stop"/></svg>Stop du jour</span><span class="tx-state-why">Perte maximale du jour atteinte. Reprise demain.</span></div>
+      <div class="tx-state is-pause"><span class="tx-state-name"><svg class="tx-ico" aria-hidden="true"><use href="#i-pause"/></svg>Pause</span><span class="tx-state-why">Palier de drawdown atteint. Reprise sur validation des deux associés.</span></div>
+    </div>
+
+    <div class="sg-sec"><h3>Tuiles de chiffres clés</h3>
+      <div class="tx-stats">
+        <div class="tx-stat"><div class="tx-label">Trades</div><div class="v">48</div><div class="h">22 gagnants · 26 perdants</div></div>
+        <div class="tx-stat"><div class="tx-label">Taux de réussite</div><div class="v">45,8 %</div><div class="h">Gain moyen 312 €</div></div>
+        <div class="tx-stat"><div class="tx-label">Profit factor</div><div class="v tx-pos">1,42</div><div class="h">Perte moyenne 158 €</div></div>
+        <div class="tx-stat"><div class="tx-label">R moyen</div><div class="v tx-pos">+0,42 R</div><div class="h">48 trades avec risque</div></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Jauge de limite avec seuils</h3>
+      <div class="sg-grid">
+        <div class="tx-panel is-ok"><div class="tx-gauge-head"><span>Drawdown du compte SAS</span><span class="tx-num">−3,2 %</span></div>
+          <div class="tx-gauge" role="img" aria-label="Drawdown de 3,2 %, premier palier à 10 %"><div class="fill" style="width:9.1%"></div><div class="mark" style="left:28.6%"><span>−10 %</span></div><div class="mark" style="left:57.1%"><span>−20 %</span></div><div class="mark" style="left:85.7%"><span>−30 %</span></div></div></div>
+        <div class="tx-panel is-caution"><div class="tx-gauge-head"><span>Perte du jour</span><span class="tx-num tx-warn">−1,50 R sur 2 R</span></div>
+          <div class="tx-gauge" role="img" aria-label="Perte du jour de 1,5 R, limite à 2 R"><div class="fill" style="width:75%"></div><div class="mark is-end" style="left:100%"><span>2 R</span></div></div></div>
+        <div class="tx-panel is-stop"><div class="tx-gauge-head"><span>Perte journalière FTMO</span><span class="tx-num tx-neg">−1 310 € sur 1 250 €</span></div>
+          <div class="tx-gauge" role="img" aria-label="Marge de sécurité dépassée : 1 310 € perdus, arrêt prévu à 1 250 €"><div class="fill" style="width:52.4%"></div><div class="mark" style="left:50%"><span>arrêt maison</span></div><div class="mark is-end" style="left:100%"><span>limite firme</span></div></div></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Tableau <span class="tx-sub">(chaque ligne devient une fiche sous 640 px)</span></h3>
+      <div class="tx-panel"><div class="tx-table-wrap"><table class="tx-table is-stack">
+        <thead><tr><th>Date</th><th>Marché</th><th>Sens</th><th>Fenêtre</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th></tr></thead>
+        <tbody>
+          <tr><td class="tx-num" data-l="Date">10/11/26 16:12</td><td data-l="Marché"><b>XAUUSD</b></td><td data-l="Sens"><span class="tx-badge is-plain is-pos">Long</span></td><td data-l="Fenêtre">NY AM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-pos" data-l="R">+2,00 R</td><td class="r tx-num tx-pos" data-l="Résultat">+300 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">09/11/26 09:21</td><td data-l="Marché"><b>DAX</b></td><td data-l="Sens"><span class="tx-badge is-plain is-neg">Short</span></td><td data-l="Fenêtre">Londres</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,00 R</td><td class="r tx-num tx-neg" data-l="Résultat">−150 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">06/11/26 20:40</td><td data-l="Marché"><b>Nasdaq</b></td><td data-l="Sens"><span class="tx-badge is-plain is-pos">Long</span></td><td data-l="Fenêtre">NY PM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,60 R</td><td class="r tx-num tx-neg" data-l="Résultat">−240 €</td><td data-l="Plan"><span class="tx-badge is-neg">Non respecté</span></td></tr>
+        </tbody>
+      </table></div></div>
+    </div>
+
+    <div class="sg-sec"><h3>Barres gain / perte et calendrier</h3>
+      <div class="sg-grid">
+        <div class="tx-panel sg-col">
+          <div class="tx-bar"><span><b>XAUUSD</b></span><span class="tx-num tx-pos">+1 240 €</span><div class="track"><i class="is-pos" style="width:50%"></i></div><div class="meta tx-num">21 trades · réussite 52 %</div></div>
+          <div class="tx-bar"><span><b>Nasdaq</b></span><span class="tx-num tx-pos">+310 €</span><div class="track"><i class="is-pos" style="width:12.5%"></i></div><div class="meta tx-num">15 trades · réussite 47 %</div></div>
+          <div class="tx-bar"><span><b>DAX</b></span><span class="tx-num tx-neg">−520 €</span><div class="track"><i class="is-neg" style="width:21%"></i></div><div class="meta tx-num">12 trades · réussite 33 %</div></div>
+        </div>
+        <div class="tx-panel"><div class="tx-cal">
+          <div class="tx-day is-pos">2<b>+300</b></div><div class="tx-day">3</div><div class="tx-day is-neg">4<b>−150</b></div><div class="tx-day is-pos">5<b>+450</b></div><div class="tx-day is-neg">6<b>−240</b></div><div class="tx-day">7</div><div class="tx-day">8</div>
+          <div class="tx-day is-neg">9<b>−150</b></div><div class="tx-day is-pos is-today">10<b>+150</b></div><div class="tx-day">11</div><div class="tx-day">12</div><div class="tx-day">13</div><div class="tx-day">14</div><div class="tx-day">15</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Carte de graphique</h3>
+      <div class="tx-panel" style="max-width:720px">
+        <div class="tx-panel-head"><div><h4 class="tx-title">Courbe de capital</h4><div class="tx-sub">48 trades · capital 15 480 €</div></div><span class="tx-delta is-pos">+480 €</span></div>
+        <div class="tx-chart">
+          <svg viewBox="0 0 640 200" role="img" aria-label="Exemple de courbe de capital avec le palier de drawdown et le détail d'un trade">
+            <g class="grid"><line x1="0" x2="584" y1="30" y2="30"/><line x1="0" x2="584" y1="70" y2="70"/><line class="zero" x1="0" x2="584" y1="110" y2="110"/><line x1="0" x2="584" y1="150" y2="150"/></g>
+            <line class="limit" x1="0" x2="584" y1="166" y2="166"/>
+            <text x="594" y="34">+800</text><text x="594" y="74">+400</text><text x="594" y="114">0</text><text x="594" y="170">−10 %</text>
+            <path class="area" d="M0,110 40,96 80,104 120,82 160,92 200,70 240,84 280,60 320,72 360,50 400,66 440,44 480,58 520,54 584,62V110Z"/>
+            <polyline class="line" pathLength="1" points="0,110 40,96 80,104 120,82 160,92 200,70 240,84 280,60 320,72 360,50 400,66 440,44 480,58 520,54 584,62"/>
+            <line class="cross" x1="440" x2="440" y1="14" y2="176"/>
+            <circle class="halo" cx="440" cy="44" r="10"/><circle class="dot" cx="440" cy="44" r="5"/>
+            <text x="0" y="192">02/09/26</text><text x="584" y="192" text-anchor="end">10/11/26</text>
+          </svg>
+          <div class="tx-tip sg-tip"><div>Trade 37 · 21/10/26 · XAUUSD</div><div class="tx-num">Trade +300 € · cumul +660 €</div></div>
+        </div>
+        <div class="tx-legend"><span style="color:var(--c-accent-fill)"><i></i><span class="tx-dim">Résultat cumulé</span></span><span style="color:var(--c-neg)"><i class="is-dash"></i><span class="tx-dim">Palier de drawdown</span></span></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Checklist avec score <span class="tx-sub">(phase 1)</span></h3>
+      <div class="tx-panel is-caution" style="max-width:520px">
+        <div class="tx-panel-head"><h4 class="tx-title">Checklist pré-trade</h4><div class="tx-score"><span class="tx-hero tx-warn" style="font-size:var(--fs-5)">8 / 10</span><span class="tx-sub">incomplète</span></div></div>
+        <div class="tx-score-bar" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+        <ul class="tx-checklist">
+          <li class="grp tx-label">Avant la fenêtre</li>
+          <li><label class="tx-check"><input type="checkbox" checked> Le biais H4 ou journalier est fixé et noté</label></li>
+          <li><label class="tx-check"><input type="checkbox" checked> Aucune annonce majeure pendant la fenêtre</label></li>
+          <li class="grp tx-label">Avant de cliquer</li>
+          <li><label class="tx-check"><input type="checkbox"> Le stop est au-delà de la prise de liquidité</label></li>
+          <li><label class="tx-check"><input type="checkbox"> Les règles sont remplies, pas de revanche</label></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Calculateur compact <span class="tx-sub">(phase 1)</span></h3>
+      <div class="tx-panel" style="max-width:660px">
+        <div class="tx-panel-head"><h4 class="tx-title">Taille de position</h4><span class="tx-sub">XAUUSD · 1 lot = 100 onces</span></div>
+        <div class="tx-calc">
+          <div class="tx-calc-in">
+            <div class="tx-field"><label for="sg-c1">Risque (€)</label><input class="tx-input tx-num" id="sg-c1" value="150"></div>
+            <div class="tx-field"><label for="sg-c2">Distance du stop</label><input class="tx-input tx-num" id="sg-c2" value="4,50"></div>
+            <div class="tx-field"><label for="sg-c3">Entrée</label><input class="tx-input tx-num" id="sg-c3" value="2 650,50"></div>
+            <div class="tx-field"><label for="sg-c4">Stop</label><input class="tx-input tx-num" id="sg-c4" value="2 646,00"></div>
+          </div>
+          <div class="tx-calc-out"><div class="tx-label">Taille à passer</div><div class="tx-hero">0,37 lot</div><div class="tx-sub">Risque réel 149,85 € · 1,0 % du capital</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Carte de compte prop firm <span class="tx-sub">(phases 1 et 2)</span></h3>
+      <div class="sg-grid">
+        <div class="tx-panel tx-account is-ok">
+          <div class="tx-account-head"><div class="tx-account-id"><span class="tx-avatar" aria-hidden="true">FT</span><div><h4 class="tx-title">FTMO 50&nbsp;000</h4><div class="tx-sub">2-Step · acheté le 02/09/26</div></div></div><span class="tx-badge is-pos">Compte financé</span></div>
+          <div><div class="tx-gauge-head"><span>Perte du jour</span><span class="tx-num">−310 € sur 1 250 €</span></div><div class="tx-gauge" role="img" aria-label="310 € perdus aujourd'hui, arrêt prévu à 1 250 €"><div class="fill" style="width:12.4%"></div><div class="mark" style="left:50%"><span>arrêt maison</span></div><div class="mark is-end" style="left:100%"><span>limite</span></div></div></div>
+          <dl class="tx-kv"><dt>Solde</dt><dd>51 240 €</dd><dt>Marge avant drawdown maximal</dt><dd>6 240 €</dd></dl>
+          <div class="tx-account-foot"><span class="tx-dim">Versements reçus</span><span class="tx-num tx-pos">+1 850 €</span></div>
+        </div>
+        <div class="tx-panel tx-account is-stop">
+          <div class="tx-account-head"><div class="tx-account-id"><span class="tx-avatar" aria-hidden="true">FN</span><div><h4 class="tx-title">FundedNext 50&nbsp;000</h4><div class="tx-sub">Stellar 2-Step · acheté le 14/10/26</div></div></div><span class="tx-badge is-neg">Challenge échoué</span></div>
+          <dl class="tx-kv"><dt>Prix du challenge</dt><dd>299,99 $</dd><dt>Durée</dt><dd>19 jours</dd></dl>
+          <div class="tx-account-foot"><span class="tx-dim">Versements reçus</span><span class="tx-num tx-dim">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Alertes persistantes et message court</h3>
+      <div class="tx-alert is-caution" role="status"><svg class="tx-ico" aria-hidden="true"><use href="#i-prudence"/></svg><div class="tx-alert-body"><b>Annonce majeure dans 12 minutes</b>CPI États-Unis à 14h30 : pas de trade entre 14h15 et 14h45.</div><button class="tx-btn is-ghost is-icon" type="button" aria-label="Masquer l'alerte"><svg class="tx-ico" aria-hidden="true"><use href="#i-fermer"/></svg></button></div>
+      <div class="tx-alert is-stop" role="status"><svg class="tx-ico" aria-hidden="true"><use href="#i-stop"/></svg><div class="tx-alert-body"><b>Limite journalière atteinte sur FTMO 50 000</b>Plus aucun trade sur ce compte aujourd'hui.</div></div>
+      <div class="tx-alert is-pause" role="status"><svg class="tx-ico" aria-hidden="true"><use href="#i-info"/></svg><div class="tx-alert-body"><b>Aperçu avec des trades d'exemple</b>Ils disparaissent dès votre premier trade.</div></div>
+      <div class="sg-row"><span class="tx-toast"><svg class="tx-ico" aria-hidden="true"><use href="#i-ok"/></svg>Trade enregistré</span></div>
+    </div>
+
+    <div class="sg-sec"><h3>Fenêtre de saisie</h3>
+      <div class="tx-dialog" role="group" aria-label="Exemple de fenêtre de saisie">
+        <div class="tx-dialog-head"><h4 class="tx-title">Versement reçu</h4><button class="tx-btn is-ghost is-icon" type="button" aria-label="Fermer"><svg class="tx-ico" aria-hidden="true"><use href="#i-fermer"/></svg></button></div>
+        <div class="tx-dialog-body">
+          <div class="tx-group tx-label">Compte</div>
+          <div class="tx-field full"><label for="sg-d1">Compte prop firm</label><select class="tx-input" id="sg-d1"><option>FTMO 50 000 · Compte financé</option></select></div>
+          <div class="tx-group tx-label">Versement</div>
+          <div class="tx-field"><label for="sg-d2">Date</label><input class="tx-input" id="sg-d2" type="date" value="2026-11-10"></div>
+          <div class="tx-field"><label for="sg-d3">Montant (€)</label><input class="tx-input tx-num" id="sg-d3" value="1 850"></div>
+        </div>
+        <div class="tx-dialog-foot"><span></span><div class="sg-row"><button class="tx-btn is-ghost" type="button">Annuler</button><button class="tx-btn is-primary" type="button">Enregistrer</button></div></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>États vide, chargement et erreur</h3>
+      <div class="sg-grid">
+        <div class="tx-empty"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg><b>Aucun compte pour l'instant</b>Ajoutez votre premier challenge pour suivre son coût et ses versements.</div>
+        <div class="tx-panel sg-col" aria-busy="true" aria-label="Chargement"><div class="tx-skel" style="width:40%"></div><div class="tx-skel"></div><div class="tx-skel" style="width:75%"></div></div>
+        <div class="tx-alert is-stop" role="alert"><svg class="tx-ico" aria-hidden="true"><use href="#i-stop"/></svg><div class="tx-alert-body"><b>Données inaccessibles</b>Vérifiez votre connexion, puis réessayez.</div></div>
+      </div>
+    </div>
+
+    <div class="sg-sec"><h3>Rapport imprimable A4 <span class="tx-sub">(phase 4)</span></h3>
+      <div class="sg-row"><button class="tx-btn" type="button" data-action="print-report">Imprimer cet exemple</button></div>
+      <div class="tx-report">
+        <div class="tx-report-head"><div><h4>Rapport mensuel · octobre 2026</h4><div>SAS de trading · établi le 02/11/2026</div></div><div class="tx-num">Page 1 / 1</div></div>
+        <table class="tx-table" style="table-layout:fixed">
+          <thead><tr><th>Poste</th><th class="r">Montant</th><th>Commentaire</th></tr></thead>
+          <tbody>
+            <tr><td>Résultat de trading</td><td class="r tx-num">+1 030 €</td><td>21 trades, 2 infractions</td></tr>
+            <tr><td>Challenges achetés</td><td class="r tx-num">−614 €</td><td>2 achats</td></tr>
+            <tr><td>Versements reçus</td><td class="r tx-num">+1 850 €</td><td>FTMO 50 000</td></tr>
+            <tr><td>Drawdown maximal du mois</td><td class="r tx-num">−4,1 %</td><td>Aucun palier atteint</td></tr>
+          </tbody>
+        </table>
+        <div class="tx-report-sign"><div>Le gérant</div><div>Le trader</div></div>
+      </div>
+    </div>
+  </section>
+      </main>
+    </div>
+  </div>
+
+  <nav class="tx-tabbar pg-tabbar" aria-label="Sections">
+    <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
+    <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
+    <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
+    <button class="tx-navitem" type="button" data-open="settings"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</button>
+  </nav>
+</div>
+
+<!-- ================= FENÊTRES DE SAISIE ================= -->
+<div class="tx-overlay" id="ov-trade" hidden>
+  <form class="tx-dialog is-wide" id="trade-form" novalidate aria-labelledby="trade-title">
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="trade-title">Nouveau trade</h3><div class="tx-sub">Montants en euros. Le R se calcule à partir du risque et du résultat.</div></div></div>
+    <div class="tx-dialog-body is-4">
+      <div class="tx-group tx-label">Quand et où</div>
+      <div class="tx-field c2"><label for="t-date">Date</label><input class="tx-input" id="t-date" type="date" required></div>
+      <div class="tx-field"><label for="t-time">Heure (Paris)</label><input class="tx-input" id="t-time" type="time"></div>
+      <div class="tx-field"><label for="t-market">Marché</label><select class="tx-input" id="t-market"></select></div>
+      <div class="tx-field c2"><label for="t-account">Compte</label><select class="tx-input" id="t-account"></select></div>
+      <div class="tx-field c2"><label for="t-window">Fenêtre</label><select class="tx-input" id="t-window"></select></div>
+      <div class="tx-group tx-label">Exécution</div>
+      <div class="tx-field c2"><span class="pg-lbl" id="t-side-l">Sens</span>
+        <div class="pg-sens" role="radiogroup" aria-labelledby="t-side-l">
+          <label><input type="radio" name="t-side" id="t-side-long" value="Long" checked><span>Long</span></label>
+          <label><input type="radio" name="t-side" id="t-side-short" value="Short"><span>Short</span></label>
+        </div>
+      </div>
+      <div class="tx-field c2"><label for="t-size">Taille (lots / contrats)</label><input class="tx-input tx-num" id="t-size" type="number" step="any" inputmode="decimal"></div>
+      <div class="tx-field"><label for="t-entry">Entrée</label><input class="tx-input tx-num" id="t-entry" type="number" step="any" inputmode="decimal"></div>
+      <div class="tx-field"><label for="t-stop">Stop</label><input class="tx-input tx-num" id="t-stop" type="number" step="any" inputmode="decimal"></div>
+      <div class="tx-field c2"><label for="t-exit">Sortie</label><input class="tx-input tx-num" id="t-exit" type="number" step="any" inputmode="decimal"></div>
+      <div class="tx-group tx-label">Résultat</div>
+      <div class="tx-field"><label for="t-risk">Risque engagé (€)</label><input class="tx-input tx-num" id="t-risk" type="number" step="any" inputmode="decimal"></div>
+      <div class="tx-field"><label for="t-rplan">R prévu</label><input class="tx-input tx-num" id="t-rplan" type="number" step="0.1" min="0" inputmode="decimal"></div>
+      <div class="tx-field c2"><label for="t-pnl">Résultat net (€)</label><input class="tx-input tx-num" id="t-pnl" type="number" step="any" inputmode="decimal" required><span class="tx-num pg-rprev" id="t-r"></span></div>
+      <div class="tx-group tx-label">Revue</div>
+      <div class="tx-field c2"><label for="t-emotion">État d'esprit</label><select class="tx-input" id="t-emotion"></select></div>
+      <div class="tx-field c2 pg-check-field"><label class="tx-check"><input type="checkbox" id="t-plan" checked> Plan respecté (setup, horaires, taille, stop)</label></div>
+      <div class="tx-field c4"><label for="t-note">Note</label><textarea class="tx-input" id="t-note" placeholder="Contexte, liquidité prise, FVG, ce qui a marché ou non…"></textarea></div>
+      <div class="tx-field c4"><label for="t-shot">Capture d'écran</label><input class="tx-file" id="t-shot" type="file" accept="image/*"><img id="t-shot-prev" class="pg-shot-prev" alt="Capture du trade" hidden></div>
+    </div>
+    <p class="tx-help is-error pg-err" id="t-err" role="alert" hidden></p>
+    <div class="tx-dialog-foot">
+      <div class="pg-foot-l">
+        <button class="tx-btn is-danger" id="t-del" type="button" hidden>Supprimer</button>
+        <span class="pg-confirm" id="t-del-confirm" hidden>Supprimer définitivement ce trade ? <button class="tx-btn is-danger" id="t-del-yes" type="button">Oui, supprimer</button></span>
+      </div>
+      <div class="pg-foot-r"><button class="tx-btn is-ghost" id="t-cancel" type="button">Annuler</button><button class="tx-btn is-primary" id="t-save" type="submit">Enregistrer</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="tx-overlay" id="ov-prop" hidden>
+  <form class="tx-dialog is-wide" id="prop-form" novalidate aria-labelledby="prop-title">
+    <div class="tx-dialog-head"><h3 class="tx-title" id="prop-title">Nouveau compte prop firm</h3></div>
+    <div class="tx-dialog-body is-4">
+      <div class="tx-group tx-label">Compte</div>
+      <div class="tx-field c2"><label for="p-firm">Firme</label><input class="tx-input" id="p-firm" list="firm-list" required><datalist id="firm-list"></datalist></div>
+      <div class="tx-field c2"><label for="p-prog">Programme</label><input class="tx-input" id="p-prog" placeholder="Ex. 2-Step, Stellar 2-Step"></div>
+      <div class="tx-field c2"><label for="p-size">Taille du compte</label><input class="tx-input tx-num" id="p-size" type="number" step="any" placeholder="50000"></div>
+      <div class="tx-field c2"><label for="p-status">Statut</label><select class="tx-input" id="p-status"></select></div>
+      <div class="tx-group tx-label">Achat</div>
+      <div class="tx-field"><label for="p-cur">Devise</label><select class="tx-input" id="p-cur"><option>USD</option><option>EUR</option></select></div>
+      <div class="tx-field"><label for="p-cost">Prix du challenge</label><input class="tx-input tx-num" id="p-cost" type="number" step="any"></div>
+      <div class="tx-field c2"><label for="p-date">Date d'achat</label><input class="tx-input" id="p-date" type="date"></div>
+      <div class="tx-field c4"><label for="p-note">Note</label><textarea class="tx-input" id="p-note" placeholder="Règles particulières, identifiant du compte (sans mot de passe)…"></textarea></div>
+    </div>
+    <p class="tx-help is-error pg-err" id="p-err" role="alert" hidden></p>
+    <div class="tx-dialog-foot">
+      <div class="pg-foot-l">
+        <button class="tx-btn is-danger" id="p-del" type="button" hidden>Supprimer</button>
+        <span class="pg-confirm" id="p-del-confirm" hidden>Supprimer ce compte et ses versements ? <button class="tx-btn is-danger" id="p-del-yes" type="button">Oui, supprimer</button></span>
+      </div>
+      <div class="pg-foot-r"><button class="tx-btn is-ghost" id="p-cancel" type="button">Annuler</button><button class="tx-btn is-primary" type="submit">Enregistrer</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="tx-overlay" id="ov-payout" hidden>
+  <form class="tx-dialog" id="payout-form" novalidate aria-labelledby="payout-title">
+    <div class="tx-dialog-head"><h3 class="tx-title" id="payout-title">Versement reçu</h3></div>
+    <div class="tx-dialog-body is-4">
+      <div class="tx-field c4"><label for="y-acc">Compte</label><select class="tx-input" id="y-acc"></select></div>
+      <div class="tx-field c2"><label for="y-date">Date</label><input class="tx-input" id="y-date" type="date"></div>
+      <div class="tx-field"><label for="y-amt">Montant</label><input class="tx-input tx-num" id="y-amt" type="number" step="any"></div>
+      <div class="tx-field"><label for="y-cur">Devise</label><select class="tx-input" id="y-cur"><option>USD</option><option>EUR</option></select></div>
+      <div class="tx-field c4"><label for="y-note">Note</label><input class="tx-input" id="y-note"></div>
+    </div>
+    <p class="tx-help is-error pg-err" id="y-err" role="alert" hidden></p>
+    <div class="tx-dialog-foot"><div class="pg-foot-r"><button class="tx-btn is-ghost" id="y-cancel" type="button">Annuler</button><button class="tx-btn is-primary" type="submit">Enregistrer</button></div></div>
+  </form>
+</div>
+
+<div class="tx-overlay" id="ov-import" hidden>
+  <div class="tx-dialog is-wide" role="dialog" aria-labelledby="imp-title">
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="imp-title">Importer votre journal</h3><div class="tx-sub">Fichier CSV (séparateur virgule ou point-virgule), une ligne par trade. Le bouton « Exporter » de l'ancien journal produit un fichier directement compatible.</div></div></div>
+    <div class="tx-dialog-body is-flow">
+      <div class="tx-field"><span class="pg-lbl">Colonnes reconnues</span><div class="tx-code">date;heure;marche;compte;sens;fenetre;entree;stop;sortie;taille;risque;r_prevu;resultat;plan;emotion;note</div></div>
+      <div class="tx-field"><label for="imp-file">Fichier CSV</label><input class="tx-file" id="imp-file" type="file" accept=".csv,text/csv,.txt"></div>
+      <p class="tx-sub" id="imp-res" role="status" style="margin:0"></p>
+    </div>
+    <div class="tx-dialog-foot"><div class="pg-foot-l"><button class="tx-btn is-ghost" id="imp-template" type="button">Télécharger un modèle</button></div><div class="pg-foot-r"><button class="tx-btn is-ghost" id="imp-cancel" type="button">Fermer</button><button class="tx-btn is-primary" id="imp-go" type="button" disabled>Importer</button></div></div>
+  </div>
+</div>
+
+<div class="tx-overlay" id="ov-settings" hidden>
+  <div class="tx-dialog is-wide" role="dialog" aria-labelledby="set-title">
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="set-title">Réglages</h3><div class="tx-sub">Partagés entre vous deux. Retirer un marché ou un compte ne supprime aucun trade.</div></div></div>
+    <div class="tx-dialog-body is-flow">
+      <div class="pg-set"><div class="tx-group tx-label">Marchés</div><div class="tx-chips" id="set-markets"></div><div class="pg-addrow"><input class="tx-input" id="set-market-in" maxlength="40" placeholder="Ex. US30, EURUSD" aria-label="Nouveau marché"><button class="tx-btn" id="set-market-add" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter</button></div></div>
+      <div class="pg-set"><div class="tx-group tx-label">Comptes du journal</div><div class="tx-chips" id="set-accounts"></div><div class="pg-addrow"><input class="tx-input" id="set-account-in" maxlength="40" placeholder="Ex. FTMO 50K n°2" aria-label="Nouveau compte"><button class="tx-btn" id="set-account-add" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter</button></div></div>
+      <div class="pg-set"><div class="tx-group tx-label">Valeurs</div>
+        <div class="pg-vals">
+          <div class="tx-field"><label for="set-capital">Capital de référence (€)</label><input class="tx-input tx-num" id="set-capital" type="number" step="100"></div>
+          <div class="tx-field"><label for="set-rplan">R prévu par défaut</label><input class="tx-input tx-num" id="set-rplan" type="number" step="0.1" min="0.1"></div>
+          <div class="tx-field"><label for="set-rate">1 € = x $</label><input class="tx-input tx-num" id="set-rate" type="number" step="0.001"></div>
+        </div>
+      </div>
+    </div>
+    <p class="tx-help is-error pg-err" id="set-err" role="alert" hidden></p>
+    <div class="tx-dialog-foot"><div class="pg-foot-r"><button class="tx-btn is-ghost" id="set-cancel" type="button">Annuler</button><button class="tx-btn is-primary" id="set-save" type="button">Enregistrer</button></div></div>
+  </div>
+</div>
+
+<div class="tx-overlay" id="ov-shot" hidden>
+  <div class="tx-dialog is-media" role="dialog" aria-label="Capture du trade">
+    <div class="pg-shot-body"><img id="shot-big" alt="Capture du trade"></div>
+    <div class="tx-dialog-foot"><span class="tx-sub" id="shot-cap"></span><div class="pg-foot-r"><button class="tx-btn" id="shot-close" type="button">Fermer</button></div></div>
+  </div>
+</div>
+<div class="tx-toast pg-toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Documents internes : lus par Claude Code en local, jamais publiés (dépôt public)
+docs-prives/
+# Dossier généré par build.sh
+site/
+.DS_Store
+# Fichiers temporaires de Word
+~$*
+# Ancien journal (artifact claude.ai) : gardé en local, pas publié
+journal-tradamax-artifact.html
+# Réglages locaux de Claude Code
+.claude/settings.local.json
