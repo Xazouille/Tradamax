@@ -601,6 +601,13 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-accrow.is-new{padding-top:var(--sp-2);border-top:1px dashed var(--c-line-2)}
 @media (max-width:560px){.pg-accrow{grid-template-columns:minmax(0,1fr) minmax(0,.8fr) auto}.pg-accrow>:first-child{grid-column:1/-1}}
 .tx-gauge[hidden]+.tx-kv{margin-top:var(--sp-4)}
+.pg-dd-foot{display:flex;justify-content:flex-end;margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:1px solid var(--c-line)}
+.pg-dd-foot:has(>[hidden]){display:none}
+.pg-acc-actions{display:inline-flex;align-items:center;gap:var(--sp-1)}
+.pg-move{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:var(--sp-3);align-items:center;padding:8px 0;border-bottom:1px solid var(--c-line);font-size:var(--fs-3)}
+.pg-move:last-child{border-bottom:0}
+.pg-move-note{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:480px){.pg-move{grid-template-columns:auto minmax(0,1fr) auto}.pg-move-note{grid-column:1/-1;grid-row:2;white-space:normal}}
 .pg-acc.is-current{border-color:var(--c-accent-fill);box-shadow:0 0 0 3px var(--c-accent-soft)}
 .pg-shot-body{padding:var(--sp-3)}
 .pg-shot-body img{display:block;max-width:100%;margin:0 auto;border-radius:10px}
@@ -747,10 +754,12 @@ code{font-family:var(--f-mono);font-size:.92em}
         <div class="tx-gauge has-names is-ok" id="gauge" aria-hidden="true"><div class="fill" id="gauge-fill" style="width:0"></div></div>
         <dl class="tx-kv">
           <dt>Capital de départ</dt><dd id="dd-cap">—</dd>
+          <dt>Ajouts et retraits</dt><dd id="dd-moves">—</dd>
           <dt>Plus haut historique</dt><dd id="dd-peak">—</dd>
           <dt>Capital actuel</dt><dd id="dd-cur">—</dd>
           <dt>Drawdown maximal</dt><dd id="dd-max">—</dd>
         </dl>
+        <div class="pg-dd-foot"><button class="tx-btn" id="btn-capital" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter ou retirer du capital</button></div>
       </div>
     </div>
 
@@ -1293,6 +1302,23 @@ code{font-family:var(--f-mono);font-size:.92em}
     </div>
     <p class="tx-help is-error pg-err" id="y-err" role="alert" hidden></p>
     <div class="tx-dialog-foot"><div class="pg-foot-r"><button class="tx-btn is-ghost" id="y-cancel" type="button">Annuler</button><button class="tx-btn is-primary" type="submit">Enregistrer</button></div></div>
+  </form>
+</div>
+
+<div class="tx-overlay" id="ov-capital" hidden>
+  <form class="tx-dialog is-wide" id="capital-form" novalidate aria-labelledby="cap-title">
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="cap-title">Capital du compte</h3><div class="tx-sub" id="cap-sub"></div></div></div>
+    <div class="tx-dialog-body is-4">
+      <div class="tx-group tx-label">Nouveau mouvement</div>
+      <div class="tx-field"><label for="cap-date">Date</label><input class="tx-input" id="cap-date" type="date" required></div>
+      <div class="tx-field"><label for="cap-amt">Montant (€)</label><input class="tx-input tx-num" id="cap-amt" type="number" step="100" inputmode="decimal" aria-describedby="cap-help"></div>
+      <div class="tx-field c2"><label for="cap-note">Note</label><input class="tx-input" id="cap-note" maxlength="80" placeholder="Ex. passage à 100 000, apport des associés"></div>
+      <p class="tx-help c4" id="cap-help" style="margin:0">Un montant positif ajoute du capital, un montant négatif en retire. Ce n'est jamais compté comme un gain ou une perte de trading.</p>
+      <div class="tx-group tx-label">Mouvements enregistrés</div>
+      <div class="c4" id="cap-list"></div>
+    </div>
+    <p class="tx-help is-error pg-err" id="cap-err" role="alert" hidden></p>
+    <div class="tx-dialog-foot"><div class="pg-foot-r"><button class="tx-btn is-ghost" id="cap-cancel" type="button">Fermer</button><button class="tx-btn is-primary" id="cap-save" type="submit"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Enregistrer le mouvement</button></div></div>
   </form>
 </div>
 

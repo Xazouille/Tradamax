@@ -31,7 +31,7 @@ Repères techniques :
 | --- | --- |
 | `membres` | E-mails autorisés ; la fonction `est_membre()` conditionne toutes les règles d'accès |
 | `trades` | Un trade par ligne (date, heure, marche, compte, sens, fenetre, entree, stop, sortie, taille, risque, r_prevu, resultat, plan, emotion, note, capture) |
-| `reglages` | Une seule ligne (`id = 1`), champ `data` en JSON : marchés, comptes (`accounts`) avec leur type et capital de départ (`accountsInfo`), R prévu, taux €/$ |
+| `reglages` | Une seule ligne (`id = 1`), champ `data` en JSON : marchés, comptes (`accounts`) avec leur type, leur capital de départ et leurs ajouts ou retraits de capital datés (`accountsInfo`), R prévu, taux €/$ |
 | `prop_comptes` | Comptes prop firm (firme, programme, taille, devise, statut, cout, date_achat) |
 | `payouts` | Versements reçus, liés à `prop_comptes` |
 

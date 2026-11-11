@@ -217,27 +217,36 @@ function accCap(name) { var c = Number(accInfo(name).capital); return c > 0 ? c 
 function accList() { return withUsed(S.set.accounts, "account"); }
 function sasNames() { return accList().filter(function (a) { return accInfo(a).type === "sas"; }); }
 function viewCap() { return S.f.account === "all" || S.f.account == null ? null : accCap(S.f.account); }
+/* ajouts (montant positif) et retraits (négatif) de capital, datés, par compte */
+function accMoves(name) { return (accInfo(name).moves || []).slice().sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); }); }
+function viewMoves() { return S.f.account === "all" || S.f.account == null ? [] : accMoves(S.f.account); }
 function byDT(a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); }
-function stats(ts, cap) {
+/* Un ajout de capital n'est jamais un gain : il monte le capital et le plus haut du même montant,
+   donc le drawdown en euros ne change pas et un drawdown en cours ne disparaît pas. */
+function stats(ts, cap, moves) {
   var has = cap != null && cap > 0, n = ts.length, gw = 0, gl = 0, w = 0, l = 0, rs = [], cum = 0, eq = [], peak = has ? cap : null, maxdd = 0, maxddE = 0;
+  var mv = (moves || []).slice().sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); }), mi = 0, added = 0;
+  function applyUntil(d) { while (mi < mv.length && (d == null || mv[mi].date <= d)) { var a = Number(mv[mi].amount) || 0; added += a; if (has) peak += a; mi++; } }
   ts.forEach(function (t, i) {
+    applyUntil(t.date);
     var p = Number(t.pnl) || 0; if (p > 0) { gw += p; w++; } else if (p < 0) { gl += -p; l++; }
     var r = rOf(t); if (r != null) rs.push(r);
     cum += p;
-    if (has) { var c = cap + cum; if (c > peak) peak = c; var dd = (peak - c) / peak; if (dd > maxdd) { maxdd = dd; maxddE = peak - c; } }
+    if (has) { var c = cap + added + cum; if (c > peak) peak = c; var dd = peak > 0 ? (peak - c) / peak : 0; if (dd > maxdd) { maxdd = dd; maxddE = peak - c; } }
     eq.push({ i: i + 1, cum: cum, t: t });
   });
-  var cur = has ? cap + cum : null;
+  applyUntil(null);
+  var cur = has ? cap + added + cum : null;
   return { n: n, total: cum, w: w, l: l, wr: n ? w / n : null, pf: gl > 0 ? gw / gl : (gw > 0 ? Infinity : null), exp: n ? cum / n : null,
-    avgR: rs.length ? rs.reduce(function (a, b) { return a + b; }, 0) / rs.length : null, rs: rs, eq: eq, cap: has ? cap : null, peak: peak, cur: cur,
-    ddNow: has ? Math.max(0, (peak - cur) / peak) : null, maxdd: has ? maxdd : null, maxddE: has ? maxddE : null, avgW: w ? gw / w : null, avgL: l ? gl / l : null };
+    avgR: rs.length ? rs.reduce(function (a, b) { return a + b; }, 0) / rs.length : null, rs: rs, eq: eq, cap: has ? cap : null, added: added, peak: peak, cur: cur,
+    ddNow: has ? (peak > 0 ? Math.max(0, (peak - cur) / peak) : 0) : null, maxdd: has ? maxdd : null, maxddE: has ? maxddE : null, avgW: w ? gw / w : null, avgL: l ? gl / l : null };
 }
 
 /* ---------------- rendu du journal ---------------- */
 function renderJournal() {
   if (S.f.account == null) S.f.account = sasNames()[0] || "all";
   refreshSelects();
-  var ts = filtered(), st = stats(ts, viewCap());
+  var ts = filtered(), st = stats(ts, viewCap(), viewMoves());
   $("banner").hidden = !S.useSample;
   renderEquity(st); renderDD(st); renderOthers(); renderKPIs(st);
   renderGroups($("by-market"), ts, function (t) { return t.market; }, S.set.markets, function () { return null; });
@@ -301,6 +310,8 @@ function renderDD(st) {
   g.querySelectorAll(".mark").forEach(function (m) { m.remove(); });
   PALIERS.forEach(function (p) { g.appendChild(el("div", { class: "mark", style: "left:" + (p.p / GAUGE_MAX * 100) + "%" }, [el("span", {}, ["−" + Math.round(p.p * 100) + " %", el("small", { text: p.l })])])); });
   $("dd-cap").textContent = has ? eur(st.cap) : "—"; $("dd-peak").textContent = has ? eur(st.peak) : "—"; $("dd-cur").textContent = has ? eur(st.cur) : "—";
+  $("dd-moves").textContent = info && st.added ? seur(st.added) : "—"; $("dd-moves").className = cls(st.added || 0);
+  $("btn-capital").hidden = !info;
   $("dd-max").textContent = has && st.n ? "−" + pct(st.maxdd) + " (" + eur(st.maxddE) + ")" : "—";
 }
 /* Section « Prop firms et comptes démo » : un résumé par compte, toujours sur tout l'historique */
@@ -308,7 +319,8 @@ function renderOthers() {
   var box = $("others"), names = accList().filter(function (n) { return accInfo(n).type !== "sas"; }); box.textContent = "";
   $("others-sec").hidden = !names.length;
   names.forEach(function (name) {
-    var info = accInfo(name), cap = accCap(name), ts = source().filter(function (t) { return t.account === name; }).sort(byDT), st = stats(ts, cap), cur = S.f.account === name;
+    var capBtn = el("button", { class: "tx-btn is-ghost", type: "button", "aria-label": "Ajouter ou retirer du capital sur " + name, title: "Ajouter ou retirer du capital" }, [icon("i-plus"), "Capital"]);
+    var info = accInfo(name), cap = accCap(name), ts = source().filter(function (t) { return t.account === name; }).sort(byDT), st = stats(ts, cap, accMoves(name)), cur = S.f.account === name;
     var card = el("article", { class: "tx-panel tx-account pg-acc" + (cur ? " is-current" : "") }, [
       el("div", { class: "tx-account-head" }, [
         el("div", { class: "tx-account-id" }, [el("span", { class: "tx-avatar", "aria-hidden": "true", text: initials(name) }),
@@ -316,11 +328,14 @@ function renderOthers() {
         el("span", { class: "tx-badge is-plain", text: info.type === "demo" ? "Démo" : "Prop firm" })]),
       el("dl", { class: "tx-kv" }, [
         el("dt", { text: "Capital de départ" }), el("dd", { text: cap ? eur(cap) : "À renseigner" }),
+        st.added ? el("dt", { text: "Ajouts et retraits" }) : null, st.added ? el("dd", { class: cls(st.added), text: seur(st.added) }) : null,
         el("dt", { text: "Résultat" }), el("dd", { class: cls(st.total), text: st.n ? seur(st.total) : "—" }),
         el("dt", { text: "Capital actuel" }), el("dd", { text: st.cur != null ? eur(st.cur) : "—" }),
         el("dt", { text: "Drawdown actuel" }), el("dd", { text: st.ddNow != null && st.n ? "−" + pct(st.ddNow) : "—" })]),
       el("div", { class: "tx-account-foot" }, [el("span", { class: "tx-dim", text: st.n + " trade" + (st.n > 1 ? "s" : "") }),
-        el("button", { class: "tx-btn is-ghost", type: "button", "aria-label": "Afficher le détail de " + name, text: cur ? "Affiché" : "Voir le détail" })])]);
+        el("span", { class: "pg-acc-actions" }, [capBtn,
+          el("button", { class: "tx-btn is-ghost", type: "button", "aria-label": "Afficher le détail de " + name, text: cur ? "Affiché" : "Voir le détail" })])])]);
+    capBtn.addEventListener("click", function (e) { e.stopPropagation(); openCapital(name); });
     card.addEventListener("click", function () { S.f.account = name; S.shown = 30; renderJournal(); window.scrollTo({ top: 0, behavior: "smooth" }); });
     box.appendChild(card);
   });
@@ -640,7 +655,8 @@ function drawAccounts() {
     cap.value = a.capital != null ? a.capital : ""; cap.addEventListener("input", function () { a.capital = num(cap.value); });
     var x = el("button", { class: "tx-btn is-ghost is-icon", type: "button", "aria-label": "Retirer " + a.name, title: "Retirer" }, [icon("i-fermer")]);
     x.addEventListener("click", function () { if (S.tmpA.length <= 1) { setErr("Gardez au moins un compte."); return; } S.tmpA.splice(i, 1); drawSettings(); });
-    box.appendChild(el("div", { class: "pg-accrow" }, [el("div", { class: "nm" }, [a.name, el("small", { text: n ? n + " trade" + (n > 1 ? "s" : "") : "aucun trade" })]), type, cap, x]));
+    var k = (a.moves || []).length;
+    box.appendChild(el("div", { class: "pg-accrow" }, [el("div", { class: "nm" }, [a.name, el("small", { text: (n ? n + " trade" + (n > 1 ? "s" : "") : "aucun trade") + (k ? " · " + k + " mouvement" + (k > 1 ? "s" : "") + " de capital" : "") })]), type, cap, x]));
   });
 }
 function drawSettings() { setErr(""); drawChips("set-markets", S.tmpM, "market"); drawAccounts(); }
@@ -653,7 +669,7 @@ function addAccount() {
 }
 function openSettings() {
   S.tmpM = S.set.markets.slice();
-  S.tmpA = S.set.accounts.map(function (n) { var i = accInfo(n); return { name: n, type: i.type, capital: i.capital }; });
+  S.tmpA = S.set.accounts.map(function (n) { var i = accInfo(n); return { name: n, type: i.type, capital: i.capital, moves: (i.moves || []).slice() }; });
   $("set-rplan").value = S.set.rPlanDefault; $("set-rate").value = S.set.eurusd; drawSettings(); show("ov-settings", true);
 }
 $("btn-settings").addEventListener("click", openSettings);
@@ -670,7 +686,7 @@ $("set-save").addEventListener("click", function () {
   if (S.tmpA.some(function (a) { return a.capital != null && !(a.capital >= 0); })) { setErr("Un capital de départ n'est pas un nombre valide."); return; }
   var sasA = S.tmpA.filter(function (a) { return a.type === "sas"; });
   if (sasA.some(function (a) { return !(a.capital > 0); })) { setErr("Indiquez le capital de départ du compte réel de la SAS : il sert au drawdown de la charte."); return; }
-  var info = {}; S.tmpA.forEach(function (a) { info[a.name] = { type: a.type, capital: a.capital > 0 ? a.capital : null }; });
+  var info = {}; S.tmpA.forEach(function (a) { info[a.name] = { type: a.type, capital: a.capital > 0 ? a.capital : null, moves: a.moves || [] }; });
   var sasCap = sasA.reduce(function (s, a) { return s + a.capital; }, 0);
   var b = this; b.disabled = true;
   saveSettings({ markets: S.tmpM.slice(), accounts: S.tmpA.map(function (a) { return a.name; }), accountsInfo: info, capital: sasCap || S.set.capital, rPlanDefault: rp, eurusd: rate }).then(function (res) {
@@ -678,6 +694,52 @@ $("set-save").addEventListener("click", function () {
     show("ov-settings", false); toast("Réglages enregistrés"); reload("reglages");
   });
 });
+
+/* ---------------- ajouts et retraits de capital ---------------- */
+function openCapital(name) {
+  if (!name || name === "all") return;
+  S.capAcc = name; S.capMoves = accMoves(name);
+  $("cap-title").textContent = "Capital · " + name; $("cap-date").value = todayISO(); $("cap-amt").value = ""; $("cap-note").value = ""; $("cap-err").hidden = true;
+  drawCapital(); show("ov-capital", true); setTimeout(function () { $("cap-amt").focus(); }, 30);
+}
+function drawCapital() {
+  var base = accCap(S.capAcc), tot = S.capMoves.reduce(function (s, m) { return s + (Number(m.amount) || 0); }, 0);
+  $("cap-sub").textContent = "Capital de départ " + (base ? eur(base) : "à renseigner dans les Réglages") + " · ajouts et retraits " + (tot ? seur(tot) : "aucun") + (base ? " · capital engagé " + eur(base + tot) : "");
+  var box = $("cap-list"); box.textContent = "";
+  if (!S.capMoves.length) { box.appendChild(el("div", { class: "tx-empty is-compact", text: "Aucun ajout ni retrait pour l'instant." })); return; }
+  S.capMoves.slice().reverse().forEach(function (m) {
+    var del = el("button", { class: "tx-btn is-ghost", type: "button", "aria-label": "Supprimer ce mouvement", text: "Supprimer" });
+    del.addEventListener("click", function () {
+      if (!del.dataset.c) { del.dataset.c = "1"; del.textContent = "Confirmer"; del.className = "tx-btn is-danger"; return; }
+      S.capMoves = S.capMoves.filter(function (x) { return x !== m; }); persistMoves("Mouvement supprimé");
+    });
+    box.appendChild(el("div", { class: "pg-move" }, [el("span", { class: "tx-num", text: frDate(m.date) }), el("span", { class: "tx-num " + cls(Number(m.amount) || 0), text: seur(Number(m.amount) || 0) }),
+      el("span", { class: "tx-dim pg-move-note", text: m.note || "" }), del]));
+  });
+}
+/* les mouvements sont rangés avec le type et le capital de chaque compte, dans les réglages partagés */
+function persistMoves(msg) {
+  var info = {}; accList().forEach(function (n) { var i = accInfo(n); info[n] = { type: i.type, capital: Number(i.capital) > 0 ? Number(i.capital) : null, moves: (i.moves || []).slice() }; });
+  info[S.capAcc] = Object.assign({}, info[S.capAcc] || accInfo(S.capAcc), { moves: S.capMoves.slice() });
+  var accounts = S.set.accounts.indexOf(S.capAcc) < 0 ? S.set.accounts.concat([S.capAcc]) : S.set.accounts.slice();
+  var b = $("cap-save"); b.disabled = true;
+  return saveSettings({ accounts: accounts, accountsInfo: info }).then(function (res) {
+    b.disabled = false;
+    if (res.error) { $("cap-err").textContent = "Enregistrement impossible. Vérifiez votre connexion et réessayez."; $("cap-err").hidden = false; S.capMoves = accMoves(S.capAcc); drawCapital(); return; }
+    S.set.accountsInfo = info; S.set.accounts = accounts; S.selSig = ""; drawCapital(); toast(msg); reload("reglages");
+  });
+}
+$("capital-form").addEventListener("submit", function (e) {
+  e.preventDefault(); var d = $("cap-date").value, a = num($("cap-amt").value);
+  if (!d || a == null || a === 0) { $("cap-err").textContent = "Indiquez une date et un montant (négatif pour un retrait)."; $("cap-err").hidden = false; return; }
+  $("cap-err").hidden = true;
+  S.capMoves.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), date: d, amount: a, note: $("cap-note").value.trim() || null });
+  $("cap-amt").value = ""; $("cap-note").value = "";
+  persistMoves(a > 0 ? "Ajout de capital enregistré" : "Retrait de capital enregistré");
+});
+$("btn-capital").addEventListener("click", function () { openCapital(S.f.account); });
+$("cap-cancel").addEventListener("click", function () { show("ov-capital", false); });
+$("ov-capital").addEventListener("click", function (e) { if (e.target === this) show("ov-capital", false); });
 
 /* ---------------- prop firms ---------------- */
 function payoutsOf(id) { return S.payouts.filter(function (p) { return p.compte_id === id; }); }
@@ -886,13 +948,13 @@ function setTab(t) {
 }
 document.querySelectorAll("[data-tab]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.tab; }); });
 window.addEventListener("hashchange", function () { setTab(location.hash.slice(1)); window.scrollTo(0, 0); });
-document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; ["ov-shot", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings"].some(function (id) { if (!$(id).hidden) { show(id, false); return true; } return false; }); });
+document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; ["ov-shot", "ov-capital", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings"].some(function (id) { if (!$(id).hidden) { show(id, false); return true; } return false; }); });
 var ro, roW = {};
 try {
   ro = new ResizeObserver(function (entries) {
     var changed = false; entries.forEach(function (en) { var w = Math.round(en.contentRect.width); if (roW[en.target.id] !== w) { roW[en.target.id] = w; changed = true; } });
     if (!changed) return; clearTimeout(ro._t);
-    ro._t = setTimeout(function () { if (S.tab === "journal") { var st = stats(filtered(), viewCap()); renderEquity(st); renderHist(st.rs); } if (S.tab === "annonces") renderEco(); }, 80);
+    ro._t = setTimeout(function () { if (S.tab === "journal") { var st = stats(filtered(), viewCap(), viewMoves()); renderEquity(st); renderHist(st.rs); } if (S.tab === "annonces") renderEco(); }, 80);
   });
   ro.observe($("eq-chart")); ro.observe($("r-hist")); ro.observe($("eco-recap"));
 } catch (e) {}
@@ -917,7 +979,7 @@ function renderSession() {
   /* drawdown et résultat du jour : compte(s) réel(s) de la SAS uniquement, jamais les prop firms ni les démos */
   var sas = sasNames(), capS = sas.reduce(function (a, n) { return a + (accCap(n) || 0); }, 0) || null;
   var mine = S.trades.filter(function (t) { return sas.indexOf(t.account) >= 0; });
-  var all = mine.slice().sort(byDT), st = stats(all, capS);
+  var all = mine.slice().sort(byDT), st = stats(all, capS, sas.reduce(function (a, n) { return a.concat(accMoves(n)); }, []));
   if (!sas.length) setV("ss-dd", "—", "", "Aucun compte réel de la SAS");
   else if (!all.length) setV("ss-dd", "—", "", S.loaded ? "Aucun trade sur le compte SAS" : "");
   else if (st.ddNow == null) setV("ss-dd", "—", "", "Capital du compte SAS à renseigner");
