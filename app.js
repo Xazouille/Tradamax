@@ -84,20 +84,20 @@ function demoCal() {
 /* ---------------- constantes ---------------- */
 var DEF = {
   markets: ["XAUUSD", "DAX", "Nasdaq"],
-  accounts: ["Compte SAS", "Challenge prop firm", "Prop firm financé", "Compte démo"],
-  /* type et capital de départ de chaque compte du journal (le compte SAS prend « capital » tant qu'il n'est pas réglé) */
-  accountsInfo: { "Challenge prop firm": { type: "prop", capital: 50000 }, "Prop firm financé": { type: "prop", capital: 50000 }, "Compte démo": { type: "demo", capital: null } },
+  accounts: ["Compte VT Markets perso", "Challenge prop firm", "Prop firm financé", "Compte démo"],
+  /* type et capital de départ de chaque compte du journal (le compte réel prend « capital » tant qu'il n'est pas réglé) */
+  accountsInfo: { "Compte VT Markets perso": { type: "sas", capital: 15000 }, "Challenge prop firm": { type: "prop", capital: 50000 }, "Prop firm financé": { type: "prop", capital: 50000 }, "Compte démo": { type: "demo", capital: null } },
   rPlanDefault: 2, capital: 15000, eurusd: 1.115
 };
-var ACC_TYPES = { sas: "Compte réel de la SAS", prop: "Prop firm", demo: "Démo" };
-var ACC_SHORT = { sas: "réel SAS", prop: "prop firm", demo: "démo" };
+var ACC_TYPES = { sas: "Compte réel", prop: "Prop firm", demo: "Démo" }; /* le type « sas » désigne le compte réel suivi par la charte */
+var ACC_SHORT = { sas: "réel", prop: "prop firm", demo: "démo" };
 var WINDOWS = [
   { id: "London", label: "Londres", ny: "3h–4h NY", paris: "9h–10h Paris", s: 180, e: 240 },
   { id: "NYAM", label: "NY AM", ny: "10h–11h NY", paris: "16h–17h Paris", s: 600, e: 660 },
   { id: "NYPM", label: "NY PM", ny: "14h–15h NY", paris: "20h–21h Paris", s: 840, e: 900 },
-  { id: "Out", label: "Hors fenêtre", ny: "", paris: "", s: -1, e: -1 }
+  { id: "Out", label: "Hors session", ny: "", paris: "", s: -1, e: -1 }
 ];
-var EMOTIONS = ["Calme", "Confiant", "Hésitant", "FOMO", "Revanche", "Fatigué"];
+var EMOTIONS = ["Calme", "Confiant", "Hésitant", "Impatient", "Revanche", "Fatigué"];
 var PALIERS = [{ p: .10, l: "Vigilance" }, { p: .20, l: "Révision + pause" }, { p: .30, l: "Pause renforcée" }];
 var GAUGE_MAX = .35;
 var PROP_STATUS = ["Challenge en cours", "Challenge échoué", "Compte financé", "Compte financé perdu", "Clôturé"];
@@ -179,6 +179,8 @@ function toRow(t) {
 function makeSample() {
   var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
   var out = [], d = new Date(); d.setDate(d.getDate() - 95);
+  /* les exemples utilisent les comptes des Réglages : le compte réel pour la moitié, les autres pour le reste */
+  var real = sasNames()[0] || S.set.accounts[0], others = S.set.accounts.filter(function (a) { return a !== real; });
   for (var i = 0; i < 95; i++) {
     d.setDate(d.getDate() + 1); var wd = d.getDay(); if (wd === 0 || wd === 6) continue; if (rnd() < .25) continue;
     var m = rnd() < .45 ? "XAUUSD" : rnd() < .55 ? "Nasdaq" : "DAX";
@@ -187,9 +189,9 @@ function makeSample() {
     var r = win ? (1.2 + rnd() * 2.3) : -(plan ? 1 : 1 + rnd() * .8);
     var hh = { London: "09", NYAM: "16", NYPM: "20", Out: "14" }[w];
     out.push({ id: "ex" + i, date: isoParis(d), time: hh + ":" + String(Math.floor(rnd() * 55)).padStart(2, "0"), market: m,
-      account: rnd() < .55 ? "Compte SAS" : rnd() < .6 ? "Challenge prop firm" : "Prop firm financé", side: rnd() < .55 ? "Long" : "Short",
+      account: rnd() < .55 || !others.length ? real : others[Math.floor(rnd() * others.length)], side: rnd() < .55 ? "Long" : "Short",
       window: w, risk: 150, pnl: Math.round(r * 150), plan: plan,
-      emotion: plan ? (rnd() < .6 ? "Calme" : "Confiant") : (["FOMO", "Revanche", "Hésitant", "Fatigué"][Math.floor(rnd() * 4)]), note: "Exemple", sample: true });
+      emotion: plan ? (rnd() < .6 ? "Calme" : "Confiant") : (["Impatient", "Revanche", "Hésitant", "Fatigué"][Math.floor(rnd() * 4)]), note: "Exemple", sample: true });
   }
   return out;
 }
@@ -207,14 +209,33 @@ function filtered() {
     return true;
   }).slice().sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); });
 }
-/* comptes : type (réel SAS, prop firm, démo) et capital de départ ; sans capital connu, pas de drawdown */
+/* comptes : type (réel, prop firm, démo) et capital de départ ; sans capital connu, pas de drawdown */
 function accInfo(name) {
   var i = (S.set.accountsInfo || {})[name]; if (i && ACC_TYPES[i.type]) return i;
   var s = norm(name), type = /demo/.test(s) ? "demo" : /sas|reel/.test(s) ? "sas" : "prop";
   return { type: type, capital: type === "sas" ? S.set.capital : null };
 }
 function accCap(name) { var c = Number(accInfo(name).capital); return c > 0 ? c : null; }
-function accList() { return withUsed(S.set.accounts, "account"); }
+/* comptes des Réglages, plus ceux encore utilisés par des trades enregistrés (jamais par les exemples) */
+function accList() { var out = S.set.accounts.slice(); S.trades.forEach(function (t) { if (t.account && out.indexOf(t.account) < 0) out.push(t.account); }); return out; }
+/* L'ancien nom par défaut « Compte SAS » devient « Compte VT Markets perso », tant qu'aucun trade ne l'utilise.
+   Le changement est enregistré au prochain « Enregistrer » des Réglages. */
+function renameLegacy() {
+  var o = "Compte SAS", nw = "Compte VT Markets perso", i = S.set.accounts.indexOf(o);
+  if (i < 0 || S.set.accounts.indexOf(nw) >= 0 || S.trades.some(function (t) { return t.account === o; })) return;
+  S.set.accounts = S.set.accounts.slice(); S.set.accounts[i] = nw;
+  var info = Object.assign({}, S.set.accountsInfo || {}); info[nw] = info[o] || { type: "sas", capital: S.set.capital }; delete info[o]; S.set.accountsInfo = info;
+}
+/* heures de Paris d'une session pour un jour donné (calculées avec Intl, le décalage avec New York varie) */
+function hFmt(m) { var h = Math.floor(m / 60), mi = m % 60; return h + "h" + (mi ? String(mi).padStart(2, "0") : ""); }
+function sessionHours(w, dayKey) { if (!w || w.s < 0) return ""; var d = dayKey || todayISO(); return hFmt(parisMinutes(nyWindowDate(d, w.s))) + "–" + hFmt(parisMinutes(nyWindowDate(d, w.e))); }
+/* session d'un trade à partir de sa date et de son heure de Paris */
+function sessionOf(dateIso, time) {
+  var t = String(time || "").match(/^(\d{1,2}):(\d{2})/); if (!dateIso || !t) return null;
+  var p = dateIso.split("-").map(Number), off = parisMinutes(new Date(Date.UTC(p[0], p[1] - 1, p[2], 12, 0))) - 720;
+  var m = nyMinutes(new Date(Date.UTC(p[0], p[1] - 1, p[2], Number(t[1]), Number(t[2])) - off * 60000));
+  var w = WINDOWS.find(function (x) { return x.s >= 0 && m >= x.s && m < x.e; }); return w ? w.id : "Out";
+}
 function sasNames() { return accList().filter(function (a) { return accInfo(a).type === "sas"; }); }
 function viewCap() { return S.f.account === "all" || S.f.account == null ? null : accCap(S.f.account); }
 /* ajouts (montant positif) et retraits (négatif) de capital, datés, par compte */
@@ -251,7 +272,7 @@ function renderJournal() {
   renderEquity(st); renderDD(st); renderOthers(); renderKPIs(st);
   renderGroups($("by-market"), ts, function (t) { return t.market; }, S.set.markets, function () { return null; });
   renderGroups($("by-window"), ts, function (t) { return t.window || "Out"; }, WINDOWS.map(function (w) { return w.id; }),
-    function (k) { var w = WINDOWS.find(function (x) { return x.id === k; }); return w && w.ny ? w.ny + " · " + w.paris : null; }, winLabel);
+    function (k) { var w = WINDOWS.find(function (x) { return x.id === k; }); return w && w.s >= 0 ? sessionHours(w) : null; }, winLabel);
   renderHist(st.rs); renderPlan(ts); renderEmotions(ts); renderCal(); renderRP(ts); renderTable(ts);
 }
 function niceTicks(mn, mx, n) { var span = mx - mn, step = Math.pow(10, Math.floor(Math.log10(span / n))), e = span / n / step; step *= e >= 5 ? 5 : e >= 2 ? 2 : 1; var out = []; for (var v = Math.ceil(mn / step) * step; v <= mx + 1e-9; v += step) out.push(Math.abs(v) < 1e-9 ? 0 : v); return out; }
@@ -294,12 +315,12 @@ function renderEquity(st) {
   ov.addEventListener("pointerleave", function () { tip.classList.remove("on"); hl.setAttribute("opacity", 0); hd.setAttribute("opacity", 0); });
 }
 function ddState(dd) { var lvl = PALIERS.filter(function (p) { return dd >= p.p; }).pop(); return { lvl: lvl, k: !lvl ? "ok" : lvl.p < .2 ? "caution" : "stop" }; }
-/* Drawdown du compte affiché. Les paliers de la charte ne s'appliquent qu'au compte réel de la SAS. */
+/* Drawdown du compte affiché. Les paliers de la charte ne s'appliquent qu'au compte réel. */
 function renderDD(st) {
   var name = S.f.account, info = name === "all" ? null : accInfo(name), sas = !!info && info.type === "sas", has = st.cap != null;
   $("dd-title").textContent = sas ? "Palier de drawdown (charte)" : "Drawdown du compte";
   $("dd-note").textContent = !info ? "Choisissez un compte pour voir son capital et son drawdown." : !has ? "Indiquez le capital de départ de « " + name + " » dans les Réglages." :
-    sas ? name + " · depuis le plus haut historique du capital" : name + " · depuis le plus haut du compte. Les paliers de la charte ne concernent que le compte de la SAS.";
+    sas ? name + " · depuis le plus haut historique du capital" : name + " · depuis le plus haut du compte. Les paliers de la charte ne concernent que le compte réel.";
   var dd = has ? st.ddNow : 0, s = ddState(dd), pill = $("dd-pill"), g = $("gauge");
   $("dd-now").textContent = has && st.n ? "−" + pct(dd) : "—";
   pill.hidden = !(has && sas); g.hidden = !(has && sas);
@@ -494,7 +515,7 @@ function refreshSelects() {
   if (S.f.account !== "all" && fa.indexOf(S.f.account) < 0) S.f.account = sasNames()[0] || "all"; if (fm.indexOf(S.f.market) < 0) S.f.market = "all";
   $("f-account").value = S.f.account; $("f-market").value = S.f.market;
 }
-fillSelect($("t-window"), WINDOWS.map(function (w) { return { v: w.id, l: w.label + (w.paris ? " (" + w.paris + ")" : "") }; }));
+/* liste des sessions de la fenêtre de saisie : remplie à l'ouverture, avec les heures de Paris du jour du trade */
 fillSelect($("t-emotion"), EMOTIONS);
 fillSelect($("p-status"), PROP_STATUS);
 $("f-period").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; S.f.period = b.dataset.v; this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); S.shown = 30; renderJournal(); });
@@ -514,7 +535,7 @@ function openTrade(t) {
   $("t-date").value = t ? t.date : todayISO(); $("t-time").value = t && t.time || "";
   $("t-market").value = t && t.market || S.set.markets[0] || ""; $("t-account").value = t && t.account || S.set.accounts[0] || "";
   (t && t.side === "Short" ? $("t-side-short") : $("t-side-long")).checked = true;
-  $("t-window").value = t && t.window || "NYAM"; $("t-emotion").value = t && t.emotion || "Calme";
+  fillWindows(); $("t-window").value = t && t.window || sessionOf($("t-date").value, $("t-time").value) || "NYAM"; S.winAuto = !t; autoWindow(); $("t-emotion").value = t && t.emotion || "Calme";
   ["entry", "stop", "exit", "size", "risk", "pnl"].forEach(function (k) { $("t-" + k).value = t && t[k] != null ? t[k] : ""; });
   $("t-rplan").value = t && Number(t.rPlan) > 0 ? t.rPlan : S.set.rPlanDefault;
   $("t-plan").checked = !t || t.plan !== false; $("t-note").value = t && t.note || "";
@@ -525,6 +546,11 @@ function openTrade(t) {
 function closeTrade() { show("ov-trade", false); S.editing = null; }
 function updR() { var r = num($("t-risk").value), p = num($("t-pnl").value), pl = num($("t-rplan").value); $("t-r").textContent = r > 0 && p != null ? "= " + rfmt(p / r) + (pl > 0 ? " sur " + String(pl).replace(".", ",") + " R prévus" : "") : ""; $("t-r").className = "tx-num pg-rprev " + cls(p || 0); }
 ["t-risk", "t-pnl", "t-rplan"].forEach(function (id) { $(id).addEventListener("input", updR); });
+/* la session suit l'heure saisie, sauf si elle a été choisie à la main */
+function fillWindows() { var v = $("t-window").value; fillSelect($("t-window"), WINDOWS.map(function (w) { var h = sessionHours(w, $("t-date").value || todayISO()); return { v: w.id, l: w.label + (h ? " · " + h : "") }; })); if (v) $("t-window").value = v; }
+function autoWindow() { fillWindows(); var s = sessionOf($("t-date").value, $("t-time").value); if (s && S.winAuto) $("t-window").value = s; $("t-window-h").textContent = s ? (S.winAuto ? "Calculée avec l'heure du trade." : "Choisie à la main.") : "Indiquez l'heure : la session se calcule seule."; }
+["t-time", "t-date"].forEach(function (id) { $(id).addEventListener("input", autoWindow); $(id).addEventListener("change", autoWindow); });
+$("t-window").addEventListener("change", function () { S.winAuto = false; autoWindow(); });
 $("t-shot").addEventListener("change", function () { var f = this.files && this.files[0]; S.shotFile = f || null; var pv = $("t-shot-prev"); if (f) { pv.src = URL.createObjectURL(f); pv.hidden = false; } });
 $("t-cancel").addEventListener("click", closeTrade);
 $("ov-trade").addEventListener("click", function (e) { if (e.target === this) closeTrade(); });
@@ -624,7 +650,7 @@ $("imp-go").addEventListener("click", function () {
 });
 function csvCell(v) { v = v == null ? "" : String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
 var CSV_HEAD = "date;heure;marche;compte;sens;fenetre;entree;stop;sortie;taille;risque;r_prevu;resultat;R;plan;emotion;note";
-$("imp-template").addEventListener("click", function () { download("modele-journal.csv", CSV_HEAD + "\n10/11/2026;16:12;XAUUSD;Compte SAS;Long;NY AM;2650,5;2646,0;2659,5;1;150;2;300;;oui;Calme;Exemple à remplacer\n"); });
+$("imp-template").addEventListener("click", function () { download("modele-journal.csv", CSV_HEAD + "\n10/11/2026;16:12;XAUUSD;Compte VT Markets perso;Long;NY AM;2650,5;2646,0;2659,5;1;150;2;300;;oui;Calme;Exemple à remplacer\n"); });
 $("btn-export").addEventListener("click", function () {
   var ts = S.trades.slice().sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); });
   if (!ts.length) { toast("Aucun trade enregistré à exporter."); return; }
@@ -685,7 +711,7 @@ $("set-save").addEventListener("click", function () {
   if (!(rp > 0) || !(rate > 0)) { setErr("Vérifiez le R prévu et le taux de change."); return; }
   if (S.tmpA.some(function (a) { return a.capital != null && !(a.capital >= 0); })) { setErr("Un capital de départ n'est pas un nombre valide."); return; }
   var sasA = S.tmpA.filter(function (a) { return a.type === "sas"; });
-  if (sasA.some(function (a) { return !(a.capital > 0); })) { setErr("Indiquez le capital de départ du compte réel de la SAS : il sert au drawdown de la charte."); return; }
+  if (sasA.some(function (a) { return !(a.capital > 0); })) { setErr("Indiquez le capital de départ du compte réel : il sert au drawdown de la charte."); return; }
   var info = {}; S.tmpA.forEach(function (a) { info[a.name] = { type: a.type, capital: a.capital > 0 ? a.capital : null, moves: a.moves || [] }; });
   var sasCap = sasA.reduce(function (s, a) { return s + a.capital; }, 0);
   var b = this; b.disabled = true;
@@ -837,8 +863,8 @@ var MARGE_ANNONCE = 15; /* minutes sans trade autour d'une annonce majeure (char
 function winFlag(d, impact) {
   if (impact !== "High" && impact !== "Medium") return null; var m = nyMinutes(d);
   for (var i = 0; i < 3; i++) { var w = WINDOWS[i];
-    if (m >= w.s - MARGE_ANNONCE && m <= w.e + MARGE_ANNONCE) return { strong: true, text: "Fenêtre " + w.label + " : pas de trade ±" + MARGE_ANNONCE + " min" };
-    if (m >= w.s - 90 && m < w.s - MARGE_ANNONCE) return { strong: false, text: "Avant la fenêtre " + w.label }; }
+    if (m >= w.s - MARGE_ANNONCE && m <= w.e + MARGE_ANNONCE) return { strong: true, text: "Session " + w.label + " : pas de trade ±" + MARGE_ANNONCE + " min" };
+    if (m >= w.s - 90 && m < w.s - MARGE_ANNONCE) return { strong: false, text: "Avant la session " + w.label }; }
   return null;
 }
 var IMP_FR = { High: "Fort", Medium: "Moyen", Low: "Faible", Holiday: "Férié" };
@@ -856,7 +882,7 @@ function parisMinutes(d) { var h = 0, m = 0; fmtParisParts.formatToParts(d).forE
 /* instant où il est nyMin (minutes) à New York, le jour dayKey : le décalage est lu par Intl pour ce jour-là */
 function nyWindowDate(dayKey, nyMin) { var p = dayKey.split("-").map(Number), off = nyMinutes(new Date(Date.UTC(p[0], p[1] - 1, p[2], 12, 0))) - 720; return new Date(Date.UTC(p[0], p[1] - 1, p[2], 0, 0) + (nyMin - off) * 60000); }
 function hm(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
-/* frise de la journée en heure de Paris : fenêtres Silver Bullet et annonces fortes ou moyennes */
+/* frise de la journée en heure de Paris : sessions et annonces fortes ou moyennes */
 function ecoLine(dayKey, evs) {
   var wrap = el("div", { class: "tx-chart pg-line" });
   var W = Math.max(280, ($("eco-recap").clientWidth || 760) - 34), H = 82, top = 22, base = 54, pl = 12, pr = 12;
@@ -865,7 +891,7 @@ function ecoLine(dayKey, evs) {
   var lo = Math.min.apply(null, mins.concat(wins.map(function (v) { return v.a; }), [420])), hi = Math.max.apply(null, mins.concat(wins.map(function (v) { return v.b; }), [1320]));
   var h0 = Math.max(0, Math.floor(lo / 60)), h1 = Math.min(24, Math.floor(hi / 60) + 1), span = (h1 - h0) * 60;
   var x = function (m) { return pl + (W - pl - pr) * (m - h0 * 60) / span; }, step = (W - pl - pr) / (h1 - h0) < 13 ? 4 : 2;
-  var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": "Frise de la journée en heure de Paris : " + wins.map(function (v) { return "fenêtre " + v.w.label + " de " + hm(v.a) + " à " + hm(v.b); }).join(", ") + (evs.length ? " ; " + evs.length + " annonce" + (evs.length > 1 ? "s" : "") + " à fort ou moyen impact" : " ; aucune annonce à fort ou moyen impact") });
+  var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": "Frise de la journée en heure de Paris : " + wins.map(function (v) { return "session " + v.w.label + " de " + hm(v.a) + " à " + hm(v.b); }).join(", ") + (evs.length ? " ; " + evs.length + " annonce" + (evs.length > 1 ? "s" : "") + " à fort ou moyen impact" : " ; aucune annonce à fort ou moyen impact") });
   wins.forEach(function (v) {
     svg.appendChild(svgEl("rect", { x: x(v.a), y: top, width: Math.max(3, x(v.b) - x(v.a)), height: base - top, rx: 4, class: "band" }));
     var t = svgEl("text", { x: (x(v.a) + x(v.b)) / 2, y: top - 8, "text-anchor": "middle", class: "band-l" }); t.textContent = v.w.label; svg.appendChild(t);
@@ -887,7 +913,7 @@ function ecoLine(dayKey, evs) {
   wrap.appendChild(el("div", { class: "tx-legend" }, [
     el("span", { style: "color:var(--c-neg)" }, [el("i", { class: "is-dot" }), el("span", { class: "tx-dim", text: "Fort impact" })]),
     el("span", { style: "color:var(--c-warn)" }, [el("i", { class: "is-dot" }), el("span", { class: "tx-dim", text: "Impact moyen" })]),
-    el("span", {}, [el("i", { class: "is-box" }), el("span", { class: "tx-dim", text: "Fenêtre Silver Bullet" })]),
+    el("span", {}, [el("i", { class: "is-box" }), el("span", { class: "tx-dim", text: "Session" })]),
     isToday ? el("span", { style: "color:var(--c-text)" }, [el("i", { class: "is-dash" }), el("span", { class: "tx-dim", text: "Maintenant" })]) : null]));
   return wrap;
 }
@@ -936,7 +962,7 @@ function loadCal() {
 
 /* ---------------- navigation ---------------- */
 var TABS = ["journal", "propfirms", "annonces", "styleguide"]; /* styleguide : page cachée, absente du menu */
-var TITLES = { journal: "Journal de séance", propfirms: "Comptes prop firm", annonces: "Annonces économiques", styleguide: "Guide de style" };
+var TITLES = { journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", styleguide: "Guide de style" };
 function setTab(t) {
   if (TABS.indexOf(t) < 0) t = "journal"; S.tab = t;
   document.querySelectorAll("[data-tab]").forEach(function (b) { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
@@ -976,13 +1002,13 @@ function nextWindow(now) {
 function waitText(min, d) { if (min < 60) return "dans " + min + " min"; if (min < 1440) return "dans " + Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0"); return fmtParisWeekday.format(d); }
 function setV(id, text, c, hint) { var v = $(id); v.textContent = text; v.className = "v" + (c ? " " + c : ""); $(id + "-h").textContent = hint || ""; }
 function renderSession() {
-  /* drawdown et résultat du jour : compte(s) réel(s) de la SAS uniquement, jamais les prop firms ni les démos */
+  /* drawdown et résultat du jour : compte(s) réel(s) uniquement, jamais les prop firms ni les démos */
   var sas = sasNames(), capS = sas.reduce(function (a, n) { return a + (accCap(n) || 0); }, 0) || null;
   var mine = S.trades.filter(function (t) { return sas.indexOf(t.account) >= 0; });
   var all = mine.slice().sort(byDT), st = stats(all, capS, sas.reduce(function (a, n) { return a.concat(accMoves(n)); }, []));
-  if (!sas.length) setV("ss-dd", "—", "", "Aucun compte réel de la SAS");
-  else if (!all.length) setV("ss-dd", "—", "", S.loaded ? "Aucun trade sur le compte SAS" : "");
-  else if (st.ddNow == null) setV("ss-dd", "—", "", "Capital du compte SAS à renseigner");
+  if (!sas.length) setV("ss-dd", "—", "", "Aucun compte réel");
+  else if (!all.length) setV("ss-dd", "—", "", S.loaded ? "Aucun trade sur le compte réel" : "");
+  else if (st.ddNow == null) setV("ss-dd", "—", "", "Capital du compte réel à renseigner");
   else {
     var dd = st.ddNow, s = ddState(dd), nxt = PALIERS.find(function (p) { return dd < p.p; }), gap = nxt ? nxt.p - dd : 0;
     setV("ss-dd", dd > 0 ? "−" + pct(dd) : pct(0), { ok: "", caution: "tx-warn", stop: "tx-neg" }[s.k], nxt ? "palier −" + Math.round(nxt.p * 100) + " % à " + pct(gap).replace(" %", "") + " point" + (gap >= .02 ? "s" : "") : "dernier palier dépassé");
@@ -1017,8 +1043,8 @@ var timers = {};
 function reload(table) {
   clearTimeout(timers[table]);
   timers[table] = setTimeout(function () {
-    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; if (S.tab === "journal") renderJournal(); renderSession(); }).catch(loadErr);
-    if (table === "reglages") S.sb.from("reglages").select("data").eq("id", 1).maybeSingle().then(function (res) { var d = res.data && res.data.data || {}; S.set = Object.assign(JSON.parse(JSON.stringify(DEF)), d); S.selSig = ""; setTab(S.tab); });
+    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; renameLegacy(); S.selSig = ""; if (S.tab === "journal") renderJournal(); renderSession(); }).catch(loadErr);
+    if (table === "reglages") S.sb.from("reglages").select("data").eq("id", 1).maybeSingle().then(function (res) { var d = res.data && res.data.data || {}; S.set = Object.assign(JSON.parse(JSON.stringify(DEF)), d); renameLegacy(); S.sample = makeSample(); S.selSig = ""; setTab(S.tab); });
     if (table === "prop_comptes") fetchAll("prop_comptes", "created_at").then(function (rows) { S.props = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
     if (table === "payouts") fetchAll("payouts", "date").then(function (rows) { S.payouts = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
   }, 250);

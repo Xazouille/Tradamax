@@ -703,7 +703,7 @@ code{font-family:var(--f-mono);font-size:.92em}
       </header>
 
       <div class="pg-head" id="page-head">
-        <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de séance</h1></div>
+        <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de trading</h1></div>
         <div class="pg-actions" data-for="journal">
           <button class="tx-btn" id="btn-import" type="button" aria-label="Importer un CSV" title="Importer un CSV"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg><span class="pg-hide-sm">Importer un CSV</span></button>
           <button class="tx-btn" id="btn-export" type="button" aria-label="Exporter" title="Exporter"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg><span class="pg-hide-sm">Exporter</span></button>
@@ -716,9 +716,9 @@ code{font-family:var(--f-mono);font-size:.92em}
       </div>
 
       <section class="tx-session" id="session" aria-label="Bandeau de séance">
-        <div><div class="tx-label">Drawdown SAS</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
-        <div><div class="tx-label">Résultat du jour SAS</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
-        <div><div class="tx-label">Prochaine fenêtre</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
+        <div><div class="tx-label">Drawdown réel</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
+        <div><div class="tx-label">Résultat du jour réel</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
+        <div><div class="tx-label">Prochaine session</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
         <div><div class="tx-label">Annonce à risque</div><div class="v" id="ss-news">—</div><div class="h" id="ss-news-h"></div></div>
       </section>
 
@@ -766,13 +766,13 @@ code{font-family:var(--f-mono);font-size:.92em}
     <section class="tx-stats" id="kpis" aria-label="Indicateurs clés"></section>
 
     <section class="pg-section" id="others-sec" aria-labelledby="others-h">
-      <div class="pg-section-head"><h2 class="tx-title" id="others-h">Prop firms et comptes démo</h2><span class="tx-sub">Capital et résultat de chaque compte, séparés du compte de la SAS</span></div>
+      <div class="pg-section-head"><h2 class="tx-title" id="others-h">Prop firms et comptes démo</h2><span class="tx-sub">Capital et résultat de chaque compte, séparés du compte réel</span></div>
       <div class="pg-accounts" id="others"></div>
     </section>
 
     <div class="pg-grid pg-3">
       <div class="tx-panel"><h2 class="tx-title">Par marché</h2><div class="tx-sub pg-panel-sub">Résultat et taux de réussite</div><div class="pg-bars" id="by-market"></div></div>
-      <div class="tx-panel"><h2 class="tx-title">Par fenêtre Silver Bullet</h2><div class="tx-sub pg-panel-sub">Heures de New York · équivalent Paris</div><div class="pg-bars" id="by-window"></div></div>
+      <div class="tx-panel"><h2 class="tx-title">Par session</h2><div class="tx-sub pg-panel-sub">Heures de Paris</div><div class="pg-bars" id="by-window"></div></div>
       <div class="tx-panel"><h2 class="tx-title">Distribution des R</h2><div class="tx-sub pg-panel-sub">Résultat de chaque trade en multiple du risque</div><div class="tx-chart" id="r-hist"></div></div>
     </div>
 
@@ -814,7 +814,7 @@ code{font-family:var(--f-mono);font-size:.92em}
       </div>
       <div class="tx-table-wrap">
         <table class="tx-table is-click pg-log">
-          <thead><tr><th>Date</th><th>Heure</th><th>Marché</th><th>Compte</th><th>Sens</th><th>Fenêtre</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th><th></th></tr></thead>
+          <thead><tr><th>Date</th><th>Heure</th><th>Marché</th><th>Compte</th><th>Sens</th><th>Session</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th><th></th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
@@ -896,14 +896,14 @@ code{font-family:var(--f-mono);font-size:.92em}
         </nav>
         <div class="sg-app-main">
           <div class="sg-app-head">
-            <div><span class="tx-eyebrow">Mardi 10 novembre 2026</span><div class="tx-display" style="font-size:clamp(28px,20px + 1.6vw,38px)">Journal de séance</div></div>
+            <div><span class="tx-eyebrow">Mardi 10 novembre 2026</span><div class="tx-display" style="font-size:clamp(28px,20px + 1.6vw,38px)">Journal de trading</div></div>
             <div class="sg-row"><button class="tx-btn" type="button">Exporter</button><button class="tx-btn is-primary" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau trade</button></div>
           </div>
           <div class="tx-state is-ok"><span class="tx-state-name"><svg class="tx-ico" aria-hidden="true"><use href="#i-ok"/></svg>Autorisé</span><span class="tx-state-why">Aucune limite atteinte. 2 trades restants aujourd'hui.</span></div>
           <div class="tx-session">
             <div><div class="tx-label">Drawdown</div><div class="v">−3,2 %</div><div class="h">palier −10 % à 6,8 points</div></div>
             <div><div class="tx-label">Résultat du jour</div><div class="v tx-pos">+150 €</div><div class="h">1 trade · +1,00 R</div></div>
-            <div><div class="tx-label">Prochaine fenêtre</div><div class="v">16h00</div><div class="h">NY AM · dans 42 min</div></div>
+            <div><div class="tx-label">Prochaine session</div><div class="v">16h00</div><div class="h">NY AM · dans 42 min</div></div>
             <div><div class="tx-label">Annonce à risque</div><div class="v tx-warn">14h30</div><div class="h">CPI États-Unis</div></div>
           </div>
           <div class="sg-app-grid">
@@ -1040,7 +1040,7 @@ code{font-family:var(--f-mono);font-size:.92em}
       <div class="tx-session">
         <div><div class="tx-label">Drawdown</div><div class="v">−3,2 %</div><div class="h">palier −10 % à 6,8 points</div></div>
         <div><div class="tx-label">Résultat du jour</div><div class="v tx-pos">+150 €</div><div class="h">1 trade · +1,00 R</div></div>
-        <div><div class="tx-label">Prochaine fenêtre</div><div class="v">16h00</div><div class="h">NY AM · dans 42 min</div></div>
+        <div><div class="tx-label">Prochaine session</div><div class="v">16h00</div><div class="h">NY AM · dans 42 min</div></div>
         <div><div class="tx-label">Annonce à risque</div><div class="v tx-warn">14h30</div><div class="h">CPI États-Unis</div></div>
       </div>
     </div>
@@ -1074,7 +1074,7 @@ code{font-family:var(--f-mono);font-size:.92em}
 
     <div class="sg-sec"><h3>Tableau <span class="tx-sub">(chaque ligne devient une fiche sous 640 px)</span></h3>
       <div class="tx-panel"><div class="tx-table-wrap"><table class="tx-table is-stack">
-        <thead><tr><th>Date</th><th>Marché</th><th>Sens</th><th>Fenêtre</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th></tr></thead>
+        <thead><tr><th>Date</th><th>Marché</th><th>Sens</th><th>Session</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th></tr></thead>
         <tbody>
           <tr><td class="tx-num" data-l="Date">10/11/26 16:12</td><td data-l="Marché"><b>XAUUSD</b></td><td data-l="Sens"><span class="tx-badge is-plain is-pos">Long</span></td><td data-l="Fenêtre">NY AM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-pos" data-l="R">+2,00 R</td><td class="r tx-num tx-pos" data-l="Résultat">+300 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
           <tr><td class="tx-num" data-l="Date">09/11/26 09:21</td><td data-l="Marché"><b>DAX</b></td><td data-l="Sens"><span class="tx-badge is-plain is-neg">Short</span></td><td data-l="Fenêtre">Londres</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,00 R</td><td class="r tx-num tx-neg" data-l="Résultat">−150 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
@@ -1231,7 +1231,7 @@ code{font-family:var(--f-mono);font-size:.92em}
       <div class="tx-field"><label for="t-time">Heure (Paris)</label><input class="tx-input" id="t-time" type="time"></div>
       <div class="tx-field"><label for="t-market">Marché</label><select class="tx-input" id="t-market"></select></div>
       <div class="tx-field c2"><label for="t-account">Compte</label><select class="tx-input" id="t-account"></select></div>
-      <div class="tx-field c2"><label for="t-window">Fenêtre</label><select class="tx-input" id="t-window"></select></div>
+      <div class="tx-field c2"><label for="t-window">Session</label><select class="tx-input" id="t-window" aria-describedby="t-window-h"></select><span class="tx-help" id="t-window-h"></span></div>
       <div class="tx-group tx-label">Exécution</div>
       <div class="tx-field c2"><span class="pg-lbl" id="t-side-l">Sens</span>
         <div class="pg-sens" role="radiogroup" aria-labelledby="t-side-l">
@@ -1340,7 +1340,7 @@ code{font-family:var(--f-mono);font-size:.92em}
     <div class="tx-dialog-body is-flow">
       <div class="pg-set"><div class="tx-group tx-label">Marchés</div><div class="tx-chips" id="set-markets"></div><div class="pg-addrow"><input class="tx-input" id="set-market-in" maxlength="40" placeholder="Ex. US30, EURUSD" aria-label="Nouveau marché"><button class="tx-btn" id="set-market-add" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter</button></div></div>
       <div class="pg-set"><div class="tx-group tx-label">Comptes et capital</div>
-        <p class="tx-sub" style="margin:0">Le compte réel de la SAS sert au drawdown de la charte et au bandeau de séance. Les prop firms et les démos ont leur propre capital, suivi à part.</p>
+        <p class="tx-sub" style="margin:0">Le compte réel sert au drawdown de la charte et au bandeau de séance. Les prop firms et les démos ont leur propre capital, suivi à part.</p>
         <div class="pg-accrows" id="set-accounts"></div>
         <div class="pg-accrow is-new">
           <input class="tx-input" id="set-account-in" maxlength="40" placeholder="Nouveau compte (ex. FTMO 50K n°2)" aria-label="Nom du nouveau compte">
