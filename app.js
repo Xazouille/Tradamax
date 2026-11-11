@@ -95,7 +95,15 @@ var WINDOWS = [
   { id: "London", label: "Londres", ny: "3h–4h NY", paris: "9h–10h Paris", s: 180, e: 240 },
   { id: "NYAM", label: "NY AM", ny: "10h–11h NY", paris: "16h–17h Paris", s: 600, e: 660 },
   { id: "NYPM", label: "NY PM", ny: "14h–15h NY", paris: "20h–21h Paris", s: 840, e: 900 },
-  { id: "Out", label: "Hors session", ny: "", paris: "", s: -1, e: -1 }
+  { id: "Out", label: "Hors fenêtre", ny: "", paris: "", s: -1, e: -1 }
+];
+/* Sessions complètes (heure de New York, sans chevauchement) : chacune contient une fenêtre Silver Bullet.
+   Elles classent les trades et les statistiques ; les fenêtres servent au bandeau de séance et aux annonces. */
+var SESSIONS = [
+  { id: "London", label: "Londres", s: 120, e: 480 },
+  { id: "NYAM", label: "New York matin", s: 480, e: 720 },
+  { id: "NYPM", label: "New York après-midi", s: 720, e: 960 },
+  { id: "Out", label: "Hors session", s: -1, e: -1 }
 ];
 var EMOTIONS = ["Calme", "Confiant", "Hésitant", "Impatient", "Revanche", "Fatigué"];
 var PALIERS = [{ p: .10, l: "Vigilance" }, { p: .20, l: "Révision + pause" }, { p: .30, l: "Pause renforcée" }];
@@ -143,7 +151,7 @@ function cls(v) { return v > 0 ? "tx-pos" : v < 0 ? "tx-neg" : ""; }
 function frDate(iso) { if (!iso) return ""; var p = iso.split("-"); return p[2] + "/" + p[1] + "/" + p[0].slice(2); }
 function todayISO() { return isoParis(new Date()); }
 function num(v) { if (v === "" || v == null) return null; var n = Number(v); return isFinite(n) ? n : null; }
-function winLabel(id) { var w = WINDOWS.find(function (x) { return x.id === id; }); return w ? w.label : (id || "—"); }
+function winLabel(id) { var w = SESSIONS.find(function (x) { return x.id === id; }); return w ? w.label : (id || "—"); }
 function toast(msg) { var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(function () { t.hidden = true; }, 2600); }
 function show(id, on) { $(id).hidden = !on; }
 function rOf(t) { return t.risk > 0 ? t.pnl / t.risk : null; }
@@ -234,7 +242,7 @@ function sessionOf(dateIso, time) {
   var t = String(time || "").match(/^(\d{1,2}):(\d{2})/); if (!dateIso || !t) return null;
   var p = dateIso.split("-").map(Number), off = parisMinutes(new Date(Date.UTC(p[0], p[1] - 1, p[2], 12, 0))) - 720;
   var m = nyMinutes(new Date(Date.UTC(p[0], p[1] - 1, p[2], Number(t[1]), Number(t[2])) - off * 60000));
-  var w = WINDOWS.find(function (x) { return x.s >= 0 && m >= x.s && m < x.e; }); return w ? w.id : "Out";
+  var w = SESSIONS.find(function (x) { return x.s >= 0 && m >= x.s && m < x.e; }); return w ? w.id : "Out";
 }
 function sasNames() { return accList().filter(function (a) { return accInfo(a).type === "sas"; }); }
 function viewCap() { return S.f.account === "all" || S.f.account == null ? null : accCap(S.f.account); }
@@ -271,8 +279,8 @@ function renderJournal() {
   $("banner").hidden = !S.useSample;
   renderEquity(st); renderDD(st); renderOthers(); renderKPIs(st);
   renderGroups($("by-market"), ts, function (t) { return t.market; }, S.set.markets, function () { return null; });
-  renderGroups($("by-window"), ts, function (t) { return t.window || "Out"; }, WINDOWS.map(function (w) { return w.id; }),
-    function (k) { var w = WINDOWS.find(function (x) { return x.id === k; }); return w && w.s >= 0 ? sessionHours(w) : null; }, winLabel);
+  renderGroups($("by-window"), ts, function (t) { return t.window || "Out"; }, SESSIONS.map(function (w) { return w.id; }),
+    function (k) { var w = SESSIONS.find(function (x) { return x.id === k; }); return w && w.s >= 0 ? sessionHours(w) : null; }, winLabel);
   renderHist(st.rs); renderPlan(ts); renderEmotions(ts); renderCal(); renderRP(ts); renderTable(ts);
 }
 function niceTicks(mn, mx, n) { var span = mx - mn, step = Math.pow(10, Math.floor(Math.log10(span / n))), e = span / n / step; step *= e >= 5 ? 5 : e >= 2 ? 2 : 1; var out = []; for (var v = Math.ceil(mn / step) * step; v <= mx + 1e-9; v += step) out.push(Math.abs(v) < 1e-9 ? 0 : v); return out; }
@@ -547,7 +555,7 @@ function closeTrade() { show("ov-trade", false); S.editing = null; }
 function updR() { var r = num($("t-risk").value), p = num($("t-pnl").value), pl = num($("t-rplan").value); $("t-r").textContent = r > 0 && p != null ? "= " + rfmt(p / r) + (pl > 0 ? " sur " + String(pl).replace(".", ",") + " R prévus" : "") : ""; $("t-r").className = "tx-num pg-rprev " + cls(p || 0); }
 ["t-risk", "t-pnl", "t-rplan"].forEach(function (id) { $(id).addEventListener("input", updR); });
 /* la session suit l'heure saisie, sauf si elle a été choisie à la main */
-function fillWindows() { var v = $("t-window").value; fillSelect($("t-window"), WINDOWS.map(function (w) { var h = sessionHours(w, $("t-date").value || todayISO()); return { v: w.id, l: w.label + (h ? " · " + h : "") }; })); if (v) $("t-window").value = v; }
+function fillWindows() { var v = $("t-window").value; fillSelect($("t-window"), SESSIONS.map(function (w) { var h = sessionHours(w, $("t-date").value || todayISO()); return { v: w.id, l: w.label + (h ? " · " + h : "") }; })); if (v) $("t-window").value = v; }
 function autoWindow() { fillWindows(); var s = sessionOf($("t-date").value, $("t-time").value); if (s && S.winAuto) $("t-window").value = s; $("t-window-h").textContent = s ? (S.winAuto ? "Calculée avec l'heure du trade." : "Choisie à la main.") : "Indiquez l'heure : la session se calcule seule."; }
 ["t-time", "t-date"].forEach(function (id) { $(id).addEventListener("input", autoWindow); $(id).addEventListener("change", autoWindow); });
 $("t-window").addEventListener("change", function () { S.winAuto = false; autoWindow(); });
@@ -619,7 +627,7 @@ function parseCSV(text) {
     var c = splitLine(l, sep), g = function (k) { return idx[k] != null ? c[idx[k]] : ""; };
     var d = pdate(g("date")), p = pnum(g("pnl")); if (!d || p == null) { skipped++; return; }
     var tm = String(g("time") || "").trim().match(/^(\d{1,2})[:h](\d{2})/), wv = String(g("window") || "");
-    var wid = WINDOWS.find(function (w) { return norm(w.label) === norm(wv); });
+    var wid = SESSIONS.concat(WINDOWS).find(function (w) { return norm(w.label) === norm(wv); });
     rows.push({ date: d, time: tm ? tm[1].padStart(2, "0") + ":" + tm[2] : "", market: pmarket(g("market")) || S.set.markets[0], account: pacc(g("account")), side: pside(g("side")),
       window: wid ? wid.id : pwin(wv), entry: pnum(g("entry")), stop: pnum(g("stop")), exit: pnum(g("exit")), size: pnum(g("size")), risk: pnum(g("risk")),
       rPlan: pnum(g("rPlan")) > 0 ? pnum(g("rPlan")) : S.set.rPlanDefault, pnl: p, plan: pplan(g("plan")), emotion: String(g("emotion") || "").trim() || null, note: String(g("note") || "").trim(), shot: null });
@@ -863,8 +871,8 @@ var MARGE_ANNONCE = 15; /* minutes sans trade autour d'une annonce majeure (char
 function winFlag(d, impact) {
   if (impact !== "High" && impact !== "Medium") return null; var m = nyMinutes(d);
   for (var i = 0; i < 3; i++) { var w = WINDOWS[i];
-    if (m >= w.s - MARGE_ANNONCE && m <= w.e + MARGE_ANNONCE) return { strong: true, text: "Session " + w.label + " : pas de trade ±" + MARGE_ANNONCE + " min" };
-    if (m >= w.s - 90 && m < w.s - MARGE_ANNONCE) return { strong: false, text: "Avant la session " + w.label }; }
+    if (m >= w.s - MARGE_ANNONCE && m <= w.e + MARGE_ANNONCE) return { strong: true, text: "Fenêtre " + w.label + " : pas de trade ±" + MARGE_ANNONCE + " min" };
+    if (m >= w.s - 90 && m < w.s - MARGE_ANNONCE) return { strong: false, text: "Avant la fenêtre " + w.label }; }
   return null;
 }
 var IMP_FR = { High: "Fort", Medium: "Moyen", Low: "Faible", Holiday: "Férié" };
@@ -882,7 +890,7 @@ function parisMinutes(d) { var h = 0, m = 0; fmtParisParts.formatToParts(d).forE
 /* instant où il est nyMin (minutes) à New York, le jour dayKey : le décalage est lu par Intl pour ce jour-là */
 function nyWindowDate(dayKey, nyMin) { var p = dayKey.split("-").map(Number), off = nyMinutes(new Date(Date.UTC(p[0], p[1] - 1, p[2], 12, 0))) - 720; return new Date(Date.UTC(p[0], p[1] - 1, p[2], 0, 0) + (nyMin - off) * 60000); }
 function hm(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
-/* frise de la journée en heure de Paris : sessions et annonces fortes ou moyennes */
+/* frise de la journée en heure de Paris : fenêtres Silver Bullet et annonces fortes ou moyennes */
 function ecoLine(dayKey, evs) {
   var wrap = el("div", { class: "tx-chart pg-line" });
   var W = Math.max(280, ($("eco-recap").clientWidth || 760) - 34), H = 82, top = 22, base = 54, pl = 12, pr = 12;
@@ -891,7 +899,7 @@ function ecoLine(dayKey, evs) {
   var lo = Math.min.apply(null, mins.concat(wins.map(function (v) { return v.a; }), [420])), hi = Math.max.apply(null, mins.concat(wins.map(function (v) { return v.b; }), [1320]));
   var h0 = Math.max(0, Math.floor(lo / 60)), h1 = Math.min(24, Math.floor(hi / 60) + 1), span = (h1 - h0) * 60;
   var x = function (m) { return pl + (W - pl - pr) * (m - h0 * 60) / span; }, step = (W - pl - pr) / (h1 - h0) < 13 ? 4 : 2;
-  var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": "Frise de la journée en heure de Paris : " + wins.map(function (v) { return "session " + v.w.label + " de " + hm(v.a) + " à " + hm(v.b); }).join(", ") + (evs.length ? " ; " + evs.length + " annonce" + (evs.length > 1 ? "s" : "") + " à fort ou moyen impact" : " ; aucune annonce à fort ou moyen impact") });
+  var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": "Frise de la journée en heure de Paris : " + wins.map(function (v) { return "fenêtre " + v.w.label + " de " + hm(v.a) + " à " + hm(v.b); }).join(", ") + (evs.length ? " ; " + evs.length + " annonce" + (evs.length > 1 ? "s" : "") + " à fort ou moyen impact" : " ; aucune annonce à fort ou moyen impact") });
   wins.forEach(function (v) {
     svg.appendChild(svgEl("rect", { x: x(v.a), y: top, width: Math.max(3, x(v.b) - x(v.a)), height: base - top, rx: 4, class: "band" }));
     var t = svgEl("text", { x: (x(v.a) + x(v.b)) / 2, y: top - 8, "text-anchor": "middle", class: "band-l" }); t.textContent = v.w.label; svg.appendChild(t);
@@ -913,7 +921,7 @@ function ecoLine(dayKey, evs) {
   wrap.appendChild(el("div", { class: "tx-legend" }, [
     el("span", { style: "color:var(--c-neg)" }, [el("i", { class: "is-dot" }), el("span", { class: "tx-dim", text: "Fort impact" })]),
     el("span", { style: "color:var(--c-warn)" }, [el("i", { class: "is-dot" }), el("span", { class: "tx-dim", text: "Impact moyen" })]),
-    el("span", {}, [el("i", { class: "is-box" }), el("span", { class: "tx-dim", text: "Session" })]),
+    el("span", {}, [el("i", { class: "is-box" }), el("span", { class: "tx-dim", text: "Fenêtre Silver Bullet" })]),
     isToday ? el("span", { style: "color:var(--c-text)" }, [el("i", { class: "is-dash" }), el("span", { class: "tx-dim", text: "Maintenant" })]) : null]));
   return wrap;
 }
