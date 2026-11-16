@@ -119,7 +119,7 @@ Préfixe `tx-`. Les variantes s'écrivent `is-…`.
 | Puces | `tx-chips` > `tx-chip` (+ `small`, bouton de retrait) | Liste modifiable (marchés, comptes du journal). Le bouton de retrait porte un `aria-label`. |
 | Bloc de code, choix de fichier | `tx-code`, `tx-file` | Format attendu d'un import ; champ d'envoi de fichier. |
 | Info-bulle qui suit le pointeur | `tx-tip is-float` (+ `on`) | Graphique : placée par le code au-dessus du point survolé, jamais hors de l'écran. |
-| États | `tx-empty` (+ `is-compact` dans un panneau ou une ligne de tableau), `tx-skel`, `tx-alert is-stop`, `tx-help is-error` / `is-ok` | Vide : une icône, puis dire quoi faire. Chargement : traits qui scintillent. Erreur : dire quoi vérifier. |
+| États | `tx-empty` (+ `is-compact` dans un panneau ou une ligne de tableau), `tx-skel`, `tx-alert is-stop`, `tx-help is-error` / `is-warn` / `is-ok` | Vide : une icône, puis dire quoi faire. Chargement : traits qui scintillent. Erreur : dire quoi vérifier. `is-warn` : un contrôle à faire, sans bloquer. |
 | Rapport imprimable | `tx-report` | Phase 4. Toujours noir sur blanc, format A4. L'impression se lance avec `data-action="print-report"`. |
 
 Icônes : uniquement celles de la planche en tête de `index.html` (`<svg class="tx-ico"><use href="#i-…"/></svg>`). Pour en ajouter une : trait de 1,75, grille de 24, sans remplissage. Une icône d'état ou d'alerte se pose dans un petit carré teinté (automatique dans `tx-state`, `tx-alert`, `tx-empty`). Aucun emoji.
@@ -153,12 +153,13 @@ Icônes : uniquement celles de la planche en tête de `index.html` (`<svg class=
 
 Les classes `pg-` décrivent la mise en page propre à Tradamax (elles ne sont pas des composants réutilisables). Elles sont en fin du `<style>` de `index.html`.
 
-- **Rail** (`pg-rail`, à partir de 900 px) : logo, Journal, Prop firms, Annonces, et Réglages en bas. **Barre du bas** (`pg-tabbar`, sous 900 px) : les mêmes entrées. Un bouton d'onglet porte `data-tab` ; Réglages ouvre une fenêtre de saisie (`#btn-settings` ou `data-open="settings"`).
+- **Rail** (`pg-rail`, à partir de 900 px) : logo, Journal, Prop firms, Annonces, Backtest, et Réglages en bas. **Barre du bas** (`pg-tabbar`, sous 900 px) : les mêmes entrées. Un bouton d'onglet porte `data-tab` ; Réglages ouvre une fenêtre de saisie (`#btn-settings` ou `data-open="settings"`).
 - **Barre du haut** (`pg-top`) : heures de Paris et de New York sur ordinateur, logo sur téléphone, utilisateur, thème, déconnexion.
 - **En-tête de page** (`pg-head`, commun à tous les onglets) : la date en sur-titre, le nom de la page (`#page-title`, mis à jour par `setTab`), et les actions de l'onglet (`pg-actions` avec `data-for="journal"`, `data-for="propfirms"`…).
 - **Bandeau de séance** (`#session`, sous l'en-tête, sur toutes les pages) : drawdown et résultat du jour calculés sur les trades enregistrés (jamais sur les exemples), prochaine fenêtre Silver Bullet calculée avec `Intl`, prochaine annonce forte USD ou EUR du jour. Rafraîchi toutes les 30 secondes.
 - **Journal des trades** (`pg-log`) : tableau sur ordinateur, fiche compacte sur trois lignes sous 640 px.
 - **Annonces** : compte rendu avec une frise de la journée en heure de Paris (fenêtres Silver Bullet en creux, annonces en points de couleur, trait « maintenant »), puis la liste détaillée.
+- **Backtest** : chiffres clés des données historiques, puis la couverture par marché (`pg-cov` : une ligne par année, un carré `pg-cov-cell` par mois, `is-full` importé, `is-part` incomplet, sans classe absent ; la grille porte `role="img"` et un `aria-label` qui liste les mois incomplets et manquants), puis la marche à suivre dans MT5 (`pg-steps`). L'import montre une barre d'avancement (`pg-progress`, `role="progressbar"`).
 
 ## Ajouter un écran : la marche à suivre
 

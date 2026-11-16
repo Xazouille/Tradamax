@@ -57,15 +57,33 @@ function demoClient() {
     return b;
   }
   var chan = { on: function () { return chan; }, subscribe: function () { return chan; } };
+  /* stockage en mémoire, par espace (captures, historique) ; l'historique démarre avec un index fictif */
+  var files = { "historique/_index.json": new Blob([JSON.stringify(demoHistoIndex())], { type: "application/json" }) };
   return {
     from: query,
-    storage: { from: function () { return {
-      upload: function (path, file) { shots[path] = URL.createObjectURL(file); return ok(null); },
+    storage: { from: function (bucket) { return {
+      upload: function (path, file) { files[bucket + "/" + path] = file; if (bucket === "captures") shots[path] = URL.createObjectURL(file); return ok(null); },
+      download: function (path) { var f = files[bucket + "/" + path]; return Promise.resolve(f ? { data: f, error: null } : { data: null, error: { message: "Object not found" } }); },
       createSignedUrls: function (paths) { return ok(paths.map(function (p) { return { path: p, signedUrl: shots[p] || null }; })); },
       remove: function () { return ok(null); } }; } },
     channel: function () { return chan; }, removeChannel: function () {},
     auth: { signOut: function () { toast("Mode démonstration : aucun compte à déconnecter."); return ok(null); } }
   };
+}
+function demoHistoIndex() {
+  /* couverture fictive : XAUUSD de mars 2023 à octobre 2025 (juillet 2024 absent, octobre 2025 incomplet), DAX depuis 2024 */
+  function months(from, to, skip, part) {
+    var out = {}, y = Number(from.slice(0, 4)), m = Number(from.slice(5)), seed = 3;
+    while (y * 100 + m <= Number(to.replace("-", ""))) {
+      var k = y + "-" + String(m).padStart(2, "0"); seed = (seed * 16807) % 2147483647;
+      if (k !== skip) out[k] = { n: k === part ? 9420 : 29800 + seed % 2400, gaps: seed % 7 === 0 ? 1 : 0 };
+      if (++m > 12) { m = 1; y++; }
+    }
+    return out;
+  }
+  return { v: 1, markets: {
+    XAUUSD: { slug: "XAUUSD", tz: "ny7", updated: "2026-11-16T09:12:00Z", months: months("2023-03", "2025-10", "2024-07", "2025-10") },
+    DAX: { slug: "DAX", tz: "ny7", updated: "2026-11-16T09:20:00Z", months: months("2024-01", "2025-10", null, null) } } };
 }
 function demoCal() {
   var d = new Date(), y = d.getUTCFullYear(), m = d.getUTCMonth(), j = d.getUTCDate();
@@ -126,7 +144,8 @@ var S = {
   f: { period: "all", account: null, market: "all" }, q: "", shown: 30, selSig: "",
   calY: null, calM: null, editing: null, shotFile: null, shotPath: null, signed: {},
   props: [], payouts: [], editingProp: null, importRows: null, tmpM: null, tmpA: null,
-  cal: null, calUpdated: null, ecoDay: "today", tab: "journal"
+  cal: null, calUpdated: null, ecoDay: "today", tab: "journal",
+  hiIdx: null, hiErr: null, hiRaw: null, hiA: null, hiBusy: false
 };
 
 /* ---------------- utilitaires ---------------- */
@@ -968,9 +987,259 @@ function loadCal() {
   fetch("data/calendar-updated.txt", { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { S.calUpdated = t.trim() || null; renderEco(); }).catch(function () {});
 }
 
+/* ---------------- backtest : données historiques (bougies M1 exportées de MT5) ---------------- */
+/* Espace privé « historique » : un fichier compressé par marché et par mois de New York (lignes t;o;h;l;c;s,
+   t = minutes UTC depuis 1970), plus un index _index.json (mois importés, nombre de bougies). Heures via Intl. */
+var HI_BUCKET = "historique", HI_INDEX = "_index.json";
+var HI_ZONES = { ny7: { tz: "America/New_York", shift: 420 }, eet: { tz: "Europe/Athens", shift: 0 }, utc: { tz: "UTC", shift: 0 } };
+var HI_GAP = 240, HI_WEEKEND = 2160; /* trou anormal : plus de 4 h en semaine ; au-delà de 36 h, c'est un week-end */
+var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+var tzFmts = {}, tzCache = {};
+function tzOffset(tz, ms) { /* écart heure locale − UTC, en minutes */
+  if (tz === "UTC") return 0;
+  var key = tz + ":" + Math.floor(ms / 3600000); if (tzCache[key] != null) return tzCache[key];
+  var f = tzFmts[tz] || (tzFmts[tz] = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" }));
+  var p = {}; f.formatToParts(new Date(ms)).forEach(function (x) { p[x.type] = Number(x.value); });
+  return (tzCache[key] = Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute) - Math.floor(ms / 60000) * 60000) / 60000));
+}
+function wallToUtc(wallMs, tz) { var g = wallMs - tzOffset(tz, wallMs) * 60000; return wallMs - tzOffset(tz, g) * 60000; }
+function nyWall(tMin) { return tMin + tzOffset("America/New_York", tMin * 60000); }
+function monthKey(wMin) { var d = new Date(wMin * 60000); return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0"); }
+function mLabel(k) { return k.slice(5) + "/" + k.slice(0, 4); }
+function mLong(k) { return MOIS[Number(k.slice(5)) - 1] + " " + k.slice(0, 4); }
+function hiSlug(m) { return String(m).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "marche"; }
+var fmtNYFull = new Intl.DateTimeFormat("fr-FR", { timeZone: "America/New_York", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+function hiDate(tMin) { return fmtNYFull.format(new Date(tMin * 60000)); }
+
+/* lecture du fichier : MT5 écrit en UTF-8 ou en UTF-16 selon les versions */
+function hiReadText(file) {
+  return file.arrayBuffer().then(function (buf) {
+    var u = new Uint8Array(buf, 0, Math.min(4, buf.byteLength)), enc = "utf-8";
+    if (u[0] === 0xFF && u[1] === 0xFE) enc = "utf-16le"; else if (u[0] === 0xFE && u[1] === 0xFF) enc = "utf-16be"; else if (u.length === 4 && u[1] === 0 && u[3] === 0) enc = "utf-16le";
+    return new TextDecoder(enc).decode(buf);
+  });
+}
+/* colonnes MT5 : <DATE> <TIME> <OPEN> <HIGH> <LOW> <CLOSE> <TICKVOL> <VOL> <SPREAD> (tabulation, virgule ou point-virgule) */
+function hiParse(text) {
+  var raw = { w: [], o: [], h: [], l: [], c: [], s: [], skipped: 0, header: false }, pos = 0, len = text.length, ix = null, sep = "\t", dec = false;
+  var reD = /(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/, reT = /(\d{1,2}):(\d{2})/;
+  function nv(v) { if (v == null) return NaN; v = v.trim(); return Number(dec ? v.replace(",", ".") : v); }
+  while (pos < len) {
+    var nl = text.indexOf("\n", pos); if (nl < 0) nl = len;
+    var line = text.slice(pos, nl); pos = nl + 1;
+    if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
+    if (!line.trim()) continue;
+    if (!ix) {
+      sep = line.indexOf("\t") >= 0 ? "\t" : (line.split(";").length > line.split(",").length ? ";" : ","); dec = sep !== ",";
+      var cells = line.split(sep).map(function (x) { return x.replace(/[<>"\s]/g, "").toLowerCase(); });
+      if (!/\d{4}[.\-\/]\d/.test(line)) { /* en-tête */
+        var find = function (names) { for (var i = 0; i < cells.length; i++) if (names.indexOf(cells[i]) >= 0) return i; return -1; };
+        ix = { d: find(["date", "datetime", "gmttime", "localtime"]), t: find(["time"]), o: find(["open"]), h: find(["high"]), l: find(["low"]), c: find(["close"]), s: find(["spread"]) };
+        if (ix.d < 0 && ix.t >= 0) { ix.d = ix.t; ix.t = -1; }
+        raw.header = true; continue;
+      }
+      var f0 = line.split(sep);
+      ix = reD.test(f0[0]) && reT.test(f0[0]) ? { d: 0, t: -1, o: 1, h: 2, l: 3, c: 4, s: -1 } : { d: 0, t: 1, o: 2, h: 3, l: 4, c: 5, s: f0.length >= 9 ? 8 : -1 };
+    }
+    if (ix.d < 0 || ix.o < 0 || ix.h < 0 || ix.l < 0 || ix.c < 0) { raw.skipped++; continue; }
+    var f = line.split(sep), md = reD.exec(f[ix.d] || "");
+    if (!md) { raw.skipped++; continue; }
+    var H = md[4], M = md[5];
+    if (H == null) { var mt = reT.exec(ix.t >= 0 ? f[ix.t] || "" : ""); if (!mt) { raw.skipped++; continue; } H = mt[1]; M = mt[2]; }
+    var o = nv(f[ix.o]), h = nv(f[ix.h]), l = nv(f[ix.l]), c = nv(f[ix.c]);
+    if (!(o > 0 && h > 0 && l > 0 && c > 0) || h < l) { raw.skipped++; continue; }
+    raw.w.push(Date.UTC(Number(md[1]), Number(md[2]) - 1, Number(md[3]), Number(H), Number(M)) / 60000);
+    raw.o.push(o); raw.h.push(h); raw.l.push(l); raw.c.push(c); raw.s.push(ix.s >= 0 ? nv(f[ix.s]) : NaN);
+  }
+  return raw;
+}
+/* conversion en UTC, tri, unité de temps, reprises après le week-end, trous et découpage par mois de New York */
+function hiAnalyze(raw, zoneKey) {
+  var z = HI_ZONES[zoneKey] || HI_ZONES.ny7, n = raw.w.length, t = new Array(n), sorted = true, i;
+  for (i = 0; i < n; i++) { t[i] = Math.round(wallToUtc((raw.w[i] - z.shift) * 60000, z.tz) / 60000); if (i && t[i] <= t[i - 1]) sorted = false; }
+  var idx = []; for (i = 0; i < n; i++) idx.push(i);
+  if (!sorted) idx.sort(function (a, b) { return t[a] - t[b] || a - b; });
+  var keep = []; idx.forEach(function (j) { if (keep.length && t[keep[keep.length - 1]] === t[j]) keep[keep.length - 1] = j; else keep.push(j); });
+  var a = { t: t, keep: keep, raw: raw, n: keep.length, tf: 1, months: {}, reopen: null, gaps: 0, dup: n - keep.length };
+  if (!keep.length) return a;
+  var ones = 0, diffs = {};
+  for (i = 1; i < keep.length; i++) { var d = t[keep[i]] - t[keep[i - 1]]; if (d === 1) ones++; else if (d < 60) diffs[d] = (diffs[d] || 0) + 1; }
+  if (keep.length > 20 && ones < (keep.length - 1) / 2) a.tf = Number(Object.keys(diffs).sort(function (x, y) { return diffs[y] - diffs[x]; })[0]) || 0;
+  var ro = {}, nRo = 0;
+  for (i = 0; i < keep.length; i++) {
+    var ti = t[keep[i]], w = nyWall(ti), k = monthKey(w), m = a.months[k] || (a.months[k] = { from: i, to: i, n: 0 });
+    m.to = i; m.n++;
+    if (i) { var g = ti - t[keep[i - 1]];
+      if (g >= HI_WEEKEND) { var key = new Date(w * 60000).getUTCDay() * 1440 + (w % 1440); ro[key] = (ro[key] || 0) + 1; nRo++; }
+      else if (g > HI_GAP) a.gaps++; }
+  }
+  if (nRo) { var best = Object.keys(ro).sort(function (x, y) { return ro[y] - ro[x]; })[0]; a.reopen = { wd: Math.floor(best / 1440), min: best % 1440, count: ro[best], total: nRo }; }
+  a.first = t[keep[0]]; a.last = t[keep[keep.length - 1]];
+  return a;
+}
+
+/* stockage Supabase */
+function hiGz(text) { return new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob().then(function (b) { return new Blob([b], { type: "application/gzip" }); }); }
+function hiGunzip(blob) { return new Response(blob.stream().pipeThrough(new DecompressionStream("gzip"))).text(); }
+function hiDownload(path) {
+  return S.sb.storage.from(HI_BUCKET).download(path).then(function (res) {
+    if (!res.error) return res.data;
+    var msg = String(res.error.message || res.error.error || "");
+    if (/bucket/i.test(msg)) throw res.error;
+    if (/not.?found|does not exist|404/i.test(msg + " " + (res.error.statusCode || res.error.status || ""))) return null;
+    throw res.error;
+  });
+}
+function hiUpload(path, blob, type) { return S.sb.storage.from(HI_BUCKET).upload(path, blob, { upsert: true, contentType: type, cacheControl: "0" }).then(function (res) { if (res.error) throw res.error; }); }
+function hiLoadIndex() { return hiDownload(HI_INDEX).then(function (b) { return b ? b.text().then(function (x) { var j = JSON.parse(x); j.markets = j.markets || {}; return j; }) : { v: 1, markets: {} }; }); }
+function hiSaveIndex(idx) { return hiUpload(HI_INDEX, new Blob([JSON.stringify(idx)], { type: "application/json" }), "application/json"); }
+function hiErrText(e) {
+  var msg = String(e && (e.message || e.error) || e || "");
+  if (/bucket/i.test(msg)) return "L'espace « historique » n'existe pas encore dans Supabase : collez la migration du 16/11/2026 (supabase/migrations) dans l'éditeur SQL.";
+  if (/row-level|security|unauthori|forbidden|403/i.test(msg)) return "Accès refusé : vérifiez que votre e-mail figure dans la table des membres.";
+  return "Erreur : " + (msg || "inconnue") + ".";
+}
+function hiRefresh() {
+  S.hiBusy = true;
+  return hiLoadIndex().then(function (idx) { S.hiIdx = idx; S.hiErr = null; }, function (e) { S.hiErr = hiErrText(e); })
+    .then(function () { S.hiBusy = false; if (S.tab === "backtest") renderBacktest(); });
+}
+/* un mois : fusion avec ce qui existe déjà (les nouvelles bougies remplacent les anciennes à la même minute) */
+function hiWriteMonth(entry, k, a) {
+  var path = entry.slug + "/" + k + ".csv.gz", m = a.months[k], r = a.raw;
+  var old = entry.months[k] ? hiDownload(path).then(function (b) { return b ? hiGunzip(b) : ""; }) : Promise.resolve("");
+  return old.then(function (txt) {
+    var map = new Map();
+    txt.split("\n").forEach(function (ln, i) { if (i && ln) map.set(Number(ln.slice(0, ln.indexOf(";"))), ln); });
+    for (var i = m.from; i <= m.to; i++) { var j = a.keep[i]; map.set(a.t[j], a.t[j] + ";" + r.o[j] + ";" + r.h[j] + ";" + r.l[j] + ";" + r.c[j] + ";" + (isFinite(r.s[j]) ? r.s[j] : "")); }
+    var ts = Array.from(map.keys()).sort(function (x, y) { return x - y; }), out = ["t;o;h;l;c;s"], gaps = 0;
+    ts.forEach(function (x, q) { out.push(map.get(x)); if (q) { var g = x - ts[q - 1]; if (g > HI_GAP && g < HI_WEEKEND) gaps++; } });
+    return hiGz(out.join("\n") + "\n").then(function (blob) { return hiUpload(path, blob, "application/gzip"); }).then(function () { return { n: ts.length, gaps: gaps }; });
+  });
+}
+
+/* onglet Backtest : chiffres clés et couverture */
+function renderBacktest() {
+  var k = $("bt-kpis"), box = $("bt-cov"); k.textContent = ""; box.textContent = "";
+  if (S.hiErr) {
+    kpi(k, "Données historiques", "—", "", "Inaccessibles");
+    box.appendChild(el("div", { class: "tx-empty" }, [icon("i-info"), el("b", { text: "Données historiques inaccessibles" }), el("span", { text: S.hiErr })])); return;
+  }
+  if (!S.hiIdx) { box.appendChild(el("div", { class: "sg-col", "aria-busy": "true", "aria-label": "Chargement" }, [el("div", { class: "tx-skel", style: "width:30%" }), el("div", { class: "tx-skel" }), el("div", { class: "tx-skel", style: "width:70%" })])); return; }
+  var idx = S.hiIdx.markets, names = S.set.markets.slice();
+  Object.keys(idx).forEach(function (m) { if (names.indexOf(m) < 0 && Object.keys(idx[m].months || {}).length) names.push(m); });
+  var tot = 0, nMk = 0, all = [], last = null;
+  names.forEach(function (m) { var ks = Object.keys((idx[m] || {}).months || {}); if (ks.length) nMk++; ks.forEach(function (x) { tot += idx[m].months[x].n || 0; all.push(x); }); if (idx[m] && idx[m].updated && (!last || idx[m].updated > last)) last = idx[m].updated; });
+  all.sort();
+  kpi(k, "Marchés couverts", nMk + " sur " + names.length, "", nMk ? names.filter(function (m) { return idx[m] && Object.keys(idx[m].months).length; }).join(", ") : "Aucun pour l'instant");
+  kpi(k, "Bougies M1", tot ? nf0.format(tot) : "0", "", tot ? "≈ " + nf0.format(Math.round(tot / 1380)) + " jours de cotation" : "—");
+  kpi(k, "Période", all.length ? all[0].slice(0, 4) + " → " + all[all.length - 1].slice(0, 4) : "—", "", all.length ? "De " + mLong(all[0]) + " à " + mLong(all[all.length - 1]) : "—");
+  kpi(k, "Dernier import", last ? frDate(last.slice(0, 10)) : "—", "", last ? "Espace privé « historique »" : "—");
+  names.forEach(function (m) { box.appendChild(covBlock(m, idx[m])); });
+}
+function covBlock(m, e) {
+  var months = (e && e.months) || {}, ks = Object.keys(months).sort(), wrap = el("div", { class: "pg-cov-mk" });
+  var head = el("div", { class: "pg-cov-head" }, [el("b", { text: m })]); wrap.appendChild(head);
+  if (!ks.length) { head.appendChild(el("span", { class: "tx-sub", text: "Aucune donnée importée" })); return wrap; }
+  var ns = ks.map(function (x) { return months[x].n || 0; }).sort(function (a, b) { return a - b; }), med = ns[Math.floor(ns.length / 2)];
+  var part = ks.filter(function (x) { return (months[x].n || 0) < med * .6; }), miss = [], tot = ns.reduce(function (s, v) { return s + v; }, 0);
+  var y0 = Number(ks[0].slice(0, 4)), y1 = Number(ks[ks.length - 1].slice(0, 4));
+  for (var y = y0; y <= y1; y++) for (var mo = 1; mo <= 12; mo++) { var key = y + "-" + String(mo).padStart(2, "0"); if (key > ks[0] && key < ks[ks.length - 1] && !months[key]) miss.push(key); }
+  head.appendChild(el("span", { class: "tx-sub", text: ks.length + " mois · " + nf0.format(tot) + " bougies · " + mLabel(ks[0]) + " → " + mLabel(ks[ks.length - 1]) + (e.updated ? " · importé le " + frDate(e.updated.slice(0, 10)) : "") }));
+  var label = m + " : " + ks.length + " mois importés, de " + mLong(ks[0]) + " à " + mLong(ks[ks.length - 1]) + (part.length ? " ; incomplets : " + part.map(mLong).join(", ") : "") + (miss.length ? " ; manquants : " + miss.map(mLong).join(", ") : "");
+  var grid = el("div", { class: "pg-cov-grid", role: "img", "aria-label": label });
+  grid.appendChild(el("span")); ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].forEach(function (x) { grid.appendChild(el("span", { class: "mh", text: x })); });
+  for (y = y0; y <= y1; y++) {
+    grid.appendChild(el("span", { class: "y", text: String(y) }));
+    for (mo = 1; mo <= 12; mo++) {
+      key = y + "-" + String(mo).padStart(2, "0"); var it = months[key], c = "pg-cov-cell" + (it ? (part.indexOf(key) >= 0 ? " is-part" : " is-full") : "");
+      grid.appendChild(el("i", { class: c, title: mLong(key) + (it ? " : " + nf0.format(it.n) + " bougies" + (it.gaps ? " · " + it.gaps + " trou" + (it.gaps > 1 ? "s" : "") + " de plus de 4 h en semaine" : "") : " : absent") }));
+    }
+  }
+  wrap.appendChild(grid);
+  var notes = [];
+  if (part.length) notes.push("Incomplets : " + part.map(mLabel).join(", ") + " (moins de 60 % des bougies d'un mois habituel).");
+  if (miss.length) notes.push("Manquants : " + miss.map(mLabel).join(", ") + ".");
+  if (notes.length) wrap.appendChild(el("p", { class: "tx-sub", style: "margin:0", text: notes.join(" ") }));
+  return wrap;
+}
+
+/* fenêtre d'import */
+function hiSyncTz() { var e = S.hiIdx && S.hiIdx.markets[$("hi-market").value]; $("hi-tz").value = e && HI_ZONES[e.tz] ? e.tz : "ny7"; }
+function hiErr(msg) { var p = $("hi-err"); p.textContent = msg || ""; p.hidden = !msg; }
+$("btn-hi").addEventListener("click", function () {
+  var sel = $("hi-market"), names = S.set.markets.slice(); sel.textContent = "";
+  Object.keys(S.hiIdx ? S.hiIdx.markets : {}).forEach(function (m) { if (names.indexOf(m) < 0) names.push(m); });
+  names.forEach(function (m) { sel.appendChild(el("option", { value: m, text: m })); });
+  hiSyncTz(); $("hi-file").value = ""; S.hiRaw = null; S.hiA = null; $("hi-res").textContent = ""; hiErr(""); $("hi-go").disabled = true;
+  show("ov-histo", true); sel.focus();
+});
+$("hi-market").addEventListener("change", function () { hiSyncTz(); hiShow(); });
+$("hi-tz").addEventListener("change", hiShow);
+$("hi-cancel").addEventListener("click", function () { if (!S.hiImporting) show("ov-histo", false); });
+$("ov-histo").addEventListener("click", function (e) { if (e.target === this && !S.hiImporting) show("ov-histo", false); });
+$("hi-file").addEventListener("change", function () {
+  var f = this.files && this.files[0]; S.hiRaw = null; S.hiA = null; $("hi-go").disabled = true; hiErr(""); if (!f) { $("hi-res").textContent = ""; return; }
+  var res = $("hi-res"); res.textContent = ""; res.appendChild(el("p", { class: "tx-help", text: "Lecture de " + f.name + " (" + nf0.format(Math.round(f.size / 1048576 * 10) / 10) + " Mo)…" }));
+  setTimeout(function () {
+    hiReadText(f).then(function (txt) { S.hiRaw = hiParse(txt); hiShow(); }).catch(function () { res.textContent = ""; hiErr("Fichier illisible : exportez de nouveau les barres depuis MT5."); });
+  }, 30);
+});
+function hiShow() {
+  var raw = S.hiRaw, res = $("hi-res"); if (!raw) return; res.textContent = ""; hiErr("");
+  var a = S.hiA = hiAnalyze(raw, $("hi-tz").value), ok = true;
+  if (!a.n) { hiErr("Aucune bougie reconnue. Le fichier doit venir de MT5 : Affichage > Symboles > Barres > Exporter les barres."); $("hi-go").disabled = true; return; }
+  if (a.tf !== 1) { hiErr("Ce fichier contient des bougies de " + (a.tf || "plusieurs") + " minutes : exportez les barres en M1."); ok = false; }
+  var idxM = (S.hiIdx && S.hiIdx.markets[$("hi-market").value] || {}).months || {}, ks = Object.keys(a.months).sort(), already = ks.filter(function (k) { return idxM[k]; }).length;
+  var dl = el("dl", { class: "tx-kv" });
+  function row(k, v) { dl.appendChild(el("dt", { text: k })); dl.appendChild(el("dd", { text: v })); }
+  row("Bougies M1", nf0.format(a.n));
+  row("Première (heure de New York)", hiDate(a.first));
+  row("Dernière (heure de New York)", hiDate(a.last));
+  row("Mois concernés", ks.length + (already ? ", dont " + already + " déjà importé" + (already > 1 ? "s" : "") + " (complété" + (already > 1 ? "s" : "") + ")" : ""));
+  row("Trous de plus de 4 h en semaine", a.gaps ? nf0.format(a.gaps) + " (jours fériés possibles)" : "Aucun");
+  if (raw.skipped || a.dup) row("Lignes ignorées", nf0.format(raw.skipped + a.dup) + (a.dup ? " (dont " + nf0.format(a.dup) + " en double)" : ""));
+  res.appendChild(dl);
+  /* contrôle de l'heure du serveur : la reprise après le week-end doit tomber à la même heure de New York toute l'année */
+  var r = a.reopen, msg, c = "tx-help is-ok";
+  if (!r) { msg = "Pas de week-end dans le fichier : impossible de vérifier l'heure du serveur."; c = "tx-help"; }
+  else {
+    var when = JOURS[r.wd] + " " + hm(r.min) + " à New York";
+    if (r.count < r.total * .85) { msg = "L'heure de reprise après le week-end varie au fil de l'année (" + when + " sur " + r.count + " semaines, une autre heure sur " + (r.total - r.count) + ") : l'heure du serveur choisie ne correspond sans doute pas à votre courtier. Essayez un autre réglage."; c = "tx-help is-warn"; }
+    else {
+      msg = "Reprise après le week-end : " + when + ", identique sur " + r.count + " semaine" + (r.count > 1 ? "s" : "") + " sur " + r.total + ".";
+      if (r.wd !== 0 || r.min < 16 * 60 || r.min > 20 * 60) { msg += " L'or et le Nasdaq rouvrent en général le dimanche vers 18:00 à New York : vérifiez l'heure du serveur."; c = "tx-help is-warn"; }
+    }
+  }
+  res.appendChild(el("p", { class: c, text: msg }));
+  $("hi-go").disabled = !ok;
+}
+$("hi-go").addEventListener("click", function () {
+  var a = S.hiA, mk = $("hi-market").value, zone = $("hi-tz").value, b = this; if (!a || !a.n) return;
+  if (typeof CompressionStream === "undefined") { hiErr("Ce navigateur ne sait pas compresser les fichiers : utilisez une version récente de Chrome, Edge, Firefox ou Safari."); return; }
+  var ks = Object.keys(a.months).sort(), done = 0, res = $("hi-res");
+  var bar = el("i"), prog = el("div", { class: "pg-progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(ks.length), "aria-valuenow": "0", "aria-label": "Envoi des mois" }, [bar]), txt = el("p", { class: "tx-help", text: "Préparation…" });
+  res.appendChild(prog); res.appendChild(txt);
+  b.disabled = true; $("hi-cancel").disabled = true; $("hi-file").disabled = true; S.hiImporting = true; hiErr("");
+  var idx, entry;
+  function step() { bar.style.width = (done / ks.length * 100) + "%"; prog.setAttribute("aria-valuenow", String(done)); txt.textContent = "Envoi : " + done + " mois sur " + ks.length; }
+  function saveIdx() { entry.updated = new Date().toISOString(); idx.markets[mk] = entry; return hiSaveIndex(idx); }
+  hiLoadIndex().then(function (x) {
+    idx = x; entry = idx.markets[mk] || { slug: hiSlug(mk), months: {} }; entry.slug = entry.slug || hiSlug(mk); entry.months = entry.months || {}; entry.tz = zone; step();
+    var chain = Promise.resolve();
+    ks.forEach(function (k) { chain = chain.then(function () { return hiWriteMonth(entry, k, a).then(function (info) { entry.months[k] = info; done++; step(); }); }); });
+    return chain.then(saveIdx, function (err) { return (done ? saveIdx() : Promise.resolve()).then(function () { throw err; }); });
+  }).then(function () {
+    txt.className = "tx-help is-ok"; txt.textContent = "Import terminé : " + ks.length + " mois de " + mk + " enregistrés.";
+    toast("Bougies de " + mk + " importées"); S.hiRaw = null; S.hiA = null; $("hi-file").value = "";
+  }, function (e) {
+    hiErr((done ? done + " mois sur " + ks.length + " ont été enregistrés. " : "") + hiErrText(e) + " Relancez l'import : les mois déjà envoyés seront simplement complétés.");
+  }).then(function () { S.hiImporting = false; $("hi-cancel").disabled = false; $("hi-file").disabled = false; hiRefresh(); });
+});
+
 /* ---------------- navigation ---------------- */
-var TABS = ["journal", "propfirms", "annonces", "styleguide"]; /* styleguide : page cachée, absente du menu */
-var TITLES = { journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", styleguide: "Guide de style" };
+var TABS = ["journal", "propfirms", "annonces", "backtest", "styleguide"]; /* styleguide : page cachée, absente du menu */
+var TITLES = { journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", backtest: "Backtest", styleguide: "Guide de style" };
 function setTab(t) {
   if (TABS.indexOf(t) < 0) t = "journal"; S.tab = t;
   document.querySelectorAll("[data-tab]").forEach(function (b) { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
@@ -978,11 +1247,12 @@ function setTab(t) {
   $("page-title").textContent = TITLES[t]; $("page-head").hidden = t === "styleguide"; document.title = "Tradamax · " + TITLES[t];
   document.querySelectorAll(".pg-actions[data-for]").forEach(function (g) { g.hidden = g.dataset.for !== t; });
   if (t === "journal") renderJournal(); if (t === "propfirms") renderProps(); if (t === "annonces") renderEco();
+  if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); }
   renderSession();
 }
 document.querySelectorAll("[data-tab]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.tab; }); });
 window.addEventListener("hashchange", function () { setTab(location.hash.slice(1)); window.scrollTo(0, 0); });
-document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; ["ov-shot", "ov-capital", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings"].some(function (id) { if (!$(id).hidden) { show(id, false); return true; } return false; }); });
+document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; ["ov-shot", "ov-capital", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings", "ov-histo"].some(function (id) { if (id === "ov-histo" && S.hiImporting) return false; if (!$(id).hidden) { show(id, false); return true; } return false; }); });
 var ro, roW = {};
 try {
   ro = new ResizeObserver(function (entries) {

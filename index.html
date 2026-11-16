@@ -369,6 +369,7 @@ textarea.tx-input{height:auto;min-height:72px;padding:9px 11px;resize:vertical;l
 .tx-legend i.is-dot{width:8px;height:8px;border-radius:50%}
 .tx-legend i.is-box{width:14px;height:10px;border-radius:3px;background:var(--c-inset);box-shadow:inset 0 0 0 1px var(--c-line-2)}
 .tx-help.is-ok{color:var(--c-pos)}
+.tx-help.is-warn{color:var(--c-warn)}
 .tx-empty.is-compact{padding:var(--sp-4) var(--sp-3);border:0}
 .tx-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
 .tx-chip{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:0 4px 0 12px;border:1px solid var(--c-line-2);border-radius:999px;background:var(--c-panel-2);font-size:var(--fs-3);font-weight:500}
@@ -612,6 +613,28 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-shot-body{padding:var(--sp-3)}
 .pg-shot-body img{display:block;max-width:100%;margin:0 auto;border-radius:10px}
 
+/* backtest : couverture des données historiques (un carré par mois), import MT5 */
+.pg-cov{display:flex;flex-direction:column;gap:var(--sp-5)}
+.pg-cov-mk{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.pg-cov-mk+.pg-cov-mk{padding-top:var(--sp-4);border-top:1px solid var(--c-line)}
+.pg-cov-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.pg-cov-head b{font-weight:600;font-size:var(--fs-4)}
+.pg-cov-grid{display:grid;grid-template-columns:40px repeat(12,minmax(0,1fr));gap:4px;max-width:620px}
+.pg-cov-grid .y{font-family:var(--f-mono);font-size:var(--fs-2);color:var(--c-text-2);align-self:center}
+.pg-cov-grid .mh{font-size:var(--fs-1);color:var(--c-text-2);text-align:center}
+.pg-cov-row{display:contents}
+.pg-cov-cell{display:block;height:22px;border-radius:5px;background:var(--c-inset);box-shadow:inset 0 0 0 1px var(--c-line)}
+.pg-cov-cell.is-full{background:color-mix(in srgb,var(--c-pos) 72%,transparent);box-shadow:none}
+.pg-cov-cell.is-part{background:color-mix(in srgb,var(--c-warn) 62%,transparent);box-shadow:none}
+.tx-legend i.pg-cov-cell{width:14px;height:10px;border-radius:3px}
+.pg-steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--fs-3);color:var(--c-text-2);max-width:72ch}
+.pg-steps b{color:var(--c-text);font-weight:600}
+.pg-hi-res{display:flex;flex-direction:column;gap:var(--sp-3)}
+.pg-hi-res:empty{display:none}
+.pg-hi-res .tx-help{margin:0}
+.pg-progress{height:6px;border-radius:999px;background:var(--c-inset);overflow:hidden}
+.pg-progress i{display:block;height:100%;width:0;border-radius:999px;background:var(--c-pos);transition:width .2s var(--ease)}
+
 /* connexion et configuration manquante */
 .pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-left,0px))}
 .pg-auth-card{width:100%;max-width:410px;padding:34px 30px 26px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
@@ -654,6 +677,7 @@ code{font-family:var(--f-mono);font-size:.92em}
   <symbol id="i-recherche" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14zM20 20l-4-4"/></symbol>
   <symbol id="i-gauche" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-droite" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-backtest" viewBox="0 0 24 24"><path d="M7 3v4M7 17v4M17 6v3M17 18v3M5 7h4v10H5zM15 9h4v9h-4z"/></symbol>
   <symbol id="i-versement" viewBox="0 0 24 24"><path d="M3 7h18v10H3zM12 10a2 2 0 1 0 0 4a2 2 0 0 0 0-4zM6.5 10v4M17.5 10v4"/></symbol>
 </svg>
 <div class="pg-cfg" id="cfg-err" hidden>
@@ -686,6 +710,7 @@ code{font-family:var(--f-mono);font-size:.92em}
       <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
       <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
       <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
+      <button class="tx-navitem" type="button" data-tab="backtest"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>Backtest</button>
     </nav>
     <button class="tx-navitem pg-rail-end" type="button" id="btn-settings"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</button>
   </aside>
@@ -712,6 +737,9 @@ code{font-family:var(--f-mono);font-size:.92em}
         <div class="pg-actions" data-for="propfirms" hidden>
           <button class="tx-btn" id="btn-add-payout" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-versement"/></svg>Versement reçu</button>
           <button class="tx-btn is-primary" id="btn-add-prop" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau compte</button>
+        </div>
+        <div class="pg-actions" data-for="backtest" hidden>
+          <button class="tx-btn is-primary" id="btn-hi" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg>Importer des bougies MT5</button>
         </div>
       </div>
 
@@ -872,6 +900,28 @@ code{font-family:var(--f-mono);font-size:.92em}
         <tbody id="eco-tbody"></tbody>
       </table></div>
       <p class="tx-sub pg-source">Source : calendrier Forex Factory, mis à jour chaque jour par le site. Les chiffres publiés (« actual ») n'y figurent pas.</p>
+    </section>
+  </section>
+
+  <!-- ================= BACKTEST ================= -->
+  <section id="tab-backtest" class="tab" hidden>
+    <p class="tx-sub pg-intro">Bougies d'une minute exportées depuis MT5, gardées dans un espace privé de Supabase. Elles serviront au backtest automatique de la stratégie (règles dans le document privé du projet).</p>
+    <section class="tx-stats" id="bt-kpis" aria-label="Données historiques"></section>
+    <section class="tx-panel">
+      <div class="tx-panel-head">
+        <div><h2 class="tx-title">Données disponibles</h2><div class="tx-sub">Un carré par mois, en heure de New York</div></div>
+        <div class="tx-legend" style="margin:0"><span><i class="pg-cov-cell is-full"></i>Importé</span><span><i class="pg-cov-cell is-part"></i>Incomplet</span><span><i class="pg-cov-cell"></i>Absent</span></div>
+      </div>
+      <div class="pg-cov" id="bt-cov"></div>
+    </section>
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div><h2 class="tx-title">Exporter les bougies depuis MT5</h2><div class="tx-sub">Une fois par marché ; un nouvel export plus tard complète les mois déjà importés</div></div></div>
+      <ol class="pg-steps">
+        <li>Dans MT5 : <b>Affichage &gt; Symboles</b> (Ctrl + U), puis l'onglet <b>Barres</b>.</li>
+        <li>Choisir le symbole (par exemple XAUUSD), la période <b>M1</b> et les dates, le plus loin possible dans le passé, puis <b>Demander</b>.</li>
+        <li>Cliquer <b>Exporter les barres</b> : MT5 enregistre un fichier CSV.</li>
+        <li>Ici : <b>Importer des bougies MT5</b>, choisir le marché et le fichier. L'heure du serveur est convertie en heure de New York.</li>
+      </ol>
     </section>
   </section>
   <!-- ================= GUIDE DE STYLE (page cachée #styleguide, données fictives) ================= -->
@@ -1217,6 +1267,7 @@ code{font-family:var(--f-mono);font-size:.92em}
     <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
     <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
     <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
+    <button class="tx-navitem" type="button" data-tab="backtest"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>Backtest</button>
     <button class="tx-navitem" type="button" data-open="settings"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</button>
   </nav>
 </div>
@@ -1331,6 +1382,24 @@ code{font-family:var(--f-mono);font-size:.92em}
       <p class="tx-sub" id="imp-res" role="status" style="margin:0"></p>
     </div>
     <div class="tx-dialog-foot"><div class="pg-foot-l"><button class="tx-btn is-ghost" id="imp-template" type="button">Télécharger un modèle</button></div><div class="pg-foot-r"><button class="tx-btn is-ghost" id="imp-cancel" type="button">Fermer</button><button class="tx-btn is-primary" id="imp-go" type="button" disabled>Importer</button></div></div>
+  </div>
+</div>
+
+<div class="tx-overlay" id="ov-histo" hidden>
+  <div class="tx-dialog is-wide" role="dialog" aria-labelledby="hi-title">
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="hi-title">Importer des bougies MT5</h3><div class="tx-sub">Fichier exporté depuis MT5 (Affichage &gt; Symboles &gt; Barres), en M1. Rien n'est envoyé avant de cliquer « Importer ».</div></div></div>
+    <div class="tx-dialog-body is-4">
+      <div class="tx-field c2"><label for="hi-market">Marché</label><select class="tx-input" id="hi-market"></select></div>
+      <div class="tx-field c2"><label for="hi-tz">Heure du serveur MT5</label><select class="tx-input" id="hi-tz">
+        <option value="ny7">New York + 7 h (la plupart des courtiers)</option>
+        <option value="eet">Europe de l'Est (UTC+2 l'hiver, UTC+3 l'été)</option>
+        <option value="utc">UTC</option>
+      </select></div>
+      <div class="tx-field c4"><label for="hi-file">Fichier CSV</label><input class="tx-file" id="hi-file" type="file" accept=".csv,.txt,text/csv"></div>
+      <div class="c4 pg-hi-res" id="hi-res" role="status" aria-live="polite"></div>
+    </div>
+    <p class="tx-help is-error pg-err" id="hi-err" role="alert" hidden></p>
+    <div class="tx-dialog-foot"><div class="pg-foot-r"><button class="tx-btn is-ghost" id="hi-cancel" type="button">Fermer</button><button class="tx-btn is-primary" id="hi-go" type="button" disabled>Importer</button></div></div>
   </div>
 </div>
 

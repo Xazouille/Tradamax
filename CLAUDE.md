@@ -21,7 +21,7 @@ Repères techniques :
 ## Architecture actuelle (V1)
 
 - **Site statique**, sans étape de build : `index.html` (structure + CSS), `app.js` (logique et rendu, JavaScript sans framework), `config.js` (URL et clé publique Supabase).
-- **Supabase** : authentification e-mail, base Postgres, stockage des captures (bucket privé `captures`), mises à jour en direct (realtime).
+- **Supabase** : authentification e-mail, base Postgres, stockage des captures (bucket privé `captures`) et des bougies M1 du backtest (bucket privé `historique` : un fichier gzip par marché et par mois de New York, plus `_index.json`), mises à jour en direct (realtime).
 - **Publication** : GitHub Pages via `.github/workflows/publier.yml`, qui lance `build.sh` (copie des fichiers + téléchargement du calendrier économique Forex Factory dans `site/data/calendar.json`), au push et chaque jour à 4h UTC.
 - **Design** : règles dans `DESIGN.md`, composants visibles sur la page cachée `#styleguide`.
 

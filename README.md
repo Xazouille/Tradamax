@@ -4,7 +4,8 @@ Tradamax V1 reprend le journal actuel (tableau de bord, calendrier, R prévu, im
 
 - **des données partagées** : vous voyez tous les deux les mêmes trades, en direct ;
 - **un onglet Prop firms** : challenges achetés, comptes financés, versements reçus, taux de réussite réel, repères du comparatif ;
-- **un onglet Annonces éco** : compte rendu du jour (USD et EUR), avec les annonces qui tombent dans vos fenêtres Silver Bullet.
+- **un onglet Annonces éco** : compte rendu du jour (USD et EUR), avec les annonces qui tombent dans vos fenêtres Silver Bullet ;
+- **un onglet Backtest** : import des bougies d'une minute exportées depuis MT5, gardées dans un espace privé, pour le futur backtest automatique.
 
 Coût : **0 €**. Le site est publié par GitHub Pages, les données sont gardées par Supabase (offre gratuite).
 
@@ -51,6 +52,16 @@ Les captures d'écran de l'ancien journal ne sont pas transférées : rajoutez c
 
 ---
 
+## Étape 5 — Les données du backtest
+
+1. Dans Supabase, **SQL Editor > New query** : collez le fichier `supabase/migrations/2026-11-16_backtest-historique.sql` et cliquez **Run**. Il crée l'espace privé « historique », réservé à vous deux.
+2. Dans MT5 : **Affichage > Symboles** (Ctrl + U), onglet **Barres**, choisissez le symbole, la période **M1** et les dates, **Demander**, puis **Exporter les barres**.
+3. Dans Tradamax, onglet **Backtest** : **Importer des bougies MT5**, choisissez le marché et le fichier. Vérifiez la ligne « Reprise après le week-end » : elle doit être identique toute l'année (sinon, changez « Heure du serveur MT5 »). Puis **Importer**.
+
+Un nouvel export plus tard complète simplement les mois déjà importés.
+
+---
+
 ## Bon à savoir
 
 - **Mise en pause Supabase** : un projet gratuit sans aucune activité pendant 7 jours est mis en pause. Il se réactive en un clic depuis le tableau de bord Supabase. Avec un usage quotidien, cela n'arrive pas.
@@ -68,6 +79,7 @@ Les captures d'écran de l'ancien journal ne sont pas transférées : rajoutez c
 | `app.js` | Le fonctionnement (journal, prop firms, annonces, connexion) |
 | `config.js` | Adresse et clé publique de votre base Supabase |
 | `supabase/schema.sql` | Création des tables et des règles d'accès |
+| `supabase/migrations/` | Évolutions de la base, à coller une fois chacune dans l'éditeur SQL de Supabase |
 | `build.sh` | Prépare le site et récupère le calendrier |
 | `.github/workflows/publier.yml` | Publication automatique et rafraîchissement quotidien |
 | `CLAUDE.md` | Règles lues par Claude Code à chaque session (projet, règles, contraintes) ; il importe le contexte interne de `docs-prives/contexte.md` |
