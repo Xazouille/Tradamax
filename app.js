@@ -31,7 +31,7 @@ function demoClient() {
       { id: "demo-p2", firme: "FTMO", programme: "2-Step", taille: 50000, devise: "EUR", statut: "Challenge en cours", cout: 345, date_achat: today, note: null },
       { id: "demo-p3", firme: "FundedNext", programme: "Stellar 2-Step", taille: 50000, devise: "USD", statut: "Challenge échoué", cout: 299.99, date_achat: today, note: null }],
     payouts: [{ id: "demo-y1", compte_id: "demo-p1", date: today, montant: 1850, devise: "EUR", note: "Premier versement" }],
-    backtest_avis: [] };
+    backtest_avis: [], backtest_controles: [] };
   function ok(data) { return Promise.resolve({ data: data, error: null }); }
   function query(table) {
     var op = "select", payload = null, filt = null, single = false, rng = null;
@@ -168,7 +168,7 @@ var S = {
   props: [], payouts: [], editingProp: null, importRows: null, tmpM: null, tmpA: null,
   cal: null, calUpdated: null, ecoDay: "today", tab: "journal",
   hiIdx: null, hiErr: null, hiRaw: null, hiA: null, hiBusy: false,
-  bt: null, btBusy: false, avis: {}, avisErr: null, rvFilter: "todo", rvShown: 30, rv: null
+  bt: null, btBusy: false, avis: {}, avisErr: null, rvFilter: "todo", rvShown: 30, rv: null, ctl: null, ctlErr: null, ctlBusy: false
 };
 
 /* ---------------- utilitaires ---------------- */
@@ -1414,11 +1414,17 @@ function btFill() {
   var names = Object.keys(idx).filter(function (m) { return Object.keys(idx[m].months || {}).length; });
   sel.textContent = ""; names.forEach(function (m) { sel.appendChild(el("option", { value: m, text: m })); });
   if (names.indexOf(cur) >= 0) sel.value = cur;
-  $("bt-rules").textContent = "Règles " + BT.RULES.version + " · " + (names.length ? "données importées : " + names.join(", ") : "importez d'abord des bougies (plus bas)");
+  $("bt-rules").textContent = "Règles " + BT.RULES.version + " · période d'apprentissage jusqu'à " + mLong(prevMonth(BT.RULES.controlFrom)) + " ; à partir de " + mLong(BT.RULES.controlFrom) + ", période de contrôle verrouillée (voir « Test de contrôle »)";
   btFillMonths();
 }
+function prevMonth(k) { var y = Number(k.slice(0, 4)), m = Number(k.slice(5)) - 1; if (!m) { y--; m = 12; } return y + "-" + String(m).padStart(2, "0"); }
+/* mois utilisables par le backtest normal et la revue : uniquement avant la période de contrôle */
+function learnMonths(e) { return e ? Object.keys(e.months).filter(function (k) { return k < BT.RULES.controlFrom; }).sort() : []; }
+function ctlMonths(e) { return e ? Object.keys(e.months).filter(function (k) { return k >= BT.RULES.controlFrom; }).sort() : []; }
 function btFillMonths() {
-  var m = $("bt-market").value, e = S.hiIdx && S.hiIdx.markets[m], ks = e ? Object.keys(e.months).sort() : [];
+  var m = $("bt-market").value, e = S.hiIdx && S.hiIdx.markets[m], ks = learnMonths(e);
+  var st = $("bt-status"); if (!S.btBusy && !S.bt) { st.className = "tx-help"; st.textContent = e && !ks.length ? "Toutes les données de ce marché sont dans la période de contrôle : importez des mois antérieurs à " + mLong(BT.RULES.controlFrom) + " pour le backtest et la revue." : ""; }
+  renderCtl();
   [["bt-from", Math.max(0, ks.length - 6)], ["bt-to", ks.length - 1]].forEach(function (p) {
     var s = $(p[0]), keep = s.value, same = s.dataset.m === m; s.textContent = "";
     ks.forEach(function (k) { s.appendChild(el("option", { value: k, text: mLong(k) })); });
@@ -1447,7 +1453,8 @@ function btLoad(m, keys, onProg) {
 $("bt-go").addEventListener("click", function () {
   var m = $("bt-market").value, from = $("bt-from").value, to = $("bt-to").value, e = S.hiIdx && S.hiIdx.markets[m], b = this, st = $("bt-status"); if (!e) return;
   if (from > to) { var x = from; from = to; to = x; }
-  var keys = Object.keys(e.months).filter(function (k) { return k >= from && k <= to; }).sort(), t0 = Date.now();
+  var keys = learnMonths(e).filter(function (k) { return k >= from && k <= to; }), t0 = Date.now(); /* jamais la période de contrôle */
+  if (!keys.length) return;
   S.btBusy = true; b.disabled = true; st.className = "tx-help"; st.textContent = "Chargement des bougies : 0 mois sur " + keys.length + "…";
   btLoad(m, keys, function (d) { st.textContent = "Chargement des bougies : " + d + " mois sur " + keys.length + "…"; }).then(function (data) {
     if (!data.t.length) throw new Error("vide");
@@ -1671,6 +1678,62 @@ function rvChart() {
   }
 }
 
+/* test de contrôle : une seule fois par marché et par version des règles, sur la période jamais utilisée pour régler.
+   La base n'accepte que l'ajout d'un résultat (ni modification ni suppression) : le résultat n'est montré qu'une fois enregistré. */
+function ctlId(m) { return m + "|" + BT.RULES.version; }
+function loadCtl() {
+  return fetchAll("backtest_controles", "created_at").then(function (rows) { S.ctl = rows; S.ctlErr = null; }, function (e) {
+    var msg = String(e && (e.message || e.code) || "");
+    S.ctl = []; S.ctlErr = /backtest_controles|relation|schema cache|PGRST205|42P01/i.test(msg) ? "La table des tests de contrôle n'existe pas encore : collez la migration supabase/migrations/2026-11-16_backtest-controles.sql dans l'éditeur SQL de Supabase." : hiErrText(e);
+  }).then(function () { if (S.tab === "backtest") renderCtl(); });
+}
+function renderCtl() {
+  var m = $("bt-market").value, e = S.hiIdx && S.hiIdx.markets[m], ks = ctlMonths(e), done = (S.ctl || []).find(function (r) { return r.id === ctlId(m); });
+  $("bt-ctl-sub").textContent = "Période de contrôle : à partir de " + mLong(BT.RULES.controlFrom) + " · règles " + BT.RULES.version;
+  var go = $("bt-ctl-go"), st = $("bt-ctl-status");
+  go.disabled = !m || !ks.length || !!done || !!S.ctlErr || !!S.ctlBusy || !S.ctl;
+  if (!S.ctlBusy) {
+    st.className = "tx-help" + (S.ctlErr ? " is-error" : "");
+    st.textContent = S.ctlErr ? S.ctlErr : !m ? "" : done ? "Test déjà fait pour " + m + " avec les règles " + BT.RULES.version + " (résultat ci-dessous). Un nouveau test demandera une nouvelle version des règles."
+      : !ks.length ? "Aucune donnée de " + m + " à partir de " + mLong(BT.RULES.controlFrom) + " : rien à tester pour l'instant."
+      : "Disponible pour " + m + " : " + mLong(ks[0]) + " à " + mLong(ks[ks.length - 1]) + ". À lancer seulement quand les règles sont définitives.";
+  }
+  var rows = S.ctl || [], tb = $("bt-ctl-body"); tb.textContent = ""; $("bt-ctl-table").hidden = !rows.length;
+  rows.slice().reverse().forEach(function (r) {
+    var x = r.resultat || {};
+    tb.appendChild(el("tr", {}, [el("td", { "data-l": "Marché", text: r.marche }), el("td", { "data-l": "Règles", text: r.regles }), el("td", { "data-l": "Période", text: r.periode }),
+      el("td", { class: "r tx-num", "data-l": "Trades", text: x.n == null ? "—" : nf0.format(x.n) }), el("td", { class: "r tx-num", "data-l": "Réussite", text: x.wr == null ? "—" : pct(x.wr) }),
+      el("td", { class: "r tx-num " + cls(x.sum || 0), "data-l": "Résultat", text: x.sum == null ? "—" : rfmt(x.sum) }), el("td", { class: "r tx-num " + cls(x.avg || 0), "data-l": "R moyen", text: x.avg == null ? "—" : rfmt(x.avg) }),
+      el("td", { class: "r tx-num", "data-l": "Drawdown", text: x.maxdd == null ? "—" : "−" + nf2.format(x.maxdd) + " R" }), el("td", { class: "tx-num", "data-l": "Fait le", text: r.created_at ? frDate(String(r.created_at).slice(0, 10)) : "—" })]));
+  });
+}
+$("bt-ctl-go").addEventListener("click", function () {
+  var m = $("bt-market").value; $("bt-ctl-q").textContent = "Lancer le test de contrôle de " + m + " avec les règles " + BT.RULES.version + " ? Il ne pourra pas être refait avec ces règles.";
+  this.hidden = true; $("bt-ctl-confirm").hidden = false; $("bt-ctl-yes").focus();
+});
+$("bt-ctl-no").addEventListener("click", function () { $("bt-ctl-confirm").hidden = true; $("bt-ctl-go").hidden = false; $("bt-ctl-go").focus(); });
+$("bt-ctl-yes").addEventListener("click", function () {
+  var m = $("bt-market").value, e = S.hiIdx && S.hiIdx.markets[m], ks = ctlMonths(e), st = $("bt-ctl-status"), msg = null;
+  $("bt-ctl-confirm").hidden = true; $("bt-ctl-go").hidden = false;
+  if (!ks.length || (S.ctl || []).some(function (r) { return r.id === ctlId(m); })) { renderCtl(); return; }
+  S.ctlBusy = true; renderCtl(); st.className = "tx-help"; st.textContent = "Chargement des bougies de contrôle : 0 mois sur " + ks.length + "…";
+  btLoad(m, ks, function (d) { st.textContent = "Chargement des bougies de contrôle : " + d + " mois sur " + ks.length + "…"; }).then(function (data) {
+    if (!data.t.length) throw new Error("vide");
+    st.textContent = "Calcul du test de contrôle…";
+    return new Promise(function (ok) { setTimeout(function () { ok(BT.run(data, { market: m })); }, 40); });
+  }).then(function (res) {
+    var s = res.stats, row = { id: ctlId(m), marche: m, regles: res.rules, periode: mLong(ks[0]) + " à " + mLong(ks[ks.length - 1]),
+      resultat: { n: s.n, setups: res.setups.length, win: s.win, loss: s.loss, be: s.be, wr: s.wr, sum: r2(s.sum), avg: s.avg == null ? null : Math.round(s.avg * 1000) / 1000, maxdd: r2(s.maxdd), worst: s.worst } };
+    /* le résultat n'est montré qu'une fois enregistré : sans enregistrement, rien n'est affiché */
+    return S.sb.from("backtest_controles").insert(row).then(function (r) { if (r.error) throw r.error; return loadCtl(); }).then(function () {
+      msg = ["tx-help is-ok", "Test de contrôle enregistré pour " + m + " (règles " + res.rules + ") : résultat ci-dessous."];
+    });
+  }).catch(function (err) {
+    msg = ["tx-help is-error", err && err.message === "vide" ? "Aucune bougie dans la période de contrôle." : /duplicate|unique|23505/i.test(String(err && (err.message || err.code))) ? "Ce test a déjà été fait par l'autre associé : résultat ci-dessous." : "Test non enregistré, donc non affiché : " + hiErrText(err)];
+    return loadCtl();
+  }).then(function () { S.ctlBusy = false; renderCtl(); if (msg) { st.className = msg[0]; st.textContent = msg[1]; } });
+});
+
 /* bilan des avis et export */
 function renderBilan() {
   var box = $("bt-bilan"); box.textContent = "";
@@ -1720,7 +1783,7 @@ function setTab(t) {
   $("page-title").textContent = TITLES[t]; $("page-head").hidden = t === "styleguide"; document.title = "Tradamax · " + TITLES[t];
   document.querySelectorAll(".pg-actions[data-for]").forEach(function (g) { g.hidden = g.dataset.for !== t; });
   if (t === "journal") renderJournal(); if (t === "propfirms") renderProps(); if (t === "annonces") renderEco();
-  if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); loadAvis(); }
+  if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); loadAvis(); loadCtl(); }
   renderSession();
 }
 document.querySelectorAll("[data-tab]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.tab; }); });

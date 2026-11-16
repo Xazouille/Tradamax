@@ -35,6 +35,7 @@ Repères techniques :
 | `prop_comptes` | Comptes prop firm (firme, programme, taille, devise, statut, cout, date_achat) |
 | `payouts` | Versements reçus, liés à `prop_comptes` |
 | `backtest_avis` | Avis du trader sur les setups du robot (pris, autrement, refusé + raison), clé `setup_id` ; migration du 16/11/2026 |
+| `backtest_controles` | Résultat du test de contrôle, un par marché et par version des règles ; lecture et ajout seulement ; migration du 16/11/2026 |
 
 Dans `app.js`, `fromRow` / `toRow` font la correspondance entre les colonnes en français et les objets de la page.
 
@@ -67,3 +68,8 @@ Dans `app.js`, `fromRow` / `toRow` font la correspondance entre les colonnes en 
 - Le cahier des charges a été écrit avant la V1 : pour l'architecture (Cloudflare, React, dépôt privé), **les choix de la V1 décrits ici priment**. Pour le reste (fonctions, règles métier, modèle de données cible), il sert de référence.
 - Jamais de mot de passe de courtier ou de prop firm dans le code ou la base.
 - Ne jamais coder d'exécution automatique d'ordres.
+
+## Backtest : ne jamais regarder la période de contrôle
+
+- Les règles du robot se règlent uniquement sur la période d'apprentissage (avant `RULES.controlFrom` dans `backtest.js`, aujourd'hui janvier 2025). Ne jamais lancer le robot ni regarder ses résultats sur la période de contrôle pour choisir une règle, même « pour voir ».
+- Toute modification des règles change `RULES.version` : le test de contrôle (table `backtest_controles`, ajout seulement) ne se fait qu'une fois par marché et par version, à la demande des associés, quand les règles sont définitives.

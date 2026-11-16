@@ -641,6 +641,11 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-rv td{white-space:nowrap}
 .pg-rv .c-act{text-align:right}
 @media (max-width:640px){.pg-rv .c-act{display:none!important}}
+.pg-ctl-why{margin:0 0 var(--sp-3);max-width:80ch}
+.pg-ctl-act{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2)}
+.pg-ctl-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);font-size:var(--fs-3)}
+.pg-ctl-act+.tx-help{margin:var(--sp-3) 0}
+.pg-ctl-act+.tx-help:empty{display:none}
 /* revue d'un setup : graphique avec zones dessinées par-dessus, avis */
 .pg-rv-body{padding:var(--sp-4) 20px;display:flex;flex-direction:column;gap:var(--sp-4)}
 .pg-rv-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:var(--sp-2) var(--sp-4)}
@@ -973,6 +978,19 @@ code{font-family:var(--f-mono);font-size:.92em}
         <button class="tx-btn" id="bt-export" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg>Exporter les avis</button>
       </div>
       <div id="bt-bilan"></div>
+    </section>
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div><h2 class="tx-title">Test de contrôle</h2><div class="tx-sub" id="bt-ctl-sub"></div></div></div>
+      <p class="tx-sub pg-ctl-why">Les règles se règlent sur la période d'apprentissage. Le test de contrôle les essaie sur des mois que personne n'a regardés : c'est lui qui dit si la stratégie tient. Il ne se lance qu'une fois par marché et par version des règles, quand elles sont définitives, et son résultat reste enregistré pour vous deux.</p>
+      <div class="pg-ctl-act">
+        <button class="tx-btn" id="bt-ctl-go" type="button">Lancer le test de contrôle</button>
+        <span class="pg-ctl-confirm" id="bt-ctl-confirm" hidden><span id="bt-ctl-q"></span> <button class="tx-btn is-primary" id="bt-ctl-yes" type="button">Oui, lancer le test</button><button class="tx-btn is-ghost" id="bt-ctl-no" type="button">Annuler</button></span>
+      </div>
+      <p class="tx-help" id="bt-ctl-status" role="status" aria-live="polite"></p>
+      <div class="tx-table-wrap"><table class="tx-table is-stack" id="bt-ctl-table" hidden>
+        <thead><tr><th>Marché</th><th>Règles</th><th>Période</th><th class="r">Trades</th><th class="r">Réussite</th><th class="r">Résultat</th><th class="r">R moyen</th><th class="r">Drawdown</th><th>Fait le</th></tr></thead>
+        <tbody id="bt-ctl-body"></tbody>
+      </table></div>
     </section>
     <section class="tx-stats" id="bt-kpis" aria-label="Données historiques"></section>
     <section class="tx-panel">

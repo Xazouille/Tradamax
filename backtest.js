@@ -25,7 +25,11 @@ var RULES = {
   strongBody: 1,               /* annulation D : retour avec un corps d'au moins 1 ATR */
   tpR: 2, beR: 1,              /* objectif 2 R ; stop au point d'entrée dès +1 R ou une prise de liquidité */
   limits: { perDay: 3, lossStreak: 2, dayLossR: 2, weekLossR: 5 },
-  review: { taken: 60, cancelled: 30 } /* setups tirés au hasard pour la revue par le trader */
+  review: { taken: 60, cancelled: 30 }, /* setups tirés au hasard pour la revue par le trader */
+  /* période de contrôle : à partir de ce mois, les données ne servent jamais à régler les règles.
+     Le backtest normal et la revue s'arrêtent avant ; le test de contrôle s'y lance une seule fois par version des règles.
+     Toute modification des règles doit changer « version ». */
+  controlFrom: "2025-01"
 };
 var TFS = [60, 30, 15, 5, 3, 1]; /* ordre de traitement d'une même minute : unités hautes d'abord */
 var REASONS = {
