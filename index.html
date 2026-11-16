@@ -634,7 +634,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-hi-res .tx-help{margin:0}
 .pg-progress{height:6px;border-radius:999px;background:var(--c-inset);overflow:hidden}
 .pg-progress i{display:block;height:100%;width:0;border-radius:999px;background:var(--c-pos);transition:width .2s var(--ease)}
-.pg-btrun{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:var(--sp-3);align-items:end}
+.pg-btrun{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:var(--sp-3);align-items:end}
+@media (max-width:1000px) and (min-width:641px){.pg-btrun{grid-template-columns:repeat(2,minmax(0,1fr))}.pg-btrun>.tx-btn{grid-column:1/-1}}
 .pg-btrun+.tx-help{margin:var(--sp-3) 0 0}
 .pg-btrun+.tx-help:empty{display:none}
 @media (max-width:640px){.pg-btrun{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pg-btrun>:first-child,.pg-btrun>.tx-btn{grid-column:1/-1}}
@@ -950,6 +951,11 @@ code{font-family:var(--f-mono);font-size:.92em}
         <div class="tx-field"><label for="bt-market">Marché</label><select class="tx-input" id="bt-market"></select></div>
         <div class="tx-field"><label for="bt-from">Du mois</label><select class="tx-input" id="bt-from"></select></div>
         <div class="tx-field"><label for="bt-to">Au mois</label><select class="tx-input" id="bt-to"></select></div>
+        <div class="tx-field"><label for="bt-zones">Zones d'entrée</label><select class="tx-input" id="bt-zones">
+          <option value="both">FVG et IFVG</option>
+          <option value="fvg">FVG seulement</option>
+          <option value="ifvg">IFVG seulement</option>
+        </select></div>
         <button class="tx-btn is-primary" id="bt-go" type="button">Lancer</button>
       </div>
       <p class="tx-help" id="bt-status" role="status" aria-live="polite"></p>

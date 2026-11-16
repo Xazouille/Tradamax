@@ -1441,6 +1441,8 @@ function btFillMonths() {
   $("bt-go").disabled = !ks.length || !!S.btBusy;
 }
 $("bt-market").addEventListener("change", btFillMonths);
+$("bt-zones").addEventListener("change", function () { renderCtl(); });
+function rulesLabel() { return BT.RULES.version + BT.ZONES[$("bt-zones").value]; }
 function btLoad(m, keys, onProg) {
   var e = S.hiIdx.markets[m], T = [], O = [], H = [], L = [], C = [], done = 0, chain = Promise.resolve();
   keys.forEach(function (k) {
@@ -1467,7 +1469,7 @@ $("bt-go").addEventListener("click", function () {
   btLoad(m, keys, function (d) { st.textContent = "Chargement des bougies : " + d + " mois sur " + keys.length + "…"; }).then(function (data) {
     if (!data.t.length) throw new Error("vide");
     st.textContent = "Calcul du backtest sur " + nf0.format(data.t.length) + " bougies…";
-    return new Promise(function (ok) { setTimeout(function () { ok({ data: data, res: BT.run(data, { market: m }) }); }, 40); });
+    return new Promise(function (ok) { setTimeout(function () { ok({ data: data, res: BT.run(data, { market: m, zones: $("bt-zones").value }) }); }, 40); });
   }).then(function (x) {
     S.bt = { market: m, from: from, to: to, m: x.data, res: x.res }; S.rvShown = 30;
     st.className = "tx-help is-ok";
@@ -1494,6 +1496,7 @@ function btRender() {
   function trow(label, o) { tb.appendChild(el("tr", {}, [el("td", { "data-l": "Unité", text: label }), el("td", { class: "r tx-num", "data-l": "Trades", text: o ? String(o.n) : "0" }), el("td", { class: "r tx-num", "data-l": "Réussite", text: o && o.n ? pct(o.win / o.n, 0) : "—" }), el("td", { class: "r tx-num " + (o ? cls(o.sum) : ""), "data-l": "Résultat", text: o ? rfmt(o.sum) : "—" })])); }
   BT.RULES.sweepTfs.forEach(function (tf) { trow("Prise de liquidité " + tfLabel(tf), s.byTf[tf]); });
   BT.RULES.obTfs.forEach(function (tf) { trow("OB " + tfLabel(tf), s.byObTf[tf]); });
+  ["FVG", "IFVG"].forEach(function (z) { trow("Zone " + z, s.byZone[z]); });
   rvRender();
 }
 
@@ -1635,7 +1638,7 @@ function rvChart() {
   });
   function draw() {
     var m = S.bt.m, tf = rv.tf, LW = window.LightweightCharts;
-    var endI = rv.revealed ? Math.min(m.t.length - 1, Math.max(su.iD, su.out ? su.out.i : su.iD) + 40 * tf) : su.iD;
+    var endI = rv.revealed ? Math.min(m.t.length - 1, Math.max(su.iD, su.out ? su.out.i : su.iD) + 40 * tf) : (su.iE != null ? su.iE - 1 : su.iD); /* avant l'avis : on s'arrête juste avant la minute d'entrée */
     var tStart = Math.max(Math.min(su.ob.t0, su.tL) - 20 * tf, m.t[endI] - 400 * tf), startI = Math.max(0, lastLE(m.t, tStart));
     var B = BT.aggregate(m, tf, startI, endI), wall = B.t.map(function (t) { return BT.nyWall(t) * 60; });
     var col = { text: cssVar("--c-text"), text2: cssVar("--c-text-2"), line: cssVar("--c-line"), panel: cssVar("--c-panel"), pos: cssVar("--c-pos"), neg: cssVar("--c-neg") };
@@ -1653,7 +1656,7 @@ function rvChart() {
     function barAt(t) { var k = lastLE(B.t, Math.floor(t / tf) * tf); return k < 0 ? null : wall[k]; }
     var mk = [], up = su.dir > 0, tSw = barAt(su.tS);
     if (tSw) mk.push({ time: tSw, position: up ? "belowBar" : "aboveBar", color: col.text2, shape: up ? "arrowUp" : "arrowDown", text: "Liquidité" });
-    if (showTrade && su.tE) { var tE = barAt(su.tE - 1); if (tE) mk.push({ time: tE, position: up ? "belowBar" : "aboveBar", color: col.text, shape: "circle", text: "Entrée" }); }
+    if (showTrade && su.tE && rv.revealed) { var tE = barAt(su.tE - 1); if (tE) mk.push({ time: tE, position: up ? "belowBar" : "aboveBar", color: col.text, shape: "circle", text: "Entrée" }); }
     if (rv.revealed && su.out && su.out.kind !== "fin") { var tX = barAt(su.out.t); if (tX) mk.push({ time: tX, position: up === (su.out.kind === "tp") ? "aboveBar" : "belowBar", color: su.out.kind === "tp" ? col.pos : su.out.kind === "sl" ? col.neg : col.text2, shape: "square", text: su.out.kind === "tp" ? "Objectif" : su.out.kind === "sl" ? "Stop" : "Point d'entrée" }); }
     series.setMarkers(mk.sort(function (a, b) { return a.time - b.time; }));
     var dec = lastLE(B.t, Math.floor((su.tD - 1) / tf) * tf), last = rv.revealed ? B.t.length - 1 : dec;
@@ -1688,7 +1691,7 @@ function rvChart() {
 
 /* test de contrôle : une seule fois par marché et par version des règles, sur la période jamais utilisée pour régler.
    La base n'accepte que l'ajout d'un résultat (ni modification ni suppression) : le résultat n'est montré qu'une fois enregistré. */
-function ctlId(m) { return m + "|" + BT.RULES.version; }
+function ctlId(m) { return m + "|" + rulesLabel(); }
 function loadCtl() {
   return fetchAll("backtest_controles", "created_at").then(function (rows) { S.ctl = rows; S.ctlErr = null; }, function (e) {
     var msg = String(e && (e.message || e.code) || "");
@@ -1697,12 +1700,12 @@ function loadCtl() {
 }
 function renderCtl() {
   var m = $("bt-market").value, e = S.hiIdx && S.hiIdx.markets[m], ks = ctlMonths(e), done = (S.ctl || []).find(function (r) { return r.id === ctlId(m); });
-  $("bt-ctl-sub").textContent = "Période de contrôle : à partir de " + mLong(BT.RULES.controlFrom) + " · règles " + BT.RULES.version;
+  $("bt-ctl-sub").textContent = "Période de contrôle : à partir de " + mLong(BT.RULES.controlFrom) + " · règles " + rulesLabel();
   var go = $("bt-ctl-go"), st = $("bt-ctl-status");
   go.disabled = !m || !ks.length || !!done || !!S.ctlErr || !!S.ctlBusy || !S.ctl;
   if (!S.ctlBusy) {
     st.className = "tx-help" + (S.ctlErr ? " is-error" : "");
-    st.textContent = S.ctlErr ? S.ctlErr : !m ? "" : done ? "Test déjà fait pour " + m + " avec les règles " + BT.RULES.version + " (résultat ci-dessous). Un nouveau test demandera une nouvelle version des règles."
+    st.textContent = S.ctlErr ? S.ctlErr : !m ? "" : done ? "Test déjà fait pour " + m + " avec les règles " + rulesLabel() + " (résultat ci-dessous). Un nouveau test demandera une nouvelle version des règles."
       : !ks.length ? "Aucune donnée de " + m + " à partir de " + mLong(BT.RULES.controlFrom) + " : rien à tester pour l'instant."
       : "Disponible pour " + m + " : " + mLong(ks[0]) + " à " + mLong(ks[ks.length - 1]) + ". À lancer seulement quand les règles sont définitives.";
   }
@@ -1716,7 +1719,7 @@ function renderCtl() {
   });
 }
 $("bt-ctl-go").addEventListener("click", function () {
-  var m = $("bt-market").value; $("bt-ctl-q").textContent = "Lancer le test de contrôle de " + m + " avec les règles " + BT.RULES.version + " ? Il ne pourra pas être refait avec ces règles.";
+  var m = $("bt-market").value; $("bt-ctl-q").textContent = "Lancer le test de contrôle de " + m + " avec les règles " + rulesLabel() + " ? Il ne pourra pas être refait avec ces règles.";
   this.hidden = true; $("bt-ctl-confirm").hidden = false; $("bt-ctl-yes").focus();
 });
 $("bt-ctl-no").addEventListener("click", function () { $("bt-ctl-confirm").hidden = true; $("bt-ctl-go").hidden = false; $("bt-ctl-go").focus(); });
@@ -1728,7 +1731,7 @@ $("bt-ctl-yes").addEventListener("click", function () {
   btLoad(m, ks, function (d) { st.textContent = "Chargement des bougies de contrôle : " + d + " mois sur " + ks.length + "…"; }).then(function (data) {
     if (!data.t.length) throw new Error("vide");
     st.textContent = "Calcul du test de contrôle…";
-    return new Promise(function (ok) { setTimeout(function () { ok(BT.run(data, { market: m })); }, 40); });
+    return new Promise(function (ok) { setTimeout(function () { ok(BT.run(data, { market: m, zones: $("bt-zones").value })); }, 40); });
   }).then(function (res) {
     var s = res.stats, row = { id: ctlId(m), marche: m, regles: res.rules, periode: mLong(ks[0]) + " à " + mLong(ks[ks.length - 1]),
       resultat: { n: s.n, setups: res.setups.length, win: s.win, loss: s.loss, be: s.be, wr: s.wr, sum: r2(s.sum), avg: s.avg == null ? null : Math.round(s.avg * 1000) / 1000, maxdd: r2(s.maxdd), worst: s.worst } };

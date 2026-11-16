@@ -46,6 +46,8 @@ var REASONS = {
   L4: "Perte de la semaine de 5 R atteinte"
 };
 var REVIEWABLE = ["A2", "B", "C", "E", "G"];
+/* type de zone d'entrée choisi au lancement : les deux (règle du trader), FVG seul ou IFVG seul ; le choix s'ajoute à la version */
+var ZONES = { both: "", fvg: " · FVG seul", ifvg: " · IFVG seul" };
 
 /* ---- heure de New York (Intl, changements d'heure compris) ---- */
 var nyFmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" });
@@ -118,8 +120,8 @@ function detect(m, R, counts) {
     if (su.phase === "fvg") {
       var d = k - su.S; if (d < 1) return;
       var z = null;
-      if (k >= 2 && B.l[k] > B.h[k - 2] && B.l[k] - B.h[k - 2] >= R.fvgMin * atr) z = { type: "FVG", top: B.l[k], bot: B.h[k - 2], t0: B.t[k - 2] };
-      else for (x = s.bear.length - 1; x >= 0; x--) { var f = s.bear[x]; if (!f.used && f.k < k && B.c[k] > f.top) { f.used = true; z = { type: "IFVG", top: f.top, bot: f.bot, t0: B.t[f.k - 2] }; break; } }
+      if (R.zones !== "ifvg" && k >= 2 && B.l[k] > B.h[k - 2] && B.l[k] - B.h[k - 2] >= R.fvgMin * atr) z = { type: "FVG", top: B.l[k], bot: B.h[k - 2], t0: B.t[k - 2] };
+      else if (R.zones !== "fvg") for (x = s.bear.length - 1; x >= 0; x--) { var f = s.bear[x]; if (!f.used && f.k < k && B.c[k] > f.top) { f.used = true; z = { type: "IFVG", top: f.top, bot: f.bot, t0: B.t[f.k - 2] }; break; } }
       if (z) {
         z.tC = B.t[k] + s.tf; su.zone = z; su.F = k; su.phase = "entry";
         var hi = -Infinity; for (x = su.S; x <= k; x++) if (B.h[x] > hi) hi = B.h[x];
@@ -213,7 +215,7 @@ function rnd(seed) { return function () { seed = (seed * 16807) % 2147483647; re
 /* m1 : { t (minutes UTC), o, h, l, c } triés ; renvoie setups, trades pris, statistiques, échantillon à revoir */
 function run(m1, opts) {
   opts = opts || {};
-  var R = RULES, counts = { A1: 0, replaced: 0, busy: 0, obs: 0, sweeps: 0 };
+  var zones = ZONES[opts.zones] ? opts.zones : "both", R = Object.assign({}, RULES, { zones: zones, version: RULES.version + ZONES[zones] }), counts = { A1: 0, replaced: 0, busy: 0, obs: 0, sweeps: 0 };
   var longs = detect(m1, R, counts); longs.forEach(function (su) { su.dir = 1; });
   var shorts = detect(mirror(m1), R, counts).map(unmirror); shorts.forEach(function (su) { su.dir = -1; });
   var setups = longs.concat(shorts);
@@ -237,11 +239,11 @@ function run(m1, opts) {
     D.n++; D.r += su.out.r; W.r += su.out.r; if (su.out.r < 0) D.streak++; else D.streak = 0;
   });
   /* statistiques des trades pris */
-  var st = { n: taken.length, win: 0, loss: 0, be: 0, sum: 0, maxdd: 0, streak: 0, worst: 0, byReason: {}, byTf: {}, byObTf: {} }, peak = 0, cum = 0;
+  var st = { n: taken.length, win: 0, loss: 0, be: 0, sum: 0, maxdd: 0, streak: 0, worst: 0, byReason: {}, byTf: {}, byObTf: {}, byZone: {} }, peak = 0, cum = 0;
   taken.forEach(function (su) {
     var r = su.out.r; st.sum += r; cum += r; if (cum > peak) peak = cum; if (peak - cum > st.maxdd) st.maxdd = peak - cum;
     if (r > 1e-9) { st.win++; st.streak = 0; } else if (r < -1e-9) { st.loss++; st.streak++; if (st.streak > st.worst) st.worst = st.streak; } else st.be++;
-    [["byTf", su.tf], ["byObTf", su.obTf]].forEach(function (g) { var o = st[g[0]][g[1]] || (st[g[0]][g[1]] = { n: 0, win: 0, sum: 0 }); o.n++; o.sum += r; if (r > 1e-9) o.win++; });
+    [["byTf", su.tf], ["byObTf", su.obTf], ["byZone", su.zone.type]].forEach(function (g) { var o = st[g[0]][g[1]] || (st[g[0]][g[1]] = { n: 0, win: 0, sum: 0 }); o.n++; o.sum += r; if (r > 1e-9) o.win++; });
   });
   setups.forEach(function (su) { if (!su.taken) st.byReason[su.reason] = (st.byReason[su.reason] || 0) + 1; });
   st.avg = st.n ? st.sum / st.n : null; st.wr = st.n ? st.win / st.n : null;
@@ -254,5 +256,5 @@ function run(m1, opts) {
   return { rules: R.version, setups: setups, taken: taken, review: review, reviewTaken: revT.length, counts: counts, stats: st };
 }
 
-window.TradamaxBT = { RULES: RULES, REASONS: REASONS, run: run, aggregate: aggregate, nyWall: nyWall, nyDayKey: nyDayKey };
+window.TradamaxBT = { RULES: RULES, REASONS: REASONS, ZONES: ZONES, run: run, aggregate: aggregate, nyWall: nyWall, nyDayKey: nyDayKey };
 })();
