@@ -1225,14 +1225,23 @@ $("btn-hi").addEventListener("click", function () {
   show("ov-histo", true); sel.focus();
 });
 $("hi-market").addEventListener("change", function () { hiSyncTz(); hiShow(); });
-$("hi-tz").addEventListener("change", hiShow);
+$("hi-tz").addEventListener("change", function () { S.hiTzAuto = null; hiShow(); });
+/* heure du serveur choisie automatiquement : celle où la reprise après le week-end tombe le plus souvent à la même heure de New York
+   (les changements d'heure européens et américains ne tombent pas le même jour : seul le bon réglage reste stable toute l'année) */
+function hiAutoTz() {
+  var raw = S.hiRaw, sel = $("hi-tz"); S.hiTzAuto = null; if (!raw || raw.absolute || raw.tzHint) return;
+  function score(z) { var r = hiAnalyze(raw, z).reopen; return r ? r.count / r.total + (r.wd === 0 && r.min >= 960 && r.min <= 1200 ? .001 : 0) : 0; }
+  var cur = sel.value, best = cur, bs = score(cur);
+  Object.keys(HI_ZONES).forEach(function (z) { if (z === cur) return; var s = score(z); if (s > bs + 1e-9) { best = z; bs = s; } });
+  if (best !== cur) { sel.value = best; S.hiTzAuto = best; }
+}
 $("hi-cancel").addEventListener("click", function () { if (!S.hiImporting) show("ov-histo", false); });
 $("ov-histo").addEventListener("click", function (e) { if (e.target === this && !S.hiImporting) show("ov-histo", false); });
 $("hi-file").addEventListener("change", function () {
   var f = this.files && this.files[0]; S.hiRaw = null; S.hiA = null; $("hi-go").disabled = true; hiErr(""); if (!f) { $("hi-res").textContent = ""; return; }
   var res = $("hi-res"); res.textContent = ""; res.appendChild(el("p", { class: "tx-help", text: "Lecture de " + f.name + " (" + nf0.format(Math.round(f.size / 1048576 * 10) / 10) + " Mo)…" }));
   setTimeout(function () {
-    hiReadText(f).then(function (txt) { S.hiRaw = hiParse(txt); hiSyncTz(); hiShow(); }).catch(function () { res.textContent = ""; hiErr("Fichier illisible : exportez de nouveau les bougies (MT5 ou Dukascopy)."); });
+    hiReadText(f).then(function (txt) { S.hiRaw = hiParse(txt); hiSyncTz(); hiAutoTz(); hiShow(); }).catch(function () { res.textContent = ""; hiErr("Fichier illisible : exportez de nouveau les bougies (MT5 ou Dukascopy)."); });
   }, 30);
 });
 function hiShow() {
@@ -1265,6 +1274,7 @@ function hiShow() {
     }
   }
   res.appendChild(el("p", { class: c, text: msg }));
+  if (S.hiTzAuto) res.appendChild(el("p", { class: "tx-help", text: "Heure du serveur choisie automatiquement : « " + $("hi-tz").selectedOptions[0].textContent + " », la seule qui donne la même heure de reprise toute l'année." }));
   $("hi-go").disabled = !ok;
 }
 $("hi-go").addEventListener("click", function () {
@@ -1537,9 +1547,10 @@ function rvChart() {
       grid: { vertLines: { color: col.line }, horzLines: { color: col.line } }, rightPriceScale: { borderColor: col.line }, timeScale: { borderColor: col.line, timeVisible: true, secondsVisible: false, rightOffset: 4 },
       crosshair: { mode: 0 }, localization: { locale: "fr-FR", priceFormatter: function (p) { return nf2.format(p); } } });
     rvChartObj = chart;
-    var series = chart.addCandlestickSeries({ upColor: col.pos, downColor: col.neg, wickUpColor: col.pos, wickDownColor: col.neg, borderVisible: false, priceLineVisible: false, lastValueVisible: false });
+    var showTrade = su.entry != null && su.risk > 0 && (su.taken || rv.revealed), levels = showTrade ? [su.entry, su.stop, su.tp] : [su.stop];
+    var series = chart.addCandlestickSeries({ upColor: col.pos, downColor: col.neg, wickUpColor: col.pos, wickDownColor: col.neg, borderVisible: false, priceLineVisible: false, lastValueVisible: false,
+      autoscaleInfoProvider: function (orig) { var r = orig(); if (r && r.priceRange) { r.priceRange.minValue = Math.min.apply(null, levels.concat([r.priceRange.minValue])); r.priceRange.maxValue = Math.max.apply(null, levels.concat([r.priceRange.maxValue])); } return r; } });
     series.setData(B.t.map(function (t, k) { return { time: wall[k], open: B.o[k], high: B.h[k], low: B.l[k], close: B.c[k] }; }));
-    var showTrade = su.entry != null && su.risk > 0 && (su.taken || rv.revealed);
     function pl(price, color, title, style) { series.createPriceLine({ price: price, color: color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title: title }); }
     if (showTrade) { pl(su.entry, col.text, "Entrée", 0); pl(su.stop, col.neg, "Stop", 2); pl(su.tp, col.pos, "Objectif", 2); }
     else pl(su.stop, col.neg, "Stop prévu", 2);

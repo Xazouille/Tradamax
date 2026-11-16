@@ -7,5 +7,7 @@ site/
 ~$*
 # Ancien journal (artifact claude.ai) : gardé en local, pas publié
 journal-tradamax-artifact.html
+# Exports de bougies (MT5, Dukascopy) : importés dans Tradamax, jamais publiés
+Import/
 # Réglages locaux de Claude Code
 .claude/settings.local.json
