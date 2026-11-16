@@ -67,7 +67,8 @@ function demoClient() {
       download: function (path) {
         var key = bucket + "/" + path, f = files[key], mm = bucket === "historique" && /^(.+)\/(\d{4}-\d{2})\.csv\.gz$/.exec(path);
         if (!f && mm) return hiGz(demoMonth(mm[1], mm[2])).then(function (b) { files[key] = b; return { data: b, error: null }; }); /* bougies fictives */
-        return Promise.resolve(f ? { data: f, error: null } : { data: null, error: { message: "Object not found" } });
+        /* même forme d'erreur que le vrai Supabase : message « {} » et réponse brute à lire */
+        return Promise.resolve(f ? { data: f, error: null } : { data: null, error: { message: "{}", originalError: new Response(JSON.stringify({ statusCode: "404", error: "not_found", message: "Object not found" }), { status: 400 }) } });
       },
       createSignedUrls: function (paths) { return ok(paths.map(function (p) { return { path: p, signedUrl: shots[p] || null }; })); },
       remove: function () { return ok(null); } }; } },
@@ -1183,20 +1184,27 @@ function hiAnalyze(raw, zoneKey, anchor) {
 /* stockage Supabase */
 function hiGz(text) { return new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob().then(function (b) { return new Blob([b], { type: "application/gzip" }); }); }
 function hiGunzip(blob) { return new Response(blob.stream().pipeThrough(new DecompressionStream("gzip"))).text(); }
+/* Téléchargement d'un fichier de l'espace « historique ». En cas d'erreur, Supabase renvoie la réponse brute
+   (message « {} ») : on lit son statut et son contenu pour distinguer « fichier absent » (normal au premier import)
+   de « espace absent » (migration pas collée) et des vraies erreurs. */
 function hiDownload(path) {
   return S.sb.storage.from(HI_BUCKET).download(path).then(function (res) {
     if (!res.error) return res.data;
-    var msg = String(res.error.message || res.error.error || "");
-    if (/bucket/i.test(msg)) throw res.error;
-    if (/not.?found|does not exist|404/i.test(msg + " " + (res.error.statusCode || res.error.status || ""))) return null;
-    throw res.error;
+    var e = res.error, resp = e.originalError, status = (resp && resp.status) || e.status || e.statusCode || "";
+    var body = resp && typeof resp.text === "function" ? resp.text().catch(function () { return ""; }) : Promise.resolve("");
+    return body.then(function (txt) {
+      var msg = [e.message, e.error, txt].filter(function (x) { return x && x !== "{}"; }).join(" ");
+      if (/bucket/i.test(msg)) throw new Error("Bucket not found");
+      if (/not_found|not.?found|does not exist|no such/i.test(msg) || String(status) === "404") return null;
+      throw new Error(msg || ("réponse " + (status || "inattendue") + " du serveur"));
+    });
   });
 }
 function hiUpload(path, blob, type) { return S.sb.storage.from(HI_BUCKET).upload(path, blob, { upsert: true, contentType: type, cacheControl: "0" }).then(function (res) { if (res.error) throw res.error; }); }
 function hiLoadIndex() { return hiDownload(HI_INDEX).then(function (b) { return b ? b.text().then(function (x) { var j = JSON.parse(x); j.markets = j.markets || {}; return j; }) : { v: 1, markets: {} }; }); }
 function hiSaveIndex(idx) { return hiUpload(HI_INDEX, new Blob([JSON.stringify(idx)], { type: "application/json" }), "application/json"); }
 function hiErrText(e) {
-  var msg = String(e && (e.message || e.error) || e || "");
+  var msg = String(e && (e.message || e.error) || e || ""); if (msg === "{}") msg = "réponse inattendue du serveur";
   if (/bucket/i.test(msg)) return "L'espace « historique » n'existe pas encore dans Supabase : collez la migration du 16/11/2026 (supabase/migrations) dans l'éditeur SQL.";
   if (/row-level|security|unauthori|forbidden|403/i.test(msg)) return "Accès refusé : vérifiez que votre e-mail figure dans la table des membres.";
   return "Erreur : " + (msg || "inconnue") + ".";
