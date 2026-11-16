@@ -64,7 +64,7 @@ MT5 ne garde souvent que quelques mois de bougies M1. Pour plusieurs années, t�
 
 4. Collez aussi `supabase/migrations/2026-11-16_backtest-avis.sql` et `supabase/migrations/2026-11-16_backtest-controles.sql` (même méthode) : ils créent la table des avis et celle des tests de contrôle.
 5. **Lancer le backtest** : choisissez le marché et la période, puis **Lancer**. Le robot applique les règles de la stratégie (simulation sur le passé, aucun ordre passé).
-6. **Revue des setups** : ouvrez chaque setup, regardez le graphique et répondez « Je le prends », « Je le prends, mais autrement » ou « Je ne le prends pas » avec la raison. Le résultat s'affiche après votre réponse. **Exporter les avis** produit le fichier à donner à Claude Code pour corriger les règles.
+6. **Revue des setups** : ouvrez chaque setup, regardez le graphique et répondez « Je le prends », « Je le prends, mais autrement » ou « Je ne le prends pas » avec la raison. Le résultat s'affiche après votre réponse. **Exporter les avis** produit le fichier à donner à Claude Code pour corriger les règles. Un avis donné par erreur s'efface depuis sa fenêtre (« Effacer cet avis ») ; « Effacer mes avis » efface tous ceux que vous avez donnés, sans toucher à ceux de l'autre associé.
 7. **Période de contrôle** : le backtest et la revue s'arrêtent à fin 2024. Les mois à partir de janvier 2025 sont réservés au **Test de contrôle**, qui ne se lance qu'une fois par marché et par version des règles, quand elles sont définitives. Son résultat reste enregistré et ne peut pas être effacé depuis le site.
 
 ---

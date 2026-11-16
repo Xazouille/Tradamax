@@ -1522,7 +1522,7 @@ function rvRender() {
       el("td", { "data-l": "Sens", text: sideLabel(su.dir) }),
       el("td", { "data-l": "Unités", text: "OB " + tfLabel(su.obTf) + " · " + tfLabel(su.tf) }),
       el("td", { "data-l": "Robot" }, [el("span", { class: "tx-badge " + (su.taken ? "is-info" : "is-plain"), title: robotText(su), text: su.taken ? "Pris" : "Annulé (" + su.reason + ")" })]),
-      el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge " + (a.avis === "refuse" ? "is-neg" : a.avis === "autrement" ? "is-warn" : "is-pos"), text: AVIS[a.avis] }) : el("span", { class: "tx-dim", text: "À revoir" })]),
+      el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge " + (a.avis === "refuse" ? "is-neg" : a.avis === "autrement" ? "is-warn" : "is-pos"), text: AVIS[a.avis] + (mine(a) ? " · vous" : "") }) : el("span", { class: "tx-dim", text: "À revoir" })]),
       el("td", { class: "c-act" }, [el("span", { class: "tx-sub", text: a ? "Revoir" : "Donner mon avis" })])
     ]);
     tr.addEventListener("click", function () { openReview(su); });
@@ -1569,7 +1569,7 @@ function rvShow() {
   $("rv-l-refuse").textContent = cancelled ? "Je ne l'aurais pas pris" : "Je ne le prends pas";
   document.querySelectorAll('input[name="rv-avis"]').forEach(function (x) { x.checked = !!a && x.value === a.avis; });
   $("rv-reason").value = a && a.raison || ""; $("rv-note").value = a && a.note || "";
-  $("rv-err").hidden = true; $("rv-prev").disabled = rv.i === 0;
+  $("rv-err").hidden = true; $("rv-prev").disabled = rv.i === 0; $("rv-del").hidden = !a; $("rv-del-confirm").hidden = true;
   rvForm(); rvResult(); rvBtn(); rvChart();
 }
 function rvAvis() { var c = document.querySelector('input[name="rv-avis"]:checked'); return c ? c.value : null; }
@@ -1598,6 +1598,7 @@ function rvResult() {
   if (su.out) {
     box.appendChild(el("b", { text: (su.taken ? "Résultat du robot : " : "Si le robot était entré à " + nf2.format(su.entry) + " : ") + rfmt(su.out.r) }));
     box.appendChild(el("span", { text: exitText(su.out).charAt(0).toUpperCase() + exitText(su.out).slice(1) + "." }));
+    if (su.iE != null && S.bt.m.t[su.iE] != null) { var lw = su.dir > 0 ? S.bt.m.l[su.iE] : S.bt.m.h[su.iE]; box.appendChild(el("span", { class: "tx-sub", text: "Ordre touché le " + nyShort(S.bt.m.t[su.iE]) + " : " + (su.dir > 0 ? "plus bas" : "plus haut") + " de la minute " + nf2.format(lw) + " pour un ordre à " + nf2.format(su.dir > 0 ? su.zone.top : su.zone.bot) + "." })); }
   } else box.appendChild(el("b", { text: "Pas d'entrée possible : le graphique montre la suite du marché." }));
 }
 function rvSave() {
@@ -1610,6 +1611,7 @@ function rvSave() {
   var row = { setup_id: su.id, marche: S.bt.market, regles: S.bt.res.rules, robot: su.taken ? "pris" : "annulé " + su.reason, avis: av, raison: av === "refuse" ? (raison || null) : null, note: note || null, r_robot: su.out ? r2(su.out.r) : null,
     details: { date_ny: nyShort(su.tS), sens: sideLabel(su.dir), unite_liquidite: tfLabel(su.tf), unite_ob: tfLabel(su.obTf), bougies_ob: su.ob.n, zone: su.zone.type, raison_robot: su.taken ? null : BT.REASONS[su.reason], entree: r2(su.entry), stop: r2(su.stop), objectif: r2(su.tp), sortie: su.out ? su.out.kind : null },
     updated_at: new Date().toISOString() };
+  if (S.user && S.user.id) row.auteur = S.user.id; /* l'auteur de l'avis : pour effacer seulement les siens */
   var b = $("rv-save"); b.disabled = true;
   S.sb.from("backtest_avis").upsert(row, { onConflict: "setup_id" }).then(function (res) {
     if (res.error) throw res.error;
@@ -1618,6 +1620,17 @@ function rvSave() {
   }).catch(function (e) { err.textContent = avisErrText(e); err.hidden = false; }).then(function () { if (S.rv === rv) rvBtn(); });
 }
 $("rv-save").addEventListener("click", rvSave);
+/* avis donné par la personne connectée (les avis sans auteur connu ne sont jamais comptés comme les siens) */
+function mine(a) { return !!(a && a.auteur && S.user && S.user.id && a.auteur === S.user.id); }
+/* effacer un avis : définitif, après confirmation */
+$("rv-del").addEventListener("click", function () { this.hidden = true; $("rv-del-confirm").hidden = false; $("rv-del-yes").focus(); });
+$("rv-del-yes").addEventListener("click", function () {
+  var rv = S.rv, su = rv && rv.su, b = this; if (!su) return; b.disabled = true;
+  S.sb.from("backtest_avis").delete().eq("setup_id", su.id).then(function (res) {
+    if (res.error) throw res.error;
+    delete S.avis[su.id]; rvShow(); rvRender(); renderBilan(); toast("Avis effacé");
+  }).catch(function (e) { var err = $("rv-err"); err.textContent = avisErrText(e); err.hidden = false; }).then(function () { b.disabled = false; });
+});
 $("rv-prev").addEventListener("click", function () { if (S.rv && S.rv.i > 0) { S.rv.i--; rvShow(); } });
 $("rv-close").addEventListener("click", rvClose);
 $("ov-review").addEventListener("click", function (e) { if (e.target === this) rvClose(); });
@@ -1777,6 +1790,23 @@ function renderBilan() {
     var lst = el("div", { class: "pg-list" }); keys.forEach(function (x) { lst.appendChild(el("div", { class: "it" }, [el("span", { text: raisonLabel(x) }), el("span"), el("span", { class: "tx-num", text: String(cnt[x]) })])); }); box.appendChild(lst);
   }
 }
+/* effacer tous ses propres avis (ceux de l'autre associé restent), après confirmation */
+function wipeMsg(cls, text) { var p = $("bt-wipe-status"); p.className = "tx-help" + (cls ? " " + cls : ""); p.textContent = text; p.hidden = !text; }
+$("bt-wipe").addEventListener("click", function () {
+  var n = Object.keys(S.avis).filter(function (k) { return mine(S.avis[k]); }).length; wipeMsg("", "");
+  if (!n) { wipeMsg("", "Aucun avis donné par vous pour l'instant."); return; }
+  $("bt-wipe-q").textContent = "Effacer les " + n + " avis que vous avez donnés ? Ceux de l'autre associé sont conservés. C'est définitif.";
+  $("bt-wipe-confirm").hidden = false; $("bt-wipe-yes").focus();
+});
+$("bt-wipe-no").addEventListener("click", function () { $("bt-wipe-confirm").hidden = true; });
+$("bt-wipe-yes").addEventListener("click", function () {
+  var b = this, n = Object.keys(S.avis).filter(function (k) { return mine(S.avis[k]); }).length; b.disabled = true;
+  S.sb.from("backtest_avis").delete().eq("auteur", S.user.id).then(function (res) {
+    if (res.error) throw res.error;
+    $("bt-wipe-confirm").hidden = true; wipeMsg("is-ok", n + " avis effacé" + (n > 1 ? "s" : "") + ". Ceux de l'autre associé sont conservés.");
+    return loadAvis();
+  }).catch(function (e) { wipeMsg("is-error", avisErrText(e)); }).then(function () { b.disabled = false; });
+});
 $("bt-export").addEventListener("click", function () {
   var rows = Object.keys(S.avis).map(function (k) { return S.avis[k]; }); if (!rows.length) return;
   var cols = ["setup_id", "marche", "regles", "date_ny", "sens", "unite_liquidite", "unite_ob", "bougies_ob", "zone", "robot", "raison_robot", "avis", "raison", "note", "entree", "stop", "objectif", "sortie", "r_robot"];
@@ -1912,7 +1942,7 @@ $("btn-logout").addEventListener("click", function () { S.sb.auth.signOut(); });
 
 /* ---------------- démarrage ---------------- */
 var CFG = window.TRADAMAX_CONFIG || {};
-if (DEMO) { S.sb = demoClient(); startApp({ user: { email: "Mode démonstration" } }); return; }
+if (DEMO) { S.sb = demoClient(); startApp({ user: { email: "Mode démonstration", id: "demo-user" } }); return; }
 if (!window.supabase || !CFG.supabaseUrl || /VOTRE/.test(CFG.supabaseUrl + CFG.supabaseAnonKey)) { show("cfg-err", true); return; }
 S.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
 S.sb.auth.getSession().then(function (res) { if (res.data.session) startApp(res.data.session); else show("auth", true); });

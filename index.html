@@ -643,6 +643,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-rv .c-act{text-align:right}
 @media (max-width:640px){.pg-rv .c-act{display:none!important}}
 .pg-ctl-why{margin:0 0 var(--sp-3);max-width:80ch}
+.pg-wipe{margin:0 0 var(--sp-3)}
+#bt-wipe-status{margin:0 0 var(--sp-3)}
 .pg-ctl-act{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2)}
 .pg-ctl-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);font-size:var(--fs-3)}
 .pg-ctl-act+.tx-help{margin:var(--sp-3) 0}
@@ -984,8 +986,13 @@ code{font-family:var(--f-mono);font-size:.92em}
     <section class="tx-panel">
       <div class="tx-panel-head">
         <div><h2 class="tx-title">Bilan des avis</h2><div class="tx-sub">Tous les avis donnés, toutes versions des règles confondues</div></div>
-        <button class="tx-btn" id="bt-export" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg>Exporter les avis</button>
+        <div class="pg-actions">
+          <button class="tx-btn is-ghost" id="bt-wipe" type="button">Effacer mes avis</button>
+          <button class="tx-btn" id="bt-export" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg>Exporter les avis</button>
+        </div>
       </div>
+      <p class="pg-confirm pg-wipe" id="bt-wipe-confirm" hidden><span id="bt-wipe-q"></span> <button class="tx-btn is-danger" id="bt-wipe-yes" type="button">Oui, effacer</button><button class="tx-btn is-ghost" id="bt-wipe-no" type="button">Annuler</button></p>
+      <p class="tx-help" id="bt-wipe-status" role="status" aria-live="polite" hidden></p>
       <div id="bt-bilan"></div>
     </section>
     <section class="tx-panel">
@@ -1514,7 +1521,11 @@ code{font-family:var(--f-mono);font-size:.92em}
     </div>
     <p class="tx-help is-error pg-err" id="rv-err" role="alert" hidden></p>
     <div class="tx-dialog-foot">
-      <div class="pg-foot-l"><button class="tx-btn is-ghost" id="rv-prev" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-gauche"/></svg>Précédent</button></div>
+      <div class="pg-foot-l">
+        <button class="tx-btn is-ghost" id="rv-prev" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-gauche"/></svg>Précédent</button>
+        <button class="tx-btn is-danger" id="rv-del" type="button" hidden>Effacer cet avis</button>
+        <span class="pg-confirm" id="rv-del-confirm" hidden>Effacer cet avis ? <button class="tx-btn is-danger" id="rv-del-yes" type="button">Oui, effacer</button></span>
+      </div>
       <div class="pg-foot-r"><button class="tx-btn is-ghost" id="rv-close" type="button">Fermer</button><button class="tx-btn is-primary" id="rv-save" type="button">Enregistrer et voir la suite</button></div>
     </div>
   </div>
