@@ -5,9 +5,11 @@
 (function () {
 "use strict";
 
-/* Règles v1 : section 8 du document de règles (réponses du trader du 16/11/2026). Distances en ATR 14. */
+/* Règles v2 : section 8 du document de règles (réponses du trader du 16/11/2026). Distances en ATR 14.
+   v2 : entrée par ordre limite sur le bord de la zone (haut du FVG/IFVG à l'achat), exécuté minute par minute ;
+   annulations D (retour violent tardif) et F (clôture de l'autre côté de la zone) supprimées. */
 var RULES = {
-  version: "v1 du 16/11/2026",
+  version: "v2 du 16/11/2026",
   obTfs: [3, 5, 15, 30, 60],   /* unités où l'on cherche l'OB */
   sweepTfs: [1, 3, 5],         /* unités de la prise de liquidité, du FVG/IFVG et de l'entrée */
   swingK: 2,                   /* sommet ou creux de swing : 2 bougies de chaque côté */
@@ -20,9 +22,8 @@ var RULES = {
   sweepConfirm: 3,             /* une clôture revient au-dessus dans les 3 bougies */
   fvgMin: .3,                  /* écart minimal d'un FVG */
   ifvgLookback: 20,            /* un IFVG inverse un FVG opposé formé dans les 20 dernières bougies */
-  maxBars: 5,                  /* FVG/IFVG puis entrée : entre 1 et 5 bougies */
-  goneR: 1,                    /* annulation B : le prix est déjà à +1 R */
-  strongBody: 1,               /* annulation D : retour avec un corps d'au moins 1 ATR */
+  maxBars: 5,                  /* FVG/IFVG puis entrée : entre 1 et 5 bougies (l'ordre limite reste actif 5 bougies) */
+  goneR: 1,                    /* annulation B : le prix est déjà à +1 R du bord de la zone */
   tpR: 2, beR: 1,              /* objectif 2 R ; stop au point d'entrée dès +1 R ou une prise de liquidité */
   limits: { perDay: 3, lossStreak: 2, dayLossR: 2, weekLossR: 5 },
   review: { taken: 60, cancelled: 30 }, /* setups tirés au hasard pour la revue par le trader */
@@ -36,9 +37,7 @@ var REASONS = {
   A2: "Pas de retour dans la zone dans les 5 bougies",
   B: "Le prix est parti sans nous (+1 R avant l'entrée)",
   C: "Liquidité prise en face avant l'entrée",
-  D: "Retour violent à la 3e, 4e ou 5e bougie",
   E: "OB cassé avant l'entrée",
-  F: "Clôture de l'autre côté de la zone au retour",
   G: "Stop du mauvais côté de l'entrée",
   P: "Position déjà ouverte",
   L1: "3 trades déjà pris ce jour-là",
@@ -46,7 +45,7 @@ var REASONS = {
   L3: "Perte du jour de 2 R atteinte",
   L4: "Perte de la semaine de 5 R atteinte"
 };
-var REVIEWABLE = ["A2", "B", "C", "D", "E", "F", "G"];
+var REVIEWABLE = ["A2", "B", "C", "E", "G"];
 
 /* ---- heure de New York (Intl, changements d'heure compris) ---- */
 var nyFmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" });
@@ -106,8 +105,10 @@ function detect(m, R, counts) {
     var top = -Infinity, bot = Infinity; for (x = g0; x <= g1; x++) { if (B.h[x] > top) top = B.h[x]; if (B.l[x] < bot) bot = B.l[x]; }
     return { tf: s.tf, t0: B.t[g0], tC: B.t[k] + s.tf, n: g1 - g0 + 1, top: top, bot: bot, valid: true, tEnd: null };
   }
-  function end(s, su, k, reason) {
-    var B = s.B; su.reason = reason; su.tD = B.t[k] + s.tf; su.iD = B.i1[k];
+  function end(s, su, k, reason, j) {
+    /* moment de la décision : la minute précise (j) quand elle est connue, sinon la fin de la bougie */
+    var B = s.B; su.reason = reason;
+    if (j != null) { su.iD = j; su.tD = m.t[j] + 1; } else { su.tD = B.t[k] + s.tf; su.iD = B.i1[k]; }
     if (s.pending === su) s.pending = null;
     if (reason === "A1") { counts.A1++; return; }
     out.push(su);
@@ -122,22 +123,24 @@ function detect(m, R, counts) {
       if (z) {
         z.tC = B.t[k] + s.tf; su.zone = z; su.F = k; su.phase = "entry";
         var hi = -Infinity; for (x = su.S; x <= k; x++) if (B.h[x] > hi) hi = B.h[x];
-        su.opp = nearestAbove(s.highs, hi); su.risk0 = z.top - su.stop; return;
+        su.opp = nearestAbove(s.highs, hi); su.risk0 = z.top - su.stop;
+        if (su.stop >= z.top) end(s, su, k, "G"); /* le stop serait au-dessus de l'ordre : pas d'ordre possible */
+        return;
       }
       if (d >= R.maxBars) end(s, su, k, "A1");
       return;
     }
     var dd = k - su.F; if (dd < 1) return;
-    if (!su.ob.valid) { end(s, su, k, "E"); return; }
-    if (B.l[k] <= su.zone.top) { /* retour dans la zone : décision à la clôture de cette bougie */
-      su.entry = B.c[k]; su.kE = k; su.iE = B.i1[k]; su.tE = B.t[k] + s.tf; su.beLiq = nearestAbove(s.highs, su.entry); su.nth = dd;
-      if (su.entry < su.zone.bot) { end(s, su, k, "F"); return; }
-      if (dd >= 3 && B.o[k] - B.c[k] >= R.strongBody * atr) { end(s, su, k, "D"); return; }
-      if (su.stop >= su.entry) { end(s, su, k, "G"); return; }
-      end(s, su, k, null); return;
+    /* ordre limite posé en haut de la zone à sa création : on rejoue chaque minute de la bougie, dans l'ordre */
+    for (var j = B.i0[k]; j <= B.i1[k]; j++) {
+      if (!su.ob.valid && su.ob.tEnd != null && su.ob.tEnd <= m.t[j]) { end(s, su, k, "E", j); return; }
+      if (m.l[j] <= su.zone.top) { /* ordre exécuté (au prix d'ouverture si le prix saute par-dessus) */
+        su.entry = Math.min(m.o[j], su.zone.top); su.kE = k; su.iE = j; su.tE = m.t[j] + 1; su.nth = dd; su.beLiq = nearestAbove(s.highs, su.entry);
+        end(s, su, k, su.stop >= su.entry ? "G" : null, j); return;
+      }
+      if (su.risk0 > 0 && m.h[j] >= su.zone.top + R.goneR * su.risk0) { end(s, su, k, "B", j); return; }
+      if (su.opp != null && m.h[j] > su.opp) { end(s, su, k, "C", j); return; }
     }
-    if (su.risk0 > 0 && B.h[k] >= su.zone.top + R.goneR * su.risk0) { end(s, su, k, "B"); return; }
-    if (su.opp != null && B.h[k] > su.opp) { end(s, su, k, "C"); return; }
     if (dd >= R.maxBars) end(s, su, k, "A2");
   }
   function confirm(s, w, k) {
@@ -194,9 +197,10 @@ function unmirror(su) {
 function simulate(m, su, R) {
   var dir = su.dir, risk = (su.entry - su.stop) * dir; if (!(risk > 0)) return null;
   var tp = su.entry + dir * R.tpR * risk, beL = su.entry + dir * R.beR * risk, stop = su.stop, be = false, tBe = null;
-  for (var i = su.iE + 1; i < m.t.length; i++) {
-    var hi = m.h[i], lo = m.l[i], op = m.o[i];
+  for (var i = su.iE; i < m.t.length; i++) {
+    var hi = m.h[i], lo = m.l[i], op = i === su.iE ? su.entry : m.o[i];
     if (dir > 0 ? lo <= stop : hi >= stop) { var px = dir > 0 ? Math.min(op, stop) : Math.max(op, stop); return { t: m.t[i], i: i, price: px, kind: be ? "be" : "sl", r: (px - su.entry) * dir / risk, tBe: tBe }; }
+    if (i === su.iE) continue; /* minute de l'entrée : seul le stop compte (on ne sait pas si l'objectif viendrait avant ou après) */
     if (dir > 0 ? hi >= tp : lo <= tp) return { t: m.t[i], i: i, price: tp, kind: "tp", r: R.tpR, tBe: tBe };
     if (!be && ((dir > 0 ? hi >= beL : lo <= beL) || (su.beLiq != null && (dir > 0 ? hi > su.beLiq : lo < su.beLiq)))) { be = true; stop = su.entry; tBe = m.t[i]; }
   }
@@ -216,7 +220,7 @@ function run(m1, opts) {
   setups.forEach(function (su) {
     su.id = (opts.market || "") + "|" + (su.dir > 0 ? "A" : "V") + "|M" + su.tf + "|" + su.tS;
     su.obTf = su.ob.tf;
-    if (su.entry != null && (su.reason === null || su.reason === "D" || su.reason === "F")) {
+    if (su.entry != null && su.reason === null) {
       su.risk = (su.entry - su.stop) * su.dir;
       if (su.risk > 0) { su.tp = su.entry + su.dir * R.tpR * su.risk; su.out = simulate(m1, su, R); }
     }

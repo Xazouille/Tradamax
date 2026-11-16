@@ -1554,7 +1554,7 @@ function rvShow() {
   var robot = $("rv-robot"); robot.textContent = "";
   if (su.taken) {
     robot.appendChild(el("b", { text: "Le robot prend ce trade." }));
-    robot.appendChild(el("span", {}, ["Entrée ", el("span", { class: "tx-num", text: nf2.format(su.entry) }), " à la clôture de la " + su.nth + (su.nth > 1 ? "e" : "re") + " bougie après " + (su.zone.type === "IFVG" ? "l'IFVG" : "le FVG") + ", stop ", el("span", { class: "tx-num", text: nf2.format(su.stop) }), " (clôture de la bougie de prise de liquidité), objectif ", el("span", { class: "tx-num", text: nf2.format(su.tp) }), " (2 R). 1 R = ", el("span", { class: "tx-num", text: nf2.format(su.risk) }), "."]));
+    robot.appendChild(el("span", {}, ["Entrée ", el("span", { class: "tx-num", text: nf2.format(su.entry) }), " : ordre limite " + (su.dir > 0 ? "en haut" : "en bas") + (su.zone.type === "IFVG" ? " de l'IFVG" : " du FVG") + ", exécuté pendant la " + su.nth + (su.nth > 1 ? "e" : "re") + " bougie après sa formation ; stop ", el("span", { class: "tx-num", text: nf2.format(su.stop) }), " (clôture de la bougie de prise de liquidité), objectif ", el("span", { class: "tx-num", text: nf2.format(su.tp) }), " (2 R). 1 R = ", el("span", { class: "tx-num", text: nf2.format(su.risk) }), "."]));
   } else {
     robot.appendChild(el("b", { text: "Le robot n'a pas pris ce setup." }));
     robot.appendChild(el("span", { text: "Raison : " + (BT.REASONS[su.reason] || su.reason) + " (règle " + su.reason + ")." }));
@@ -1653,7 +1653,7 @@ function rvChart() {
     function barAt(t) { var k = lastLE(B.t, Math.floor(t / tf) * tf); return k < 0 ? null : wall[k]; }
     var mk = [], up = su.dir > 0, tSw = barAt(su.tS);
     if (tSw) mk.push({ time: tSw, position: up ? "belowBar" : "aboveBar", color: col.text2, shape: up ? "arrowUp" : "arrowDown", text: "Liquidité" });
-    if (showTrade && su.tE) { var tE = barAt(su.tE - su.tf); if (tE) mk.push({ time: tE, position: up ? "belowBar" : "aboveBar", color: col.text, shape: "circle", text: "Entrée" }); }
+    if (showTrade && su.tE) { var tE = barAt(su.tE - 1); if (tE) mk.push({ time: tE, position: up ? "belowBar" : "aboveBar", color: col.text, shape: "circle", text: "Entrée" }); }
     if (rv.revealed && su.out && su.out.kind !== "fin") { var tX = barAt(su.out.t); if (tX) mk.push({ time: tX, position: up === (su.out.kind === "tp") ? "aboveBar" : "belowBar", color: su.out.kind === "tp" ? col.pos : su.out.kind === "sl" ? col.neg : col.text2, shape: "square", text: su.out.kind === "tp" ? "Objectif" : su.out.kind === "sl" ? "Stop" : "Point d'entrée" }); }
     series.setMarkers(mk.sort(function (a, b) { return a.time - b.time; }));
     var dec = lastLE(B.t, Math.floor((su.tD - 1) / tf) * tf), last = rv.revealed ? B.t.length - 1 : dec;
