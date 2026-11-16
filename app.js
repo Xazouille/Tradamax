@@ -30,7 +30,8 @@ function demoClient() {
       { id: "demo-p1", firme: "FTMO", programme: "2-Step", taille: 50000, devise: "EUR", statut: "Compte financé", cout: 345, date_achat: today, note: null },
       { id: "demo-p2", firme: "FTMO", programme: "2-Step", taille: 50000, devise: "EUR", statut: "Challenge en cours", cout: 345, date_achat: today, note: null },
       { id: "demo-p3", firme: "FundedNext", programme: "Stellar 2-Step", taille: 50000, devise: "USD", statut: "Challenge échoué", cout: 299.99, date_achat: today, note: null }],
-    payouts: [{ id: "demo-y1", compte_id: "demo-p1", date: today, montant: 1850, devise: "EUR", note: "Premier versement" }] };
+    payouts: [{ id: "demo-y1", compte_id: "demo-p1", date: today, montant: 1850, devise: "EUR", note: "Premier versement" }],
+    backtest_avis: [] };
   function ok(data) { return Promise.resolve({ data: data, error: null }); }
   function query(table) {
     var op = "select", payload = null, filt = null, single = false, rng = null;
@@ -39,7 +40,7 @@ function demoClient() {
       var t = db[table];
       if (op === "insert") { [].concat(payload).forEach(function (r) { t.push(Object.assign({ id: "demo-" + (++n), created_at: new Date().toISOString() }, r)); }); return ok(null); }
       if (op === "update") { t.forEach(function (r) { if (match(r)) Object.assign(r, payload); }); return ok(null); }
-      if (op === "upsert") { var e = t.find(function (r) { return r.id === payload.id; }); if (e) Object.assign(e, payload); else t.push(payload); return ok(null); }
+      if (op === "upsert") { var key = payload.setup_id != null ? "setup_id" : "id", e = t.find(function (r) { return r[key] === payload[key]; }); if (e) Object.assign(e, payload); else t.push(Object.assign({ created_at: new Date().toISOString() }, payload)); return ok(null); }
       if (op === "delete") {
         if (table === "prop_comptes") { var gone = t.filter(match).map(function (r) { return r.id; }); db.payouts = db.payouts.filter(function (y) { return gone.indexOf(y.compte_id) < 0; }); }
         db[table] = t.filter(function (r) { return !match(r); }); return ok(null);
@@ -63,7 +64,11 @@ function demoClient() {
     from: query,
     storage: { from: function (bucket) { return {
       upload: function (path, file) { files[bucket + "/" + path] = file; if (bucket === "captures") shots[path] = URL.createObjectURL(file); return ok(null); },
-      download: function (path) { var f = files[bucket + "/" + path]; return Promise.resolve(f ? { data: f, error: null } : { data: null, error: { message: "Object not found" } }); },
+      download: function (path) {
+        var key = bucket + "/" + path, f = files[key], mm = bucket === "historique" && /^(.+)\/(\d{4}-\d{2})\.csv\.gz$/.exec(path);
+        if (!f && mm) return hiGz(demoMonth(mm[1], mm[2])).then(function (b) { files[key] = b; return { data: b, error: null }; }); /* bougies fictives */
+        return Promise.resolve(f ? { data: f, error: null } : { data: null, error: { message: "Object not found" } });
+      },
       createSignedUrls: function (paths) { return ok(paths.map(function (p) { return { path: p, signedUrl: shots[p] || null }; })); },
       remove: function () { return ok(null); } }; } },
     channel: function () { return chan; }, removeChannel: function () {},
@@ -84,6 +89,23 @@ function demoHistoIndex() {
   return { v: 1, markets: {
     XAUUSD: { slug: "XAUUSD", tz: "ny7", updated: "2026-11-16T09:12:00Z", months: months("2023-03", "2025-10", "2024-07", "2025-10") },
     DAX: { slug: "DAX", tz: "ny7", updated: "2026-11-16T09:20:00Z", months: months("2024-01", "2025-10", null, null) } } };
+}
+function demoMonth(slug, key) {
+  /* un mois de bougies M1 fictives (marche au hasard avec des poussées), heures d'ouverture de l'or : dimanche 18h à vendredi 17h, pause de 17h à 18h (New York) */
+  var base = { XAUUSD: [2600, .35], DAX: [19000, 2.5], Nasdaq: [20000, 3] }[slug] || [1000, .2];
+  var y = Number(key.slice(0, 4)), mo = Number(key.slice(5)) - 1, seed = ((y * 12 + mo) * 7919 + slug.length * 104729) % 2147483646 + 1;
+  var p = base[0] * (1 + ((y * 12 + mo) % 7) * .01), vol = base[1], drift = 0, out = ["t;o;h;l;c;s"], days = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+  function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+  for (var d = 1; d <= days; d++) {
+    var wd = new Date(Date.UTC(y, mo, d)).getUTCDay();
+    for (var mn = 0; mn < 1440; mn++) {
+      if (wd === 6 || (wd === 0 && mn < 1080) || (wd === 5 && mn >= 1020) || (mn >= 1020 && mn < 1080)) continue;
+      if (rnd() < .004) drift = (rnd() - .5) * vol * 1.4; if (rnd() < .01) drift *= .3;
+      var o = p, c = o + drift + (rnd() - .5) * 2 * vol, h = Math.max(o, c) + rnd() * vol * .6, l = Math.min(o, c) - rnd() * vol * .6; p = c;
+      out.push(Math.round(wallToUtc(Date.UTC(y, mo, d, 0, mn), "America/New_York") / 60000) + ";" + o.toFixed(2) + ";" + h.toFixed(2) + ";" + l.toFixed(2) + ";" + c.toFixed(2) + ";");
+    }
+  }
+  return out.join("\n") + "\n";
 }
 function demoCal() {
   var d = new Date(), y = d.getUTCFullYear(), m = d.getUTCMonth(), j = d.getUTCDate();
@@ -145,7 +167,8 @@ var S = {
   calY: null, calM: null, editing: null, shotFile: null, shotPath: null, signed: {},
   props: [], payouts: [], editingProp: null, importRows: null, tmpM: null, tmpA: null,
   cal: null, calUpdated: null, ecoDay: "today", tab: "journal",
-  hiIdx: null, hiErr: null, hiRaw: null, hiA: null, hiBusy: false
+  hiIdx: null, hiErr: null, hiRaw: null, hiA: null, hiBusy: false,
+  bt: null, btBusy: false, avis: {}, avisErr: null, rvFilter: "todo", rvShown: 30, rv: null
 };
 
 /* ---------------- utilitaires ---------------- */
@@ -1136,6 +1159,8 @@ function renderBacktest() {
   kpi(k, "Période", all.length ? all[0].slice(0, 4) + " → " + all[all.length - 1].slice(0, 4) : "—", "", all.length ? "De " + mLong(all[0]) + " à " + mLong(all[all.length - 1]) : "—");
   kpi(k, "Dernier import", last ? frDate(last.slice(0, 10)) : "—", "", last ? "Espace privé « historique »" : "—");
   names.forEach(function (m) { box.appendChild(covBlock(m, idx[m])); });
+  if (!S.btBusy) btFill();
+  btRender(); renderBilan();
 }
 function covBlock(m, e) {
   var months = (e && e.months) || {}, ks = Object.keys(months).sort(), wrap = el("div", { class: "pg-cov-mk" });
@@ -1237,6 +1262,334 @@ $("hi-go").addEventListener("click", function () {
   }).then(function () { S.hiImporting = false; $("hi-cancel").disabled = false; $("hi-file").disabled = false; hiRefresh(); });
 });
 
+/* ---------------- backtest : lancement, résultats, revue des setups avec graphique, avis ---------------- */
+var BT = window.TradamaxBT;
+var LWC_URL = "https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js";
+var AVIS = { pris: "Pris", autrement: "Pris autrement", refuse: "Refusé" };
+var RAISONS = [["ob", "L'OB n'est pas valable"], ["liq", "Pas de vraie prise de liquidité"], ["fvg", "Le FVG ou l'IFVG n'est pas valable"], ["tard", "Entrée trop tardive"], ["stop", "Stop mal placé"], ["ctx", "Contexte ou tendance contraire"], ["news", "Annonce économique"], ["autre", "Autre (à préciser en commentaire)"]];
+function raisonLabel(k) { var r = RAISONS.find(function (x) { return x[0] === k; }); return r ? r[1] : (k || ""); }
+var fmtNYShort = new Intl.DateTimeFormat("fr-FR", { timeZone: "America/New_York", day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+function nyShort(tMin) { return fmtNYShort.format(new Date(tMin * 60000)); }
+function tfLabel(tf) { return tf >= 60 ? "H" + tf / 60 : "M" + tf; }
+function sideLabel(d) { return d > 0 ? "Achat" : "Vente"; }
+function r2(v) { return v == null ? null : Math.round(v * 100) / 100; }
+function lastLE(arr, x) { var lo = 0, hi = arr.length - 1, ans = -1; while (lo <= hi) { var mid = (lo + hi) >> 1; if (arr[mid] <= x) { ans = mid; lo = mid + 1; } else hi = mid - 1; } return ans; }
+function loadLWC() {
+  if (window.LightweightCharts) return Promise.resolve();
+  if (!loadLWC.p) loadLWC.p = new Promise(function (ok, ko) { var s = document.createElement("script"); s.src = LWC_URL; s.onload = ok; s.onerror = function () { loadLWC.p = null; ko(new Error("graphique")); }; document.head.appendChild(s); });
+  return loadLWC.p;
+}
+function avisErrText(e) {
+  var msg = String(e && (e.message || e.code) || e || "");
+  if (/backtest_avis|relation|schema cache|PGRST205|42P01/i.test(msg)) return "La table des avis n'existe pas encore : collez la migration supabase/migrations/2026-11-16_backtest-avis.sql dans l'éditeur SQL de Supabase.";
+  return hiErrText(e);
+}
+function loadAvis() {
+  return fetchAll("backtest_avis", "created_at").then(function (rows) { var o = {}; rows.forEach(function (r) { o[r.setup_id] = r; }); S.avis = o; S.avisErr = null; }, function (e) { S.avisErr = avisErrText(e); })
+    .then(function () { if (S.tab === "backtest") { rvRender(); renderBilan(); } });
+}
+
+/* lancement */
+function btFill() {
+  var idx = S.hiIdx ? S.hiIdx.markets : {}, sel = $("bt-market"), cur = sel.value;
+  var names = Object.keys(idx).filter(function (m) { return Object.keys(idx[m].months || {}).length; });
+  sel.textContent = ""; names.forEach(function (m) { sel.appendChild(el("option", { value: m, text: m })); });
+  if (names.indexOf(cur) >= 0) sel.value = cur;
+  $("bt-rules").textContent = "Règles " + BT.RULES.version + " · " + (names.length ? "données importées : " + names.join(", ") : "importez d'abord des bougies (plus bas)");
+  btFillMonths();
+}
+function btFillMonths() {
+  var m = $("bt-market").value, e = S.hiIdx && S.hiIdx.markets[m], ks = e ? Object.keys(e.months).sort() : [];
+  [["bt-from", Math.max(0, ks.length - 6)], ["bt-to", ks.length - 1]].forEach(function (p) {
+    var s = $(p[0]), keep = s.value, same = s.dataset.m === m; s.textContent = "";
+    ks.forEach(function (k) { s.appendChild(el("option", { value: k, text: mLong(k) })); });
+    s.value = same && ks.indexOf(keep) >= 0 ? keep : (ks[p[1]] || ""); s.dataset.m = m;
+  });
+  $("bt-go").disabled = !ks.length || !!S.btBusy;
+}
+$("bt-market").addEventListener("change", btFillMonths);
+function btLoad(m, keys, onProg) {
+  var e = S.hiIdx.markets[m], T = [], O = [], H = [], L = [], C = [], done = 0, chain = Promise.resolve();
+  keys.forEach(function (k) {
+    chain = chain.then(function () { return hiDownload(e.slug + "/" + k + ".csv.gz"); }).then(function (b) { return b ? hiGunzip(b) : ""; }).then(function (txt) {
+      var lines = txt.split("\n");
+      for (var i = 1; i < lines.length; i++) { var ln = lines[i]; if (!ln) continue; var f = ln.split(";"); T.push(+f[0]); O.push(+f[1]); H.push(+f[2]); L.push(+f[3]); C.push(+f[4]); }
+      onProg(++done);
+    });
+  });
+  return chain.then(function () {
+    var ord = [], i; for (i = 0; i < T.length; i++) ord.push(i);
+    ord.sort(function (a, b) { return T[a] - T[b] || a - b; });
+    var t = [], o = [], h = [], l = [], c = [];
+    ord.forEach(function (j) { if (t.length && t[t.length - 1] === T[j]) return; t.push(T[j]); o.push(O[j]); h.push(H[j]); l.push(L[j]); c.push(C[j]); });
+    return { t: Int32Array.from(t), o: Float64Array.from(o), h: Float64Array.from(h), l: Float64Array.from(l), c: Float64Array.from(c) };
+  });
+}
+$("bt-go").addEventListener("click", function () {
+  var m = $("bt-market").value, from = $("bt-from").value, to = $("bt-to").value, e = S.hiIdx && S.hiIdx.markets[m], b = this, st = $("bt-status"); if (!e) return;
+  if (from > to) { var x = from; from = to; to = x; }
+  var keys = Object.keys(e.months).filter(function (k) { return k >= from && k <= to; }).sort(), t0 = Date.now();
+  S.btBusy = true; b.disabled = true; st.className = "tx-help"; st.textContent = "Chargement des bougies : 0 mois sur " + keys.length + "…";
+  btLoad(m, keys, function (d) { st.textContent = "Chargement des bougies : " + d + " mois sur " + keys.length + "…"; }).then(function (data) {
+    if (!data.t.length) throw new Error("vide");
+    st.textContent = "Calcul du backtest sur " + nf0.format(data.t.length) + " bougies…";
+    return new Promise(function (ok) { setTimeout(function () { ok({ data: data, res: BT.run(data, { market: m }) }); }, 40); });
+  }).then(function (x) {
+    S.bt = { market: m, from: from, to: to, m: x.data, res: x.res }; S.rvShown = 30;
+    st.className = "tx-help is-ok";
+    st.textContent = "Backtest terminé en " + ((Date.now() - t0) / 1000).toFixed(1).replace(".", ",") + " s : " + mLong(from) + " à " + mLong(to) + ", " + nf0.format(x.data.t.length) + " bougies, " + x.res.stats.n + " trades pris, " + x.res.review.length + " setups à revoir.";
+    btRender(); loadAvis();
+  }).catch(function (err) { st.className = "tx-help is-error"; st.textContent = err && err.message === "vide" ? "Aucune bougie sur cette période." : hiErrText(err); })
+    .then(function () { S.btBusy = false; b.disabled = false; });
+});
+
+/* résultats */
+function btRender() {
+  var r = S.bt && S.bt.res; $("bt-out").hidden = !r; if (!r) return;
+  var s = r.stats, k = $("bt-res-kpis"); k.textContent = "";
+  kpi(k, "Trades pris", String(s.n), "", "sur " + nf0.format(r.setups.length) + " setups complets · " + S.bt.market);
+  kpi(k, "Taux de réussite", s.wr == null ? "—" : pct(s.wr), "", s.n ? s.win + " gagnants · " + s.loss + " perdants · " + s.be + " à zéro" : "—");
+  kpi(k, "Résultat", s.n ? rfmt(s.sum) : "—", cls(s.sum), s.avg == null ? "—" : "R moyen " + rfmt(s.avg));
+  kpi(k, "Drawdown max", s.n ? "−" + nf2.format(s.maxdd) + " R" : "—", "", "Plus longue série de pertes : " + s.worst);
+  var rb = $("bt-reasons"); rb.textContent = "";
+  var rs = Object.assign({ A1: r.counts.A1 }, s.byReason), labels = Object.assign({ A1: "Pas de FVG ni d'IFVG dans les 5 bougies" }, BT.REASONS);
+  Object.keys(rs).filter(function (c) { return rs[c]; }).sort(function (a, b) { return rs[b] - rs[a]; }).forEach(function (c) {
+    rb.appendChild(el("div", { class: "it" }, [el("span", { text: labels[c] || c }), el("span", { class: "tx-sub tx-num", text: c }), el("span", { class: "tx-num", text: nf0.format(rs[c]) })]));
+  });
+  var tb = $("bt-tf"); tb.textContent = "";
+  function trow(label, o) { tb.appendChild(el("tr", {}, [el("td", { "data-l": "Unité", text: label }), el("td", { class: "r tx-num", "data-l": "Trades", text: o ? String(o.n) : "0" }), el("td", { class: "r tx-num", "data-l": "Réussite", text: o && o.n ? pct(o.win / o.n, 0) : "—" }), el("td", { class: "r tx-num " + (o ? cls(o.sum) : ""), "data-l": "Résultat", text: o ? rfmt(o.sum) : "—" })])); }
+  BT.RULES.sweepTfs.forEach(function (tf) { trow("Prise de liquidité " + tfLabel(tf), s.byTf[tf]); });
+  BT.RULES.obTfs.forEach(function (tf) { trow("OB " + tfLabel(tf), s.byObTf[tf]); });
+  rvRender();
+}
+
+/* liste à revoir : trades pris + échantillon d'annulés */
+function rvItems() {
+  var r = S.bt && S.bt.res; if (!r) return [];
+  return r.review.filter(function (su) { var a = S.avis[su.id]; return S.rvFilter === "all" || (S.rvFilter === "done" ? !!a : !a); });
+}
+function robotText(su) { return su.taken ? "Pris par le robot" : "Annulé : " + (BT.REASONS[su.reason] || su.reason); }
+function rvRender() {
+  var r = S.bt && S.bt.res; if (!r) return;
+  var done = r.review.filter(function (su) { return S.avis[su.id]; }).length;
+  $("bt-rv-sub").textContent = done + " revu" + (done > 1 ? "s" : "") + " sur " + r.review.length + " : les " + r.taken.length + " trades pris par le robot et " + (r.review.length - r.taken.length) + " setups annulés tirés au hasard. Le résultat s'affiche après votre avis.";
+  var tb = $("bt-rv-body"); tb.textContent = "";
+  function empty(b, t) { tb.appendChild(el("tr", {}, [el("td", { colspan: "6", class: "c-empty" }, [el("div", { class: "tx-empty is-compact" }, [el("b", { text: b }), el("span", { text: t })])])])); }
+  if (S.avisErr) empty("Avis indisponibles", S.avisErr);
+  var items = rvItems(), vis = items.slice(0, S.rvShown);
+  if (!items.length) empty(S.rvFilter === "todo" ? "Tout est revu" : "Aucun setup", S.rvFilter === "todo" ? "Chaque setup de ce backtest a reçu un avis." : "Rien à afficher avec ce filtre.");
+  vis.forEach(function (su) {
+    var a = S.avis[su.id];
+    var tr = el("tr", { tabindex: "0", "aria-label": sideLabel(su.dir) + " du " + nyShort(su.tS) + ", " + robotText(su) + (a ? ", avis : " + AVIS[a.avis] : ", à revoir") }, [
+      el("td", { class: "tx-num", "data-l": "Date", text: nyShort(su.tS) }),
+      el("td", { "data-l": "Sens", text: sideLabel(su.dir) }),
+      el("td", { "data-l": "Unités", text: "OB " + tfLabel(su.obTf) + " · " + tfLabel(su.tf) }),
+      el("td", { "data-l": "Robot" }, [el("span", { class: "tx-badge " + (su.taken ? "is-info" : "is-plain"), title: robotText(su), text: su.taken ? "Pris" : "Annulé (" + su.reason + ")" })]),
+      el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge " + (a.avis === "refuse" ? "is-neg" : a.avis === "autrement" ? "is-warn" : "is-pos"), text: AVIS[a.avis] }) : el("span", { class: "tx-dim", text: "À revoir" })]),
+      el("td", { class: "c-act" }, [el("span", { class: "tx-sub", text: a ? "Revoir" : "Donner mon avis" })])
+    ]);
+    tr.addEventListener("click", function () { openReview(su); });
+    tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openReview(su); } });
+    tb.appendChild(tr);
+  });
+  show("bt-rv-more", items.length > vis.length);
+}
+$("bt-rv-filter").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; S.rvFilter = b.dataset.v; S.rvShown = 30; this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); rvRender(); });
+$("bt-rv-more-b").addEventListener("click", function () { S.rvShown += 30; rvRender(); });
+
+/* fenêtre de revue */
+(function () { var s = $("rv-reason"); s.appendChild(el("option", { value: "", text: "Choisir une raison" })); RAISONS.forEach(function (r) { s.appendChild(el("option", { value: r[0], text: r[1] })); }); })();
+function openReview(su) {
+  var list = rvItems(), i = list.indexOf(su);
+  if (i < 0) { list = S.bt.res.review; i = list.indexOf(su); }
+  S.rv = { list: list.slice(), i: i }; show("ov-review", true); rvShow(); $("rv-close").focus();
+}
+function rvClose() { rvDestroy(); show("ov-review", false); S.rv = null; }
+function rvShow() {
+  var rv = S.rv, su = rv.list[rv.i], a = S.avis[su.id];
+  rv.su = su; rv.tf = su.tf; rv.revealed = !!a; rv.dirty = false;
+  $("rv-title").textContent = sideLabel(su.dir) + " " + S.bt.market + " · " + nyShort(su.tS);
+  $("rv-sub").textContent = "OB " + tfLabel(su.obTf) + " (" + su.ob.n + " bougie" + (su.ob.n > 1 ? "s" : "") + ") · prise de liquidité " + tfLabel(su.tf) + " · " + su.zone.type + " · heures de New York";
+  $("rv-pos").textContent = (rv.i + 1) + " / " + rv.list.length;
+  var seg = $("rv-tf"); seg.textContent = "";
+  [su.tf, su.obTf].filter(function (v, i, a2) { return a2.indexOf(v) === i; }).forEach(function (tf) {
+    var b = el("button", { type: "button", "aria-pressed": String(tf === rv.tf), text: tfLabel(tf) + (tf === su.tf ? " · prise de liquidité" : " · OB") });
+    b.addEventListener("click", function () { rv.tf = tf; seg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); rvChart(); });
+    seg.appendChild(b);
+  });
+  var robot = $("rv-robot"); robot.textContent = "";
+  if (su.taken) {
+    robot.appendChild(el("b", { text: "Le robot prend ce trade." }));
+    robot.appendChild(el("span", {}, ["Entrée ", el("span", { class: "tx-num", text: nf2.format(su.entry) }), " à la clôture de la " + su.nth + (su.nth > 1 ? "e" : "re") + " bougie après " + (su.zone.type === "IFVG" ? "l'IFVG" : "le FVG") + ", stop ", el("span", { class: "tx-num", text: nf2.format(su.stop) }), " (clôture de la bougie de prise de liquidité), objectif ", el("span", { class: "tx-num", text: nf2.format(su.tp) }), " (2 R). 1 R = ", el("span", { class: "tx-num", text: nf2.format(su.risk) }), "."]));
+  } else {
+    robot.appendChild(el("b", { text: "Le robot n'a pas pris ce setup." }));
+    robot.appendChild(el("span", { text: "Raison : " + (BT.REASONS[su.reason] || su.reason) + " (règle " + su.reason + ")." }));
+  }
+  var cancelled = !su.taken;
+  $("rv-q").textContent = cancelled ? "L'auriez-vous pris ?" : "Prenez-vous ce trade ?";
+  $("rv-l-pris").textContent = cancelled ? "Je l'aurais pris" : "Je le prends";
+  $("rv-l-autrement").textContent = cancelled ? "Je l'aurais pris autrement" : "Je le prends, mais autrement";
+  $("rv-l-refuse").textContent = cancelled ? "Je ne l'aurais pas pris" : "Je ne le prends pas";
+  document.querySelectorAll('input[name="rv-avis"]').forEach(function (x) { x.checked = !!a && x.value === a.avis; });
+  $("rv-reason").value = a && a.raison || ""; $("rv-note").value = a && a.note || "";
+  $("rv-err").hidden = true; $("rv-prev").disabled = rv.i === 0;
+  rvForm(); rvResult(); rvBtn(); rvChart();
+}
+function rvAvis() { var c = document.querySelector('input[name="rv-avis"]:checked'); return c ? c.value : null; }
+function rvForm() {
+  var av = rvAvis(), cancelled = S.rv && S.rv.su && !S.rv.su.taken;
+  $("rv-reason-f").hidden = av !== "refuse";
+  $("rv-note-l").textContent = av === "autrement" ? "Qu'est-ce que vous feriez autrement ? (entrée, stop, objectif…)" : av === "pris" && cancelled ? "Pourquoi l'annulation du robot est de trop ? (facultatif)" : "Commentaire (facultatif)";
+}
+function rvBtn() {
+  var rv = S.rv, b = $("rv-save");
+  if (!rv.revealed) { b.textContent = "Enregistrer et voir la suite"; b.disabled = false; }
+  else if (rv.dirty) { b.textContent = "Mettre à jour l'avis"; b.disabled = false; }
+  else { b.textContent = rv.i < rv.list.length - 1 ? "Setup suivant" : "Dernier setup"; b.disabled = rv.i >= rv.list.length - 1; }
+}
+document.querySelectorAll('input[name="rv-avis"]').forEach(function (x) { x.addEventListener("change", function () { rvForm(); if (S.rv) { S.rv.dirty = true; rvBtn(); } }); });
+["rv-reason", "rv-note"].forEach(function (id) { $(id).addEventListener("input", function () { if (S.rv && S.rv.revealed) { S.rv.dirty = true; rvBtn(); } }); });
+function exitText(o) {
+  var when = " le " + nyShort(o.t);
+  if (o.kind === "tp") return "objectif atteint" + when;
+  if (o.kind === "sl") return "stop touché" + when;
+  if (o.kind === "be") return "sorti au point d'entrée" + when + " (stop remonté le " + nyShort(o.tBe) + ")";
+  return "encore ouvert à la fin des données";
+}
+function rvResult() {
+  var rv = S.rv, su = rv.su, box = $("rv-result"); box.textContent = ""; if (!rv.revealed) return;
+  if (su.out) {
+    box.appendChild(el("b", { text: (su.taken ? "Résultat du robot : " : "Si le robot était entré à " + nf2.format(su.entry) + " : ") + rfmt(su.out.r) }));
+    box.appendChild(el("span", { text: exitText(su.out).charAt(0).toUpperCase() + exitText(su.out).slice(1) + "." }));
+  } else box.appendChild(el("b", { text: "Pas d'entrée possible : le graphique montre la suite du marché." }));
+}
+function rvSave() {
+  var rv = S.rv, su = rv.su, av = rvAvis(), raison = $("rv-reason").value, note = $("rv-note").value.replace(/\s+/g, " ").trim(), err = $("rv-err");
+  if (rv.revealed && !rv.dirty) { if (rv.i < rv.list.length - 1) { rv.i++; rvShow(); } return; }
+  if (!av) { err.textContent = "Choisissez une réponse."; err.hidden = false; return; }
+  if (av === "refuse" && !raison && su.taken) { err.textContent = "Choisissez une raison : c'est ce qui permet d'améliorer les règles."; err.hidden = false; return; }
+  if (av === "autrement" && !note) { err.textContent = "Dites en quelques mots ce que vous feriez autrement."; err.hidden = false; return; }
+  err.hidden = true;
+  var row = { setup_id: su.id, marche: S.bt.market, regles: S.bt.res.rules, robot: su.taken ? "pris" : "annulé " + su.reason, avis: av, raison: av === "refuse" ? (raison || null) : null, note: note || null, r_robot: su.out ? r2(su.out.r) : null,
+    details: { date_ny: nyShort(su.tS), sens: sideLabel(su.dir), unite_liquidite: tfLabel(su.tf), unite_ob: tfLabel(su.obTf), bougies_ob: su.ob.n, zone: su.zone.type, raison_robot: su.taken ? null : BT.REASONS[su.reason], entree: r2(su.entry), stop: r2(su.stop), objectif: r2(su.tp), sortie: su.out ? su.out.kind : null },
+    updated_at: new Date().toISOString() };
+  var b = $("rv-save"); b.disabled = true;
+  S.sb.from("backtest_avis").upsert(row, { onConflict: "setup_id" }).then(function (res) {
+    if (res.error) throw res.error;
+    S.avis[su.id] = Object.assign({}, S.avis[su.id] || {}, row); rv.revealed = true; rv.dirty = false;
+    rvResult(); rvChart(); rvRender(); renderBilan();
+  }).catch(function (e) { err.textContent = avisErrText(e); err.hidden = false; }).then(function () { if (S.rv === rv) rvBtn(); });
+}
+$("rv-save").addEventListener("click", rvSave);
+$("rv-prev").addEventListener("click", function () { if (S.rv && S.rv.i > 0) { S.rv.i--; rvShow(); } });
+$("rv-close").addEventListener("click", rvClose);
+$("ov-review").addEventListener("click", function (e) { if (e.target === this) rvClose(); });
+/* le graphique reprend les couleurs du thème : bouton de thème ou changement du système */
+function rvRetheme() { if (S.rv && !$("ov-review").hidden) setTimeout(rvChart, 30); }
+document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest('[data-action="theme"]')) rvRetheme(); });
+try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rvRetheme); } catch (e) {}
+
+/* graphique : bougies jusqu'à la décision (puis la suite une fois l'avis donné), zones dessinées par-dessus */
+var rvChartObj = null, rvRaf = 0;
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function rvDestroy() { cancelAnimationFrame(rvRaf); rvRaf = 0; if (rvChartObj) { try { rvChartObj.remove(); } catch (e) {} rvChartObj = null; } }
+function rvChart() {
+  var rv = S.rv, su = rv && rv.su, box = $("rv-chart"); if (!su) return;
+  rvDestroy(); box.textContent = "";
+  loadLWC().then(function () { if (S.rv === rv && rv.su === su && !$("ov-review").hidden) draw(); }, function () {
+    box.appendChild(el("div", { class: "tx-empty is-compact" }, [el("b", { text: "Graphique indisponible" }), el("span", { text: "La bibliothèque de graphiques n'a pas pu être chargée : vérifiez la connexion internet." })]));
+  });
+  function draw() {
+    var m = S.bt.m, tf = rv.tf, LW = window.LightweightCharts;
+    var endI = rv.revealed ? Math.min(m.t.length - 1, Math.max(su.iD, su.out ? su.out.i : su.iD) + 40 * tf) : su.iD;
+    var tStart = Math.max(Math.min(su.ob.t0, su.tL) - 20 * tf, m.t[endI] - 400 * tf), startI = Math.max(0, lastLE(m.t, tStart));
+    var B = BT.aggregate(m, tf, startI, endI), wall = B.t.map(function (t) { return BT.nyWall(t) * 60; });
+    var col = { text: cssVar("--c-text"), text2: cssVar("--c-text-2"), line: cssVar("--c-line"), panel: cssVar("--c-panel"), pos: cssVar("--c-pos"), neg: cssVar("--c-neg") };
+    var chart = LW.createChart(box, { autoSize: true, layout: { background: { type: "solid", color: col.panel }, textColor: col.text2, fontFamily: "IBM Plex Mono, ui-monospace, monospace", fontSize: 11 },
+      grid: { vertLines: { color: col.line }, horzLines: { color: col.line } }, rightPriceScale: { borderColor: col.line }, timeScale: { borderColor: col.line, timeVisible: true, secondsVisible: false, rightOffset: 4 },
+      crosshair: { mode: 0 }, localization: { locale: "fr-FR", priceFormatter: function (p) { return nf2.format(p); } } });
+    rvChartObj = chart;
+    var series = chart.addCandlestickSeries({ upColor: col.pos, downColor: col.neg, wickUpColor: col.pos, wickDownColor: col.neg, borderVisible: false, priceLineVisible: false, lastValueVisible: false });
+    series.setData(B.t.map(function (t, k) { return { time: wall[k], open: B.o[k], high: B.h[k], low: B.l[k], close: B.c[k] }; }));
+    var showTrade = su.entry != null && su.risk > 0 && (su.taken || rv.revealed);
+    function pl(price, color, title, style) { series.createPriceLine({ price: price, color: color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title: title }); }
+    if (showTrade) { pl(su.entry, col.text, "Entrée", 0); pl(su.stop, col.neg, "Stop", 2); pl(su.tp, col.pos, "Objectif", 2); }
+    else pl(su.stop, col.neg, "Stop prévu", 2);
+    function barAt(t) { var k = lastLE(B.t, Math.floor(t / tf) * tf); return k < 0 ? null : wall[k]; }
+    var mk = [], up = su.dir > 0, tSw = barAt(su.tS);
+    if (tSw) mk.push({ time: tSw, position: up ? "belowBar" : "aboveBar", color: col.text2, shape: up ? "arrowUp" : "arrowDown", text: "Liquidité" });
+    if (showTrade && su.tE) { var tE = barAt(su.tE - su.tf); if (tE) mk.push({ time: tE, position: up ? "belowBar" : "aboveBar", color: col.text, shape: "circle", text: "Entrée" }); }
+    if (rv.revealed && su.out && su.out.kind !== "fin") { var tX = barAt(su.out.t); if (tX) mk.push({ time: tX, position: up === (su.out.kind === "tp") ? "aboveBar" : "belowBar", color: su.out.kind === "tp" ? col.pos : su.out.kind === "sl" ? col.neg : col.text2, shape: "square", text: su.out.kind === "tp" ? "Objectif" : su.out.kind === "sl" ? "Stop" : "Point d'entrée" }); }
+    series.setMarkers(mk.sort(function (a, b) { return a.time - b.time; }));
+    var dec = lastLE(B.t, Math.floor((su.tD - 1) / tf) * tf), last = rv.revealed ? B.t.length - 1 : dec;
+    chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, dec - 45), to: Math.max(last, dec) + 8 });
+    /* zones : OB, FVG/IFVG et niveau de liquidité pris, recalculés à chaque image (zoom, défilement) */
+    var ov = svgEl("svg", { class: "pg-rv-ov", "aria-hidden": "true" }); box.appendChild(ov);
+    var obR = svgEl("rect", { class: "pg-ov-ob", rx: 2 }), zR = svgEl("rect", { class: "pg-ov-z", rx: 2 }), lv = svgEl("line", { class: "pg-ov-l" }), obT = svgEl("text", { class: "pg-ov-t" }), zT = svgEl("text", { class: "pg-ov-t" });
+    obT.textContent = "OB " + tfLabel(su.obTf); zT.textContent = su.zone.type + " " + tfLabel(su.tf);
+    [obR, zR, lv, obT, zT].forEach(function (x) { ov.appendChild(x); });
+    var tEnd = rv.revealed ? B.t[B.t.length - 1] : su.tD - 1, ts = chart.timeScale();
+    function xAt(t) { var k = lastLE(B.t, t); return ts.logicalToCoordinate(k < 0 ? -1 : k); }
+    function box2(r, label, t0, t1, top, bot) {
+      var W = ts.width(), half = (ts.options().barSpacing || 6) / 2, x0 = xAt(t0), x1 = xAt(t1), y0 = series.priceToCoordinate(top), y1 = series.priceToCoordinate(bot);
+      if (x0 == null || x1 == null || y0 == null || y1 == null) { r.setAttribute("width", 0); label.setAttribute("x", -999); return; }
+      x0 = Math.max(0, x0 - half); x1 = Math.min(W, x1 + half);
+      r.setAttribute("x", x0); r.setAttribute("y", Math.min(y0, y1)); r.setAttribute("width", Math.max(0, x1 - x0)); r.setAttribute("height", Math.max(1, Math.abs(y1 - y0)));
+      label.setAttribute("x", x0 + 4); label.setAttribute("y", Math.min(y0, y1) - 4);
+    }
+    function frame() {
+      if (rvChartObj !== chart) return;
+      if ($("ov-review").hidden) { rvDestroy(); return; }
+      box2(obR, obT, su.ob.t0, tEnd, su.ob.top, su.ob.bot);
+      box2(zR, zT, su.zone.t0, tEnd, su.zone.top, su.zone.bot);
+      var lx0 = xAt(su.tL), lx1 = xAt(su.tS), ly = series.priceToCoordinate(su.L);
+      if (lx0 != null && lx1 != null && ly != null) { lv.setAttribute("x1", Math.max(0, lx0)); lv.setAttribute("x2", Math.min(ts.width(), lx1)); lv.setAttribute("y1", ly); lv.setAttribute("y2", ly); }
+      rvRaf = requestAnimationFrame(frame);
+    }
+    frame();
+    box.setAttribute("aria-label", "Graphique " + tfLabel(tf) + " jusqu'à " + (rv.revealed ? "la fin du trade" : "la décision du robot") + " : OB " + tfLabel(su.obTf) + " entre " + nf2.format(su.ob.bot) + " et " + nf2.format(su.ob.top) + ", liquidité prise à " + nf2.format(su.L) + ", " + su.zone.type + " entre " + nf2.format(su.zone.bot) + " et " + nf2.format(su.zone.top) + (showTrade ? ", entrée " + nf2.format(su.entry) + ", stop " + nf2.format(su.stop) + ", objectif " + nf2.format(su.tp) : "") + ".");
+  }
+}
+
+/* bilan des avis et export */
+function renderBilan() {
+  var box = $("bt-bilan"); box.textContent = "";
+  if (S.avisErr) { box.appendChild(el("div", { class: "tx-empty is-compact" }, [el("b", { text: "Avis inaccessibles" }), el("span", { text: S.avisErr })])); $("bt-export").disabled = true; return; }
+  var rows = Object.keys(S.avis).map(function (k) { return S.avis[k]; }); $("bt-export").disabled = !rows.length;
+  if (!rows.length) { box.appendChild(el("div", { class: "tx-empty is-compact" }, [el("b", { text: "Aucun avis pour l'instant" }), el("span", { text: "Lancez un backtest, puis ouvrez un setup de la revue pour donner votre avis." })])); return; }
+  function isRobot(r) { return /^pris/.test(r.robot); }
+  function avg(list) { var v = list.filter(function (r) { return r.r_robot != null && isFinite(Number(r.r_robot)); }).map(function (r) { return Number(r.r_robot); }); return v.length ? { n: v.length, a: v.reduce(function (s, x) { return s + x; }, 0) / v.length } : null; }
+  var robot = rows.filter(isRobot), acc = robot.filter(function (r) { return r.avis !== "refuse"; }), ref = robot.filter(function (r) { return r.avis === "refuse"; });
+  var missed = rows.filter(function (r) { return !isRobot(r) && r.avis !== "refuse"; }), agree = acc.length + rows.filter(function (r) { return !isRobot(r) && r.avis === "refuse"; }).length;
+  var aA = avg(acc), aR = avg(ref), aM = avg(missed), k = el("section", { class: "tx-stats", "aria-label": "Bilan des avis" });
+  kpi(k, "Avis donnés", String(rows.length), "", robot.length + " sur des trades du robot");
+  kpi(k, "Accord avec le robot", pct(agree / rows.length, 0), "", agree + " sur " + rows.length);
+  kpi(k, "Trades acceptés", aA ? rfmt(aA.a) : "—", aA ? cls(aA.a) : "", aA ? "R moyen sur " + aA.n + " trade" + (aA.n > 1 ? "s" : "") : "Aucun pour l'instant");
+  kpi(k, "Trades refusés", aR ? rfmt(aR.a) : "—", aR ? cls(aR.a) : "", aR ? "R moyen qu'ils auraient fait (" + aR.n + ")" : "Aucun pour l'instant");
+  kpi(k, "Annulés que vous auriez pris", String(missed.length), "", aM ? "R moyen si pris : " + rfmt(aM.a) : "—");
+  box.appendChild(k);
+  var msg = !aA || !aR || aA.n < 5 || aR.n < 5 ? "Encore trop peu d'avis pour conclure : il faut au moins 5 trades acceptés et 5 refusés."
+    : aR.a < aA.a ? "Les trades que vous refusez font en moyenne " + rfmt(aR.a) + ", contre " + rfmt(aA.a) + " pour ceux que vous acceptez : votre jugement améliore le résultat. Il faut le traduire en règle (voir les raisons ci-dessous)."
+    : "Les trades que vous refusez font en moyenne " + rfmt(aR.a) + ", contre " + rfmt(aA.a) + " pour ceux que vous acceptez : pour l'instant, vos refus n'améliorent pas le résultat.";
+  box.appendChild(el("p", { class: "tx-sub", style: "margin:var(--sp-3) 0 0", text: msg }));
+  var cnt = {}; rows.forEach(function (r) { if (r.avis === "refuse" && r.raison) cnt[r.raison] = (cnt[r.raison] || 0) + 1; });
+  var keys = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; });
+  if (keys.length) {
+    box.appendChild(el("div", { class: "tx-group tx-label", style: "margin:var(--sp-4) 0 var(--sp-1)", text: "Raisons de refus" }));
+    var lst = el("div", { class: "pg-list" }); keys.forEach(function (x) { lst.appendChild(el("div", { class: "it" }, [el("span", { text: raisonLabel(x) }), el("span"), el("span", { class: "tx-num", text: String(cnt[x]) })])); }); box.appendChild(lst);
+  }
+}
+$("bt-export").addEventListener("click", function () {
+  var rows = Object.keys(S.avis).map(function (k) { return S.avis[k]; }); if (!rows.length) return;
+  var cols = ["setup_id", "marche", "regles", "date_ny", "sens", "unite_liquidite", "unite_ob", "bougies_ob", "zone", "robot", "raison_robot", "avis", "raison", "note", "entree", "stop", "objectif", "sortie", "r_robot"];
+  function q(v) { v = v == null ? "" : String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  var lines = [cols.join(";")].concat(rows.map(function (r) {
+    var d = r.details || {}, f = { setup_id: r.setup_id, marche: r.marche, regles: r.regles, robot: r.robot, avis: r.avis, raison: raisonLabel(r.raison), note: r.note, r_robot: r.r_robot };
+    return cols.map(function (c) { var v = c in f ? f[c] : d[c]; return q(typeof v === "number" ? String(v).replace(".", ",") : v); }).join(";");
+  }));
+  download("tradamax-avis-backtest-" + todayISO() + ".csv", lines.join("\n"));
+});
+
 /* ---------------- navigation ---------------- */
 var TABS = ["journal", "propfirms", "annonces", "backtest", "styleguide"]; /* styleguide : page cachée, absente du menu */
 var TITLES = { journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", backtest: "Backtest", styleguide: "Guide de style" };
@@ -1247,12 +1600,12 @@ function setTab(t) {
   $("page-title").textContent = TITLES[t]; $("page-head").hidden = t === "styleguide"; document.title = "Tradamax · " + TITLES[t];
   document.querySelectorAll(".pg-actions[data-for]").forEach(function (g) { g.hidden = g.dataset.for !== t; });
   if (t === "journal") renderJournal(); if (t === "propfirms") renderProps(); if (t === "annonces") renderEco();
-  if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); }
+  if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); loadAvis(); }
   renderSession();
 }
 document.querySelectorAll("[data-tab]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.tab; }); });
 window.addEventListener("hashchange", function () { setTab(location.hash.slice(1)); window.scrollTo(0, 0); });
-document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; ["ov-shot", "ov-capital", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings", "ov-histo"].some(function (id) { if (id === "ov-histo" && S.hiImporting) return false; if (!$(id).hidden) { show(id, false); return true; } return false; }); });
+document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; if (!$("ov-review").hidden) { rvClose(); return; } ["ov-shot", "ov-capital", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings", "ov-histo"].some(function (id) { if (id === "ov-histo" && S.hiImporting) return false; if (!$(id).hidden) { show(id, false); return true; } return false; }); });
 var ro, roW = {};
 try {
   ro = new ResizeObserver(function (entries) {

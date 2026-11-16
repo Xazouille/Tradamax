@@ -60,6 +60,10 @@ Les captures d'écran de l'ancien journal ne sont pas transférées : rajoutez c
 
 Un nouvel export plus tard complète simplement les mois déjà importés.
 
+4. Collez aussi `supabase/migrations/2026-11-16_backtest-avis.sql` (même méthode) : il crée la table des avis.
+5. **Lancer le backtest** : choisissez le marché et la période, puis **Lancer**. Le robot applique les règles de la stratégie (simulation sur le passé, aucun ordre passé).
+6. **Revue des setups** : ouvrez chaque setup, regardez le graphique et répondez « Je le prends », « Je le prends, mais autrement » ou « Je ne le prends pas » avec la raison. Le résultat s'affiche après votre réponse. **Exporter les avis** produit le fichier à donner à Claude Code pour corriger les règles.
+
 ---
 
 ## Bon à savoir
@@ -76,7 +80,8 @@ Un nouvel export plus tard complète simplement les mois déjà importés.
 | Fichier | Rôle |
 | --- | --- |
 | `index.html` | La page et son style |
-| `app.js` | Le fonctionnement (journal, prop firms, annonces, connexion) |
+| `app.js` | Le fonctionnement (journal, prop firms, annonces, backtest, connexion) |
+| `backtest.js` | Le robot de backtest : règles de la stratégie appliquées aux bougies M1 (simulation uniquement) |
 | `config.js` | Adresse et clé publique de votre base Supabase |
 | `supabase/schema.sql` | Création des tables et des règles d'accès |
 | `supabase/migrations/` | Évolutions de la base, à coller une fois chacune dans l'éditeur SQL de Supabase |

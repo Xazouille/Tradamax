@@ -634,6 +634,39 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-hi-res .tx-help{margin:0}
 .pg-progress{height:6px;border-radius:999px;background:var(--c-inset);overflow:hidden}
 .pg-progress i{display:block;height:100%;width:0;border-radius:999px;background:var(--c-pos);transition:width .2s var(--ease)}
+.pg-btrun{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:var(--sp-3);align-items:end}
+.pg-btrun+.tx-help{margin:var(--sp-3) 0 0}
+.pg-btrun+.tx-help:empty{display:none}
+@media (max-width:640px){.pg-btrun{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pg-btrun>:first-child,.pg-btrun>.tx-btn{grid-column:1/-1}}
+.pg-rv td{white-space:nowrap}
+.pg-rv .c-act{text-align:right}
+@media (max-width:640px){.pg-rv .c-act{display:none!important}}
+/* revue d'un setup : graphique avec zones dessinées par-dessus, avis */
+.pg-rv-body{padding:var(--sp-4) 20px;display:flex;flex-direction:column;gap:var(--sp-4)}
+.pg-rv-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:var(--sp-2) var(--sp-4)}
+.pg-rv-chart{position:relative;height:420px;border:1px solid var(--c-line);border-radius:var(--r-2);overflow:hidden;background:var(--c-panel)}
+.pg-rv-chart>.pg-rv-ov{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3}
+.pg-rv-chart>.tx-empty{position:absolute;inset:0;display:grid;place-content:center;border:0}
+.pg-ov-ob{fill:color-mix(in srgb,var(--c-info) 13%,transparent);stroke:color-mix(in srgb,var(--c-info) 60%,transparent);stroke-width:1}
+.pg-ov-z{fill:color-mix(in srgb,var(--c-warn) 18%,transparent);stroke:color-mix(in srgb,var(--c-warn) 70%,transparent);stroke-width:1}
+.pg-ov-l{stroke:var(--c-text-2);stroke-width:1.5;stroke-dasharray:5 4}
+.pg-ov-t{font:500 11px var(--f-sans);fill:var(--c-text-2)}
+.tx-legend i.pg-lg-ob{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-info) 22%,transparent);box-shadow:inset 0 0 0 1px var(--c-info)}
+.tx-legend i.pg-lg-z{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-warn) 26%,transparent);box-shadow:inset 0 0 0 1px var(--c-warn)}
+.tx-legend i.pg-lg-l{background:repeating-linear-gradient(90deg,var(--c-text-2) 0 4px,transparent 4px 7px)}
+.pg-rv-robot{display:flex;flex-direction:column;gap:6px;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-2);background:var(--c-panel-2);border:1px solid var(--c-line);font-size:var(--fs-3);color:var(--c-text-2)}
+.pg-rv-robot b{color:var(--c-text);font-weight:600}
+.pg-rv-robot .tx-num{color:var(--c-text)}
+.pg-rv-avis{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
+.pg-rv-avis legend{padding:0;margin-bottom:var(--sp-2)}
+.pg-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.pg-choice label{position:relative;display:flex;align-items:center;justify-content:center;text-align:center;min-height:40px;padding:6px 10px;border:1px solid var(--c-ctl);border-radius:var(--r-2);background:var(--c-field);color:var(--c-text-2);font-weight:600;font-size:var(--fs-3);cursor:pointer;transition:background-color .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease)}
+.pg-choice input{position:absolute;opacity:0;pointer-events:none}
+.pg-choice label:hover{color:var(--c-text)}
+.pg-choice label:has(input:focus-visible){outline:2px solid var(--c-focus);outline-offset:2px}
+.pg-choice label:has(input:checked){background:var(--c-accent-soft);border-color:var(--c-accent-fill);color:var(--c-text)}
+.pg-rv-result:empty{display:none}
+@media (max-width:560px){.pg-rv-chart{height:300px}.pg-rv-body{padding:var(--sp-3) var(--sp-4)}.pg-choice{grid-template-columns:minmax(0,1fr)}}
 
 /* connexion et configuration manquante */
 .pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-left,0px))}
@@ -739,7 +772,7 @@ code{font-family:var(--f-mono);font-size:.92em}
           <button class="tx-btn is-primary" id="btn-add-prop" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau compte</button>
         </div>
         <div class="pg-actions" data-for="backtest" hidden>
-          <button class="tx-btn is-primary" id="btn-hi" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg>Importer des bougies MT5</button>
+          <button class="tx-btn" id="btn-hi" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg>Importer des bougies MT5</button>
         </div>
       </div>
 
@@ -905,7 +938,42 @@ code{font-family:var(--f-mono);font-size:.92em}
 
   <!-- ================= BACKTEST ================= -->
   <section id="tab-backtest" class="tab" hidden>
-    <p class="tx-sub pg-intro">Bougies d'une minute exportées depuis MT5, gardées dans un espace privé de Supabase. Elles serviront au backtest automatique de la stratégie (règles dans le document privé du projet).</p>
+    <p class="tx-sub pg-intro">Le robot applique les règles de la stratégie aux bougies d'une minute importées depuis MT5. Simulation sur le passé uniquement : aucun ordre n'est passé.</p>
+    <section class="tx-panel">
+      <div class="tx-panel-head"><div><h2 class="tx-title">Lancer le backtest</h2><div class="tx-sub" id="bt-rules"></div></div></div>
+      <div class="pg-btrun">
+        <div class="tx-field"><label for="bt-market">Marché</label><select class="tx-input" id="bt-market"></select></div>
+        <div class="tx-field"><label for="bt-from">Du mois</label><select class="tx-input" id="bt-from"></select></div>
+        <div class="tx-field"><label for="bt-to">Au mois</label><select class="tx-input" id="bt-to"></select></div>
+        <button class="tx-btn is-primary" id="bt-go" type="button">Lancer</button>
+      </div>
+      <p class="tx-help" id="bt-status" role="status" aria-live="polite"></p>
+    </section>
+    <div class="tab" id="bt-out" hidden>
+      <section class="tx-stats" id="bt-res-kpis" aria-label="Résultat du backtest"></section>
+      <div class="pg-grid pg-2">
+        <section class="tx-panel"><h2 class="tx-title">Setups non pris</h2><div class="tx-sub pg-panel-sub">Raison de chaque annulation par le robot</div><div class="pg-list" id="bt-reasons"></div></section>
+        <section class="tx-panel"><h2 class="tx-title">Par unité de temps</h2><div class="tx-sub pg-panel-sub">Trades pris selon l'unité de la prise de liquidité et celle de l'OB</div><div class="tx-table-wrap"><table class="tx-table is-stack"><thead><tr><th>Unité</th><th class="r">Trades</th><th class="r">Réussite</th><th class="r">Résultat</th></tr></thead><tbody id="bt-tf"></tbody></table></div></section>
+      </div>
+      <section class="tx-panel">
+        <div class="tx-panel-head">
+          <div><h2 class="tx-title">Revue des setups</h2><div class="tx-sub" id="bt-rv-sub"></div></div>
+          <div class="tx-seg" id="bt-rv-filter" role="group" aria-label="Setups affichés"><button type="button" data-v="todo" aria-pressed="true">À revoir</button><button type="button" data-v="done" aria-pressed="false">Revus</button><button type="button" data-v="all" aria-pressed="false">Tous</button></div>
+        </div>
+        <div class="tx-table-wrap"><table class="tx-table is-stack is-click pg-rv">
+          <thead><tr><th>Date (New York)</th><th>Sens</th><th>Unités</th><th>Robot</th><th>Avis</th><th></th></tr></thead>
+          <tbody id="bt-rv-body"></tbody>
+        </table></div>
+        <div class="pg-more" id="bt-rv-more" hidden><button class="tx-btn" id="bt-rv-more-b" type="button">Afficher plus</button></div>
+      </section>
+    </div>
+    <section class="tx-panel">
+      <div class="tx-panel-head">
+        <div><h2 class="tx-title">Bilan des avis</h2><div class="tx-sub">Tous les avis donnés, toutes versions des règles confondues</div></div>
+        <button class="tx-btn" id="bt-export" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg>Exporter les avis</button>
+      </div>
+      <div id="bt-bilan"></div>
+    </section>
     <section class="tx-stats" id="bt-kpis" aria-label="Données historiques"></section>
     <section class="tx-panel">
       <div class="tx-panel-head">
@@ -1385,6 +1453,36 @@ code{font-family:var(--f-mono);font-size:.92em}
   </div>
 </div>
 
+<div class="tx-overlay" id="ov-review" hidden>
+  <div class="tx-dialog is-media" role="dialog" aria-labelledby="rv-title">
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="rv-title">Setup</h3><div class="tx-sub" id="rv-sub"></div></div><span class="tx-sub tx-num" id="rv-pos"></span></div>
+    <div class="pg-rv-body">
+      <div class="pg-rv-bar">
+        <div class="tx-seg" id="rv-tf" role="group" aria-label="Unité de temps du graphique"></div>
+        <div class="tx-legend" style="margin:0"><span><i class="pg-lg-ob"></i>OB</span><span><i class="pg-lg-z"></i>FVG ou IFVG</span><span><i class="pg-lg-l"></i>Liquidité prise</span><span>Heure de New York</span></div>
+      </div>
+      <div class="pg-rv-chart" id="rv-chart" role="img" aria-label="Graphique du setup"></div>
+      <div class="pg-rv-robot" id="rv-robot"></div>
+      <fieldset class="pg-rv-avis">
+        <legend class="pg-lbl" id="rv-q">Votre avis</legend>
+        <div class="pg-choice" role="radiogroup" aria-labelledby="rv-q">
+          <label><input type="radio" name="rv-avis" value="pris"><span id="rv-l-pris">Je le prends</span></label>
+          <label><input type="radio" name="rv-avis" value="autrement"><span id="rv-l-autrement">Je le prends, mais autrement</span></label>
+          <label><input type="radio" name="rv-avis" value="refuse"><span id="rv-l-refuse">Je ne le prends pas</span></label>
+        </div>
+        <div class="tx-field" id="rv-reason-f" hidden><label for="rv-reason">Pourquoi ?</label><select class="tx-input" id="rv-reason"></select></div>
+        <div class="tx-field"><label for="rv-note" id="rv-note-l">Commentaire (facultatif)</label><textarea class="tx-input" id="rv-note" maxlength="500"></textarea></div>
+      </fieldset>
+      <div class="pg-rv-robot pg-rv-result" id="rv-result" role="status" aria-live="polite"></div>
+    </div>
+    <p class="tx-help is-error pg-err" id="rv-err" role="alert" hidden></p>
+    <div class="tx-dialog-foot">
+      <div class="pg-foot-l"><button class="tx-btn is-ghost" id="rv-prev" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-gauche"/></svg>Précédent</button></div>
+      <div class="pg-foot-r"><button class="tx-btn is-ghost" id="rv-close" type="button">Fermer</button><button class="tx-btn is-primary" id="rv-save" type="button">Enregistrer et voir la suite</button></div>
+    </div>
+  </div>
+</div>
+
 <div class="tx-overlay" id="ov-histo" hidden>
   <div class="tx-dialog is-wide" role="dialog" aria-labelledby="hi-title">
     <div class="tx-dialog-head"><div><h3 class="tx-title" id="hi-title">Importer des bougies MT5</h3><div class="tx-sub">Fichier exporté depuis MT5 (Affichage &gt; Symboles &gt; Barres), en M1. Rien n'est envoyé avant de cliquer « Importer ».</div></div></div>
@@ -1440,6 +1538,7 @@ code{font-family:var(--f-mono);font-size:.92em}
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="backtest.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
