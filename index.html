@@ -772,7 +772,7 @@ code{font-family:var(--f-mono);font-size:.92em}
           <button class="tx-btn is-primary" id="btn-add-prop" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau compte</button>
         </div>
         <div class="pg-actions" data-for="backtest" hidden>
-          <button class="tx-btn" id="btn-hi" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg>Importer des bougies MT5</button>
+          <button class="tx-btn" id="btn-hi" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg>Importer des bougies</button>
         </div>
       </div>
 
@@ -983,13 +983,23 @@ code{font-family:var(--f-mono);font-size:.92em}
       <div class="pg-cov" id="bt-cov"></div>
     </section>
     <section class="tx-panel">
-      <div class="tx-panel-head"><div><h2 class="tx-title">Exporter les bougies depuis MT5</h2><div class="tx-sub">Une fois par marché ; un nouvel export plus tard complète les mois déjà importés</div></div></div>
-      <ol class="pg-steps">
-        <li>Dans MT5 : <b>Affichage &gt; Symboles</b> (Ctrl + U), puis l'onglet <b>Barres</b>.</li>
-        <li>Choisir le symbole (par exemple XAUUSD), la période <b>M1</b> et les dates, le plus loin possible dans le passé, puis <b>Demander</b>.</li>
-        <li>Cliquer <b>Exporter les barres</b> : MT5 enregistre un fichier CSV.</li>
-        <li>Ici : <b>Importer des bougies MT5</b>, choisir le marché et le fichier. L'heure du serveur est convertie en heure de New York.</li>
-      </ol>
+      <div class="tx-panel-head"><div><h2 class="tx-title">Où trouver les bougies</h2><div class="tx-sub">Un nouvel export plus tard complète les mois déjà importés</div></div></div>
+      <div class="pg-grid pg-2">
+        <div class="pg-set"><div class="tx-group tx-label">MT5 : les prix de votre courtier, quelques mois</div>
+          <ol class="pg-steps">
+            <li>MT5 connecté au compte du courtier (le mot de passe investisseur suffit). Dans <b>Outils &gt; Options &gt; Graphiques</b>, « Barres max » sur <b>Illimité</b>.</li>
+            <li><b>Affichage &gt; Symboles</b> (Ctrl + U), onglet <b>Barres</b> : le symbole, <b>M1</b>, les dates, puis <b>Requête</b>.</li>
+            <li><b>Exporter les barres</b>, puis ici <b>Importer des bougies</b>. L'heure du serveur est convertie en heure de New York.</li>
+          </ol>
+        </div>
+        <div class="pg-set"><div class="tx-group tx-label">Dukascopy : plusieurs années, prix très proches</div>
+          <ol class="pg-steps">
+            <li>Sur le site de Dukascopy, page des données historiques (compte gratuit pour télécharger).</li>
+            <li>L'instrument (or, indice allemand, Nasdaq), bougies d'<b>une minute</b>, heure <b>GMT</b>, format <b>CSV</b>. Par tranches d'un an si le site refuse une période plus longue.</li>
+            <li>Ici : <b>Importer des bougies</b>. Le format et l'heure UTC sont reconnus ; les données sont rangées sous « XAUUSD (Dukascopy) ».</li>
+          </ol>
+        </div>
+      </div>
     </section>
   </section>
   <!-- ================= GUIDE DE STYLE (page cachée #styleguide, données fictives) ================= -->
@@ -1485,13 +1495,13 @@ code{font-family:var(--f-mono);font-size:.92em}
 
 <div class="tx-overlay" id="ov-histo" hidden>
   <div class="tx-dialog is-wide" role="dialog" aria-labelledby="hi-title">
-    <div class="tx-dialog-head"><div><h3 class="tx-title" id="hi-title">Importer des bougies MT5</h3><div class="tx-sub">Fichier exporté depuis MT5 (Affichage &gt; Symboles &gt; Barres), en M1. Rien n'est envoyé avant de cliquer « Importer ».</div></div></div>
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="hi-title">Importer des bougies</h3><div class="tx-sub">Fichier exporté depuis MT5 (Affichage &gt; Symboles &gt; Barres) ou depuis Dukascopy, en bougies d'une minute. Les données Dukascopy sont rangées à part. Rien n'est envoyé avant de cliquer « Importer ».</div></div></div>
     <div class="tx-dialog-body is-4">
       <div class="tx-field c2"><label for="hi-market">Marché</label><select class="tx-input" id="hi-market"></select></div>
       <div class="tx-field c2"><label for="hi-tz">Heure du serveur MT5</label><select class="tx-input" id="hi-tz">
         <option value="ny7">New York + 7 h (la plupart des courtiers)</option>
         <option value="eet">Europe de l'Est (UTC+2 l'hiver, UTC+3 l'été)</option>
-        <option value="utc">UTC</option>
+        <option value="utc">UTC (Dukascopy)</option>
       </select></div>
       <div class="tx-field c4"><label for="hi-file">Fichier CSV</label><input class="tx-file" id="hi-file" type="file" accept=".csv,.txt,text/csv"></div>
       <div class="c4 pg-hi-res" id="hi-res" role="status" aria-live="polite"></div>

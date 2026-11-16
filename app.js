@@ -1042,11 +1042,18 @@ function hiReadText(file) {
     return new TextDecoder(enc).decode(buf);
   });
 }
-/* colonnes MT5 : <DATE> <TIME> <OPEN> <HIGH> <LOW> <CLOSE> <TICKVOL> <VOL> <SPREAD> (tabulation, virgule ou point-virgule) */
+/* Formats reconnus (tabulation, virgule ou point-virgule) :
+   - MT5 : <DATE> <TIME> <OPEN> <HIGH> <LOW> <CLOSE> <TICKVOL> <VOL> <SPREAD>, dates année.mois.jour, heure du serveur ;
+   - Dukascopy : Gmt time (UTC) ou Local time (avec GMT+hhmm), Open, High, Low, Close, Volume, dates jour.mois.année ;
+   - horodatage en secondes ou millisecondes (UTC).
+   Les bougies « plates » sans volume (week-ends ajoutés par Dukascopy) sont retirées. */
 function hiParse(text) {
-  var raw = { w: [], o: [], h: [], l: [], c: [], s: [], skipped: 0, header: false }, pos = 0, len = text.length, ix = null, sep = "\t", dec = false;
-  var reD = /(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/, reT = /(\d{1,2}):(\d{2})/;
-  function nv(v) { if (v == null) return NaN; v = v.trim(); return Number(dec ? v.replace(",", ".") : v); }
+  var raw = { w: [], o: [], h: [], l: [], c: [], s: [], skipped: 0, flats: 0, header: false, source: "autre", tzHint: null, abs: 0 }, pos = 0, len = text.length, ix = null, sep = "\t", dec = false;
+  var reYMD = /^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/, reDMY = /^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})(?:[ T]+(\d{1,2}):(\d{2}))?/;
+  var reT = /(\d{1,2}):(\d{2})/, reOff = /(?:GMT|UTC)\s*([+-])(\d{1,2}):?(\d{2})?/i, reEpoch = /^\d{10,13}$/;
+  function nv(v) { if (v == null) return NaN; v = v.trim().replace(/^"|"$/g, ""); return Number(dec ? v.replace(",", ".") : v); }
+  function clean(v) { return (v || "").trim().replace(/^"|"$/g, ""); }
+  function isDate(v) { v = clean(v); return reYMD.test(v) || reDMY.test(v) || reEpoch.test(v); }
   while (pos < len) {
     var nl = text.indexOf("\n", pos); if (nl < 0) nl = len;
     var line = text.slice(pos, nl); pos = nl + 1;
@@ -1054,31 +1061,42 @@ function hiParse(text) {
     if (!line.trim()) continue;
     if (!ix) {
       sep = line.indexOf("\t") >= 0 ? "\t" : (line.split(";").length > line.split(",").length ? ";" : ","); dec = sep !== ",";
-      var cells = line.split(sep).map(function (x) { return x.replace(/[<>"\s]/g, "").toLowerCase(); });
-      if (!/\d{4}[.\-\/]\d/.test(line)) { /* en-tête */
+      var first = line.split(sep), cells = first.map(function (x) { return x.replace(/[<>"\s]/g, "").toLowerCase(); });
+      if (!isDate(first[0])) { /* en-tête */
         var find = function (names) { for (var i = 0; i < cells.length; i++) if (names.indexOf(cells[i]) >= 0) return i; return -1; };
-        ix = { d: find(["date", "datetime", "gmttime", "localtime"]), t: find(["time"]), o: find(["open"]), h: find(["high"]), l: find(["low"]), c: find(["close"]), s: find(["spread"]) };
+        var tv = find(["tickvol"]);
+        ix = { d: find(["date", "datetime", "gmttime", "localtime", "time(utc)", "timeutc", "timestamp", "time(eet)"]), t: find(["time"]), o: find(["open"]), h: find(["high"]), l: find(["low"]), c: find(["close"]), s: find(["spread"]), v: tv >= 0 ? tv : find(["volume", "vol"]) };
         if (ix.d < 0 && ix.t >= 0) { ix.d = ix.t; ix.t = -1; }
+        if (line.indexOf("<") >= 0) raw.source = "mt5";
+        else if (/gmt|utc/.test(cells.join(" "))) { raw.source = "duka"; raw.tzHint = "utc"; }
         raw.header = true; continue;
       }
-      var f0 = line.split(sep);
-      ix = reD.test(f0[0]) && reT.test(f0[0]) ? { d: 0, t: -1, o: 1, h: 2, l: 3, c: 4, s: -1 } : { d: 0, t: 1, o: 2, h: 3, l: 4, c: 5, s: f0.length >= 9 ? 8 : -1 };
+      var d0 = clean(first[0]);
+      ix = reT.test(d0) || reEpoch.test(d0) ? { d: 0, t: -1, o: 1, h: 2, l: 3, c: 4, s: -1, v: first.length > 5 ? 5 : -1 } : { d: 0, t: 1, o: 2, h: 3, l: 4, c: 5, s: first.length >= 9 ? 8 : -1, v: first.length > 6 ? 6 : -1 };
     }
     if (ix.d < 0 || ix.o < 0 || ix.h < 0 || ix.l < 0 || ix.c < 0) { raw.skipped++; continue; }
-    var f = line.split(sep), md = reD.exec(f[ix.d] || "");
-    if (!md) { raw.skipped++; continue; }
-    var H = md[4], M = md[5];
-    if (H == null) { var mt = reT.exec(ix.t >= 0 ? f[ix.t] || "" : ""); if (!mt) { raw.skipped++; continue; } H = mt[1]; M = mt[2]; }
+    var f = line.split(sep), ds = clean(f[ix.d]), wMin, absolute = false;
+    if (reEpoch.test(ds)) { wMin = Math.floor((ds.length >= 13 ? Number(ds) : Number(ds) * 1000) / 60000); absolute = true; }
+    else {
+      var y, mo, d, H, M, md = reYMD.exec(ds);
+      if (md) { y = md[1]; mo = md[2]; d = md[3]; H = md[4]; M = md[5]; }
+      else { md = reDMY.exec(ds); if (!md) { raw.skipped++; continue; } d = md[1]; mo = md[2]; y = md[3]; H = md[4]; M = md[5]; if (raw.source === "autre") raw.source = "duka"; }
+      if (H == null) { var mt = reT.exec(ix.t >= 0 ? f[ix.t] || "" : ""); if (!mt) { raw.skipped++; continue; } H = mt[1]; M = mt[2]; }
+      wMin = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(H), Number(M)) / 60000;
+      var off = reOff.exec(ds); if (off) { wMin -= (off[1] === "-" ? -1 : 1) * (Number(off[2]) * 60 + Number(off[3] || 0)); absolute = true; }
+    }
     var o = nv(f[ix.o]), h = nv(f[ix.h]), l = nv(f[ix.l]), c = nv(f[ix.c]);
     if (!(o > 0 && h > 0 && l > 0 && c > 0) || h < l) { raw.skipped++; continue; }
-    raw.w.push(Date.UTC(Number(md[1]), Number(md[2]) - 1, Number(md[3]), Number(H), Number(M)) / 60000);
-    raw.o.push(o); raw.h.push(h); raw.l.push(l); raw.c.push(c); raw.s.push(ix.s >= 0 ? nv(f[ix.s]) : NaN);
+    if (ix.v >= 0 && o === h && h === l && l === c && nv(f[ix.v]) === 0) { raw.flats++; continue; }
+    raw.w.push(wMin); raw.o.push(o); raw.h.push(h); raw.l.push(l); raw.c.push(c); raw.s.push(ix.s >= 0 ? nv(f[ix.s]) : NaN);
+    if (absolute) raw.abs++;
   }
+  raw.absolute = raw.w.length > 0 && raw.abs === raw.w.length; /* heures déjà en UTC : le réglage de l'heure du serveur ne s'applique pas */
   return raw;
 }
 /* conversion en UTC, tri, unité de temps, reprises après le week-end, trous et découpage par mois de New York */
 function hiAnalyze(raw, zoneKey) {
-  var z = HI_ZONES[zoneKey] || HI_ZONES.ny7, n = raw.w.length, t = new Array(n), sorted = true, i;
+  var z = raw.absolute ? HI_ZONES.utc : (HI_ZONES[zoneKey] || HI_ZONES.ny7), n = raw.w.length, t = new Array(n), sorted = true, i;
   for (i = 0; i < n; i++) { t[i] = Math.round(wallToUtc((raw.w[i] - z.shift) * 60000, z.tz) / 60000); if (i && t[i] <= t[i - 1]) sorted = false; }
   var idx = []; for (i = 0; i < n; i++) idx.push(i);
   if (!sorted) idx.sort(function (a, b) { return t[a] - t[b] || a - b; });
@@ -1190,13 +1208,20 @@ function covBlock(m, e) {
 }
 
 /* fenêtre d'import */
-function hiSyncTz() { var e = S.hiIdx && S.hiIdx.markets[$("hi-market").value]; $("hi-tz").value = e && HI_ZONES[e.tz] ? e.tz : "ny7"; }
+/* les données Dukascopy sont rangées à part (« XAUUSD (Dukascopy) ») : jamais mélangées aux prix du courtier */
+var DUKA = " (Dukascopy)";
+function hiKey() { var m = $("hi-market").value; return S.hiRaw && S.hiRaw.source === "duka" ? m + DUKA : m; }
+function hiSyncTz() {
+  var raw = S.hiRaw, sel = $("hi-tz");
+  if (raw && (raw.absolute || raw.tzHint)) { sel.value = "utc"; sel.disabled = !!raw.absolute; return; }
+  var e = S.hiIdx && S.hiIdx.markets[hiKey()]; sel.disabled = false; sel.value = e && HI_ZONES[e.tz] ? e.tz : "ny7";
+}
 function hiErr(msg) { var p = $("hi-err"); p.textContent = msg || ""; p.hidden = !msg; }
 $("btn-hi").addEventListener("click", function () {
   var sel = $("hi-market"), names = S.set.markets.slice(); sel.textContent = "";
-  Object.keys(S.hiIdx ? S.hiIdx.markets : {}).forEach(function (m) { if (names.indexOf(m) < 0) names.push(m); });
+  Object.keys(S.hiIdx ? S.hiIdx.markets : {}).forEach(function (m) { m = m.replace(DUKA, ""); if (names.indexOf(m) < 0) names.push(m); });
   names.forEach(function (m) { sel.appendChild(el("option", { value: m, text: m })); });
-  hiSyncTz(); $("hi-file").value = ""; S.hiRaw = null; S.hiA = null; $("hi-res").textContent = ""; hiErr(""); $("hi-go").disabled = true;
+  $("hi-file").value = ""; S.hiRaw = null; S.hiA = null; hiSyncTz(); $("hi-res").textContent = ""; hiErr(""); $("hi-go").disabled = true;
   show("ov-histo", true); sel.focus();
 });
 $("hi-market").addEventListener("change", function () { hiSyncTz(); hiShow(); });
@@ -1207,22 +1232,25 @@ $("hi-file").addEventListener("change", function () {
   var f = this.files && this.files[0]; S.hiRaw = null; S.hiA = null; $("hi-go").disabled = true; hiErr(""); if (!f) { $("hi-res").textContent = ""; return; }
   var res = $("hi-res"); res.textContent = ""; res.appendChild(el("p", { class: "tx-help", text: "Lecture de " + f.name + " (" + nf0.format(Math.round(f.size / 1048576 * 10) / 10) + " Mo)…" }));
   setTimeout(function () {
-    hiReadText(f).then(function (txt) { S.hiRaw = hiParse(txt); hiShow(); }).catch(function () { res.textContent = ""; hiErr("Fichier illisible : exportez de nouveau les barres depuis MT5."); });
+    hiReadText(f).then(function (txt) { S.hiRaw = hiParse(txt); hiSyncTz(); hiShow(); }).catch(function () { res.textContent = ""; hiErr("Fichier illisible : exportez de nouveau les bougies (MT5 ou Dukascopy)."); });
   }, 30);
 });
 function hiShow() {
   var raw = S.hiRaw, res = $("hi-res"); if (!raw) return; res.textContent = ""; hiErr("");
   var a = S.hiA = hiAnalyze(raw, $("hi-tz").value), ok = true;
-  if (!a.n) { hiErr("Aucune bougie reconnue. Le fichier doit venir de MT5 : Affichage > Symboles > Barres > Exporter les barres."); $("hi-go").disabled = true; return; }
-  if (a.tf !== 1) { hiErr("Ce fichier contient des bougies de " + (a.tf || "plusieurs") + " minutes : exportez les barres en M1."); ok = false; }
-  var idxM = (S.hiIdx && S.hiIdx.markets[$("hi-market").value] || {}).months || {}, ks = Object.keys(a.months).sort(), already = ks.filter(function (k) { return idxM[k]; }).length;
+  if (!a.n) { hiErr("Aucune bougie reconnue. Le fichier doit venir de MT5 (Affichage > Symboles > Barres > Exporter les barres) ou de Dukascopy (format CSV)."); $("hi-go").disabled = true; return; }
+  if (a.tf !== 1) { hiErr("Ce fichier contient des bougies de " + (a.tf || "plusieurs") + " minutes : exportez les bougies d'une minute (M1)."); ok = false; }
+  var key = hiKey(), idxM = (S.hiIdx && S.hiIdx.markets[key] || {}).months || {}, ks = Object.keys(a.months).sort(), already = ks.filter(function (k) { return idxM[k]; }).length;
   var dl = el("dl", { class: "tx-kv" });
   function row(k, v) { dl.appendChild(el("dt", { text: k })); dl.appendChild(el("dd", { text: v })); }
+  row("Format reconnu", raw.source === "mt5" ? "MT5" : raw.source === "duka" ? "Dukascopy" + (raw.absolute || raw.tzHint ? " (heure UTC)" : "") : "Autre" + (raw.absolute ? " (heure UTC)" : ""));
+  row("Rangé sous", key);
   row("Bougies M1", nf0.format(a.n));
   row("Première (heure de New York)", hiDate(a.first));
   row("Dernière (heure de New York)", hiDate(a.last));
   row("Mois concernés", ks.length + (already ? ", dont " + already + " déjà importé" + (already > 1 ? "s" : "") + " (complété" + (already > 1 ? "s" : "") + ")" : ""));
   row("Trous de plus de 4 h en semaine", a.gaps ? nf0.format(a.gaps) + " (jours fériés possibles)" : "Aucun");
+  if (raw.flats) row("Bougies plates retirées", nf0.format(raw.flats) + " (marché fermé)");
   if (raw.skipped || a.dup) row("Lignes ignorées", nf0.format(raw.skipped + a.dup) + (a.dup ? " (dont " + nf0.format(a.dup) + " en double)" : ""));
   res.appendChild(dl);
   /* contrôle de l'heure du serveur : la reprise après le week-end doit tomber à la même heure de New York toute l'année */
@@ -1230,17 +1258,17 @@ function hiShow() {
   if (!r) { msg = "Pas de week-end dans le fichier : impossible de vérifier l'heure du serveur."; c = "tx-help"; }
   else {
     var when = JOURS[r.wd] + " " + hm(r.min) + " à New York";
-    if (r.count < r.total * .85) { msg = "L'heure de reprise après le week-end varie au fil de l'année (" + when + " sur " + r.count + " semaines, une autre heure sur " + (r.total - r.count) + ") : l'heure du serveur choisie ne correspond sans doute pas à votre courtier. Essayez un autre réglage."; c = "tx-help is-warn"; }
+    if (r.count < r.total * .85) { msg = "L'heure de reprise après le week-end varie au fil de l'année (" + when + " sur " + r.count + " semaines, une autre heure sur " + (r.total - r.count) + ") : " + (raw.absolute ? "le fichier contient peut-être des trous ou des jours fériés." : "l'heure du serveur choisie ne correspond sans doute pas à votre courtier. Essayez un autre réglage."); c = "tx-help is-warn"; }
     else {
       msg = "Reprise après le week-end : " + when + ", identique sur " + r.count + " semaine" + (r.count > 1 ? "s" : "") + " sur " + r.total + ".";
-      if (r.wd !== 0 || r.min < 16 * 60 || r.min > 20 * 60) { msg += " L'or et le Nasdaq rouvrent en général le dimanche vers 18:00 à New York : vérifiez l'heure du serveur."; c = "tx-help is-warn"; }
+      if (/xau|gold|nas|ustec|us100|usatech|nq/i.test($("hi-market").value) && (r.wd !== 0 || r.min < 16 * 60 || r.min > 20 * 60)) { msg += " L'or et le Nasdaq rouvrent en général le dimanche vers 18:00 à New York : vérifiez l'heure du serveur."; c = "tx-help is-warn"; }
     }
   }
   res.appendChild(el("p", { class: c, text: msg }));
   $("hi-go").disabled = !ok;
 }
 $("hi-go").addEventListener("click", function () {
-  var a = S.hiA, mk = $("hi-market").value, zone = $("hi-tz").value, b = this; if (!a || !a.n) return;
+  var a = S.hiA, mk = hiKey(), zone = $("hi-tz").value, b = this; if (!a || !a.n) return;
   if (typeof CompressionStream === "undefined") { hiErr("Ce navigateur ne sait pas compresser les fichiers : utilisez une version récente de Chrome, Edge, Firefox ou Safari."); return; }
   var ks = Object.keys(a.months).sort(), done = 0, res = $("hi-res");
   var bar = el("i"), prog = el("div", { class: "pg-progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(ks.length), "aria-valuenow": "0", "aria-label": "Envoi des mois" }, [bar]), txt = el("p", { class: "tx-help", text: "Préparation…" });
@@ -1256,7 +1284,7 @@ $("hi-go").addEventListener("click", function () {
     return chain.then(saveIdx, function (err) { return (done ? saveIdx() : Promise.resolve()).then(function () { throw err; }); });
   }).then(function () {
     txt.className = "tx-help is-ok"; txt.textContent = "Import terminé : " + ks.length + " mois de " + mk + " enregistrés.";
-    toast("Bougies de " + mk + " importées"); S.hiRaw = null; S.hiA = null; $("hi-file").value = "";
+    toast("Bougies de " + mk + " importées"); S.hiRaw = null; S.hiA = null; $("hi-file").value = ""; $("hi-tz").disabled = false;
   }, function (e) {
     hiErr((done ? done + " mois sur " + ks.length + " ont été enregistrés. " : "") + hiErrText(e) + " Relancez l'import : les mois déjà envoyés seront simplement complétés.");
   }).then(function () { S.hiImporting = false; $("hi-cancel").disabled = false; $("hi-file").disabled = false; hiRefresh(); });
