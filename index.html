@@ -992,11 +992,11 @@ code{font-family:var(--f-mono);font-size:.92em}
             <li><b>Exporter les barres</b>, puis ici <b>Importer des bougies</b>. L'heure du serveur est convertie en heure de New York.</li>
           </ol>
         </div>
-        <div class="pg-set"><div class="tx-group tx-label">Dukascopy : plusieurs années, prix très proches</div>
+        <div class="pg-set"><div class="tx-group tx-label">HistData : plusieurs années, gratuit</div>
           <ol class="pg-steps">
-            <li>Sur le site de Dukascopy, page des données historiques (compte gratuit pour télécharger).</li>
-            <li>L'instrument (or, indice allemand, Nasdaq), bougies d'<b>une minute</b>, heure <b>GMT</b>, format <b>CSV</b>. Par tranches d'un an si le site refuse une période plus longue.</li>
-            <li>Ici : <b>Importer des bougies</b>. Le format et l'heure UTC sont reconnus ; les données sont rangées sous « XAUUSD (Dukascopy) ».</li>
+            <li>Sur histdata.com : <b>Download</b>, format <b>ASCII</b>, <b>1 Minute Bar Quotes</b>.</li>
+            <li>Le marché : <b>XAUUSD</b> (or), <b>GRXEUR</b> (DAX), <b>NSXUSD</b> (Nasdaq), puis une année : une archive .zip par année.</li>
+            <li>Ici : <b>Importer des bougies</b>, en choisissant directement les archives .zip, plusieurs années à la fois. Le marché et l'heure sont reconnus ; les données sont rangées sous « XAUUSD (HistData) ».</li>
           </ol>
         </div>
       </div>
@@ -1495,15 +1495,17 @@ code{font-family:var(--f-mono);font-size:.92em}
 
 <div class="tx-overlay" id="ov-histo" hidden>
   <div class="tx-dialog is-wide" role="dialog" aria-labelledby="hi-title">
-    <div class="tx-dialog-head"><div><h3 class="tx-title" id="hi-title">Importer des bougies</h3><div class="tx-sub">Fichier exporté depuis MT5 (Affichage &gt; Symboles &gt; Barres) ou depuis Dukascopy, en bougies d'une minute. Les données Dukascopy sont rangées à part. Rien n'est envoyé avant de cliquer « Importer ».</div></div></div>
+    <div class="tx-dialog-head"><div><h3 class="tx-title" id="hi-title">Importer des bougies</h3><div class="tx-sub">Export de MT5 (Affichage &gt; Symboles &gt; Barres), de HistData ou de Dukascopy, en bougies d'une minute. Les données qui ne viennent pas du courtier sont rangées à part. Rien n'est envoyé avant de cliquer « Importer ».</div></div></div>
     <div class="tx-dialog-body is-4">
       <div class="tx-field c2"><label for="hi-market">Marché</label><select class="tx-input" id="hi-market"></select></div>
       <div class="tx-field c2"><label for="hi-tz">Heure du serveur MT5</label><select class="tx-input" id="hi-tz">
         <option value="ny7">New York + 7 h (la plupart des courtiers)</option>
         <option value="eet">Europe de l'Est (UTC+2 l'hiver, UTC+3 l'été) : VT Markets</option>
         <option value="utc">UTC (Dukascopy)</option>
+        <option value="eet7">Europe de l'Est − 7 h : HistData</option>
+        <option value="est">UTC−5 toute l'année</option>
       </select></div>
-      <div class="tx-field c4"><label for="hi-file">Fichier CSV</label><input class="tx-file" id="hi-file" type="file" accept=".csv,.txt,text/csv"></div>
+      <div class="tx-field c4"><label for="hi-file">Fichiers (.csv ou .zip, plusieurs à la fois pour un même marché)</label><input class="tx-file" id="hi-file" type="file" multiple accept=".csv,.txt,.zip,text/csv,application/zip"></div>
       <div class="c4 pg-hi-res" id="hi-res" role="status" aria-live="polite"></div>
     </div>
     <p class="tx-help is-error pg-err" id="hi-err" role="alert" hidden></p>

@@ -60,7 +60,7 @@ Les captures d'écran de l'ancien journal ne sont pas transférées : rajoutez c
 
 Un nouvel export plus tard complète simplement les mois déjà importés.
 
-MT5 ne garde souvent que quelques mois de bougies M1. Pour plusieurs années, exportez depuis **Dukascopy** (données historiques gratuites, compte requis) : bougies d'une minute, heure GMT, format CSV. Tradamax reconnaît le format et l'heure UTC, retire les bougies du week-end et range ces données à part (« XAUUSD (Dukascopy) »), sans les mélanger aux prix de votre courtier.
+MT5 ne garde souvent que quelques mois de bougies M1. Pour plusieurs années, téléchargez-les sur **histdata.com** (gratuit, sans compte) : *Download > ASCII > 1 Minute Bar Quotes*, puis le marché (`XAUUSD` pour l'or, `GRXEUR` pour le DAX, `NSXUSD` pour le Nasdaq) et l'année. Importez directement les archives .zip, plusieurs années d'un coup : Tradamax reconnaît le format, le marché et l'heure, et range ces données à part (« XAUUSD (HistData) »), sans les mélanger aux prix de votre courtier. Les fichiers Dukascopy sont aussi reconnus.
 
 4. Collez aussi `supabase/migrations/2026-11-16_backtest-avis.sql` (même méthode) : il crée la table des avis.
 5. **Lancer le backtest** : choisissez le marché et la période, puis **Lancer**. Le robot applique les règles de la stratégie (simulation sur le passé, aucun ordre passé).

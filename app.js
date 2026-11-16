@@ -1014,7 +1014,9 @@ function loadCal() {
 /* Espace privé « historique » : un fichier compressé par marché et par mois de New York (lignes t;o;h;l;c;s,
    t = minutes UTC depuis 1970), plus un index _index.json (mois importés, nombre de bougies). Heures via Intl. */
 var HI_BUCKET = "historique", HI_INDEX = "_index.json";
-var HI_ZONES = { ny7: { tz: "America/New_York", shift: 420 }, eet: { tz: "Europe/Athens", shift: 0 }, utc: { tz: "UTC", shift: 0 } };
+/* heure des fichiers : ny7 = New York + 7 h ; eet = Europe de l'Est (VT Markets) ; eet7 = Europe de l'Est − 7 h (HistData, constaté sur leurs fichiers) ;
+   utc (Dukascopy) ; est = UTC−5 toute l'année */
+var HI_ZONES = { ny7: { tz: "America/New_York", shift: 420 }, eet: { tz: "Europe/Athens", shift: 0 }, eet7: { tz: "Europe/Athens", shift: -420 }, utc: { tz: "UTC", shift: 0 }, est: { tz: "Etc/GMT+5", shift: 0 } };
 var HI_GAP = 240, HI_WEEKEND = 2160; /* trou anormal : plus de 4 h en semaine ; au-delà de 36 h, c'est un week-end */
 var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 var tzFmts = {}, tzCache = {};
@@ -1035,12 +1037,45 @@ var fmtNYFull = new Intl.DateTimeFormat("fr-FR", { timeZone: "America/New_York",
 function hiDate(tMin) { return fmtNYFull.format(new Date(tMin * 60000)); }
 
 /* lecture du fichier : MT5 écrit en UTF-8 ou en UTF-16 selon les versions */
+function hiDecode(buf) {
+  var u = new Uint8Array(buf, 0, Math.min(4, buf.byteLength)), enc = "utf-8";
+  if (u[0] === 0xFF && u[1] === 0xFE) enc = "utf-16le"; else if (u[0] === 0xFE && u[1] === 0xFF) enc = "utf-16be"; else if (u.length === 4 && u[1] === 0 && u[3] === 0) enc = "utf-16le";
+  return new TextDecoder(enc).decode(buf);
+}
+/* archive .zip (HistData) : on lit seulement les fichiers .csv qu'elle contient, décompressés par le navigateur */
+function hiUnzip(buf) {
+  var dv = new DataView(buf), n = buf.byteLength, e = -1, i;
+  for (i = n - 22; i >= Math.max(0, n - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) return Promise.reject(new Error("zip"));
+  var cnt = dv.getUint16(e + 10, true), p = dv.getUint32(e + 16, true), parts = [];
+  for (var k = 0; k < cnt && dv.getUint32(p, true) === 0x02014b50; k++) {
+    var method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), lho = dv.getUint32(p + 42, true);
+    var name = new TextDecoder().decode(new Uint8Array(buf, p + 46, nlen)), start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+    if (/\.csv$/i.test(name)) parts.push({ name: name, method: method, data: new Uint8Array(buf, start, csize) });
+    p += 46 + nlen + xlen + clen;
+  }
+  return Promise.all(parts.map(function (x) {
+    var raw = x.method === 0 ? Promise.resolve(x.data.slice().buffer) : x.method === 8 ? new Response(new Blob([x.data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer() : Promise.reject(new Error("zip"));
+    return raw.then(function (b) { return { name: x.name, text: hiDecode(b) }; });
+  }));
+}
 function hiReadText(file) {
   return file.arrayBuffer().then(function (buf) {
-    var u = new Uint8Array(buf, 0, Math.min(4, buf.byteLength)), enc = "utf-8";
-    if (u[0] === 0xFF && u[1] === 0xFE) enc = "utf-16le"; else if (u[0] === 0xFE && u[1] === 0xFF) enc = "utf-16be"; else if (u.length === 4 && u[1] === 0 && u[3] === 0) enc = "utf-16le";
-    return new TextDecoder(enc).decode(buf);
+    var u = new Uint8Array(buf, 0, Math.min(2, buf.byteLength));
+    if (u[0] === 0x50 && u[1] === 0x4B) return hiUnzip(buf); /* « PK » : archive zip */
+    return [{ name: file.name, text: hiDecode(buf) }];
   });
+}
+/* plusieurs fichiers d'un même marché (une année chacun, par exemple) : bougies mises bout à bout */
+function hiMerge(list) {
+  var out = { w: [], o: [], h: [], l: [], c: [], s: [], skipped: 0, flats: 0, abs: 0, header: false, source: "autre", tzHint: null, files: list.length };
+  list.forEach(function (r, i) {
+    ["w", "o", "h", "l", "c", "s"].forEach(function (k) { out[k] = out[k].concat(r[k]); });
+    out.skipped += r.skipped; out.flats += r.flats; out.abs += r.abs;
+    if (i === 0) { out.source = r.source; out.tzHint = r.tzHint; out.header = r.header; } else if (r.source !== out.source) out.mixed = true;
+  });
+  out.absolute = out.w.length > 0 && out.abs === out.w.length;
+  return out;
 }
 /* Formats reconnus (tabulation, virgule ou point-virgule) :
    - MT5 : <DATE> <TIME> <OPEN> <HIGH> <LOW> <CLOSE> <TICKVOL> <VOL> <SPREAD>, dates année.mois.jour, heure du serveur ;
@@ -1048,12 +1083,13 @@ function hiReadText(file) {
    - horodatage en secondes ou millisecondes (UTC).
    Les bougies « plates » sans volume (week-ends ajoutés par Dukascopy) sont retirées. */
 function hiParse(text) {
-  var raw = { w: [], o: [], h: [], l: [], c: [], s: [], skipped: 0, flats: 0, header: false, source: "autre", tzHint: null, abs: 0 }, pos = 0, len = text.length, ix = null, sep = "\t", dec = false;
+  var raw = { w: [], o: [], h: [], l: [], c: [], s: [], flat: [], skipped: 0, flats: 0, header: false, source: "autre", tzHint: null, abs: 0 }, pos = 0, len = text.length, ix = null, sep = "\t", dec = false, anyVol = false;
   var reYMD = /^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/, reDMY = /^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})(?:[ T]+(\d{1,2}):(\d{2}))?/;
+  var reCompact = /^(\d{4})(\d{2})(\d{2})[ T]?(\d{2})(\d{2})(\d{2})?$/; /* HistData : 20250101 180000 */
   var reT = /(\d{1,2}):(\d{2})/, reOff = /(?:GMT|UTC)\s*([+-])(\d{1,2}):?(\d{2})?/i, reEpoch = /^\d{10,13}$/;
   function nv(v) { if (v == null) return NaN; v = v.trim().replace(/^"|"$/g, ""); return Number(dec ? v.replace(",", ".") : v); }
   function clean(v) { return (v || "").trim().replace(/^"|"$/g, ""); }
-  function isDate(v) { v = clean(v); return reYMD.test(v) || reDMY.test(v) || reEpoch.test(v); }
+  function isDate(v) { v = clean(v); return reYMD.test(v) || reDMY.test(v) || reEpoch.test(v) || reCompact.test(v); }
   while (pos < len) {
     var nl = text.indexOf("\n", pos); if (nl < 0) nl = len;
     var line = text.slice(pos, nl); pos = nl + 1;
@@ -1072,14 +1108,15 @@ function hiParse(text) {
         raw.header = true; continue;
       }
       var d0 = clean(first[0]);
-      ix = reT.test(d0) || reEpoch.test(d0) ? { d: 0, t: -1, o: 1, h: 2, l: 3, c: 4, s: -1, v: first.length > 5 ? 5 : -1 } : { d: 0, t: 1, o: 2, h: 3, l: 4, c: 5, s: first.length >= 9 ? 8 : -1, v: first.length > 6 ? 6 : -1 };
+      ix = reT.test(d0) || reEpoch.test(d0) || reCompact.test(d0) ? { d: 0, t: -1, o: 1, h: 2, l: 3, c: 4, s: -1, v: first.length > 5 ? 5 : -1 } : { d: 0, t: 1, o: 2, h: 3, l: 4, c: 5, s: first.length >= 9 ? 8 : -1, v: first.length > 6 ? 6 : -1 };
     }
     if (ix.d < 0 || ix.o < 0 || ix.h < 0 || ix.l < 0 || ix.c < 0) { raw.skipped++; continue; }
     var f = line.split(sep), ds = clean(f[ix.d]), wMin, absolute = false;
     if (reEpoch.test(ds)) { wMin = Math.floor((ds.length >= 13 ? Number(ds) : Number(ds) * 1000) / 60000); absolute = true; }
     else {
-      var y, mo, d, H, M, md = reYMD.exec(ds);
-      if (md) { y = md[1]; mo = md[2]; d = md[3]; H = md[4]; M = md[5]; }
+      var y, mo, d, H, M, md = reCompact.exec(ds);
+      if (md) { y = md[1]; mo = md[2]; d = md[3]; H = md[4]; M = md[5]; if (raw.source === "autre" && !raw.header) { raw.source = "histdata"; raw.tzHint = "eet7"; } }
+      else if ((md = reYMD.exec(ds))) { y = md[1]; mo = md[2]; d = md[3]; H = md[4]; M = md[5]; }
       else { md = reDMY.exec(ds); if (!md) { raw.skipped++; continue; } d = md[1]; mo = md[2]; y = md[3]; H = md[4]; M = md[5]; if (raw.source === "autre") raw.source = "duka"; }
       if (H == null) { var mt = reT.exec(ix.t >= 0 ? f[ix.t] || "" : ""); if (!mt) { raw.skipped++; continue; } H = mt[1]; M = mt[2]; }
       wMin = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(H), Number(M)) / 60000;
@@ -1087,15 +1124,26 @@ function hiParse(text) {
     }
     var o = nv(f[ix.o]), h = nv(f[ix.h]), l = nv(f[ix.l]), c = nv(f[ix.c]);
     if (!(o > 0 && h > 0 && l > 0 && c > 0) || h < l) { raw.skipped++; continue; }
-    if (ix.v >= 0 && o === h && h === l && l === c && nv(f[ix.v]) === 0) { raw.flats++; continue; }
+    var vol = ix.v >= 0 ? nv(f[ix.v]) : NaN; if (vol > 0) anyVol = true;
     raw.w.push(wMin); raw.o.push(o); raw.h.push(h); raw.l.push(l); raw.c.push(c); raw.s.push(ix.s >= 0 ? nv(f[ix.s]) : NaN);
+    raw.flat.push(vol === 0 && o === h && h === l && l === c);
     if (absolute) raw.abs++;
   }
+  /* bougies plates sans volume : retirées seulement si le fichier a des volumes (HistData n'en a jamais : on garde tout) */
+  if (anyVol && raw.flat.indexOf(true) >= 0) {
+    var keep = ["w", "o", "h", "l", "c", "s"], out = {}; keep.forEach(function (k) { out[k] = []; });
+    for (var q = 0; q < raw.w.length; q++) { if (raw.flat[q]) { raw.flats++; continue; } keep.forEach(function (k) { out[k].push(raw[k][q]); }); }
+    keep.forEach(function (k) { raw[k] = out[k]; }); raw.abs = Math.min(raw.abs, raw.w.length);
+  }
+  delete raw.flat;
   raw.absolute = raw.w.length > 0 && raw.abs === raw.w.length; /* heures déjà en UTC : le réglage de l'heure du serveur ne s'applique pas */
   return raw;
 }
 /* conversion en UTC, tri, unité de temps, reprises après le week-end, trous et découpage par mois de New York */
-function hiAnalyze(raw, zoneKey) {
+/* heure de référence des horaires d'un marché : Francfort pour les indices européens (le DAX ouvre à heure fixe de Francfort), New York sinon */
+function hiAnchor(market) { return /dax|ger|de40|deu|grx|stoxx|eu50|cac|fra40|ftse|uk100/i.test(market || "") ? { tz: "Europe/Berlin", label: "Francfort" } : { tz: "America/New_York", label: "New York" }; }
+function hiAnalyze(raw, zoneKey, anchor) {
+  anchor = anchor || hiAnchor("");
   var z = raw.absolute ? HI_ZONES.utc : (HI_ZONES[zoneKey] || HI_ZONES.ny7), n = raw.w.length, t = new Array(n), sorted = true, i;
   for (i = 0; i < n; i++) { t[i] = Math.round(wallToUtc((raw.w[i] - z.shift) * 60000, z.tz) / 60000); if (i && t[i] <= t[i - 1]) sorted = false; }
   var idx = []; for (i = 0; i < n; i++) idx.push(i);
@@ -1106,15 +1154,28 @@ function hiAnalyze(raw, zoneKey) {
   var ones = 0, diffs = {};
   for (i = 1; i < keep.length; i++) { var d = t[keep[i]] - t[keep[i - 1]]; if (d === 1) ones++; else if (d < 60) diffs[d] = (diffs[d] || 0) + 1; }
   if (keep.length > 20 && ones < (keep.length - 1) / 2) a.tf = Number(Object.keys(diffs).sort(function (x, y) { return diffs[y] - diffs[x]; })[0]) || 0;
-  var ro = {}, nRo = 0;
+  /* reprises après le week-end, par année : les horaires d'un marché peuvent changer d'une année à l'autre
+     (le DAX de HistData ne couvre que la séance de Francfort en 2023), l'heure du serveur, elle, ne change pas */
+  var roY = {};
   for (i = 0; i < keep.length; i++) {
     var ti = t[keep[i]], w = nyWall(ti), k = monthKey(w), m = a.months[k] || (a.months[k] = { from: i, to: i, n: 0 });
     m.to = i; m.n++;
     if (i) { var g = ti - t[keep[i - 1]];
-      if (g >= HI_WEEKEND) { var key = new Date(w * 60000).getUTCDay() * 1440 + (w % 1440); ro[key] = (ro[key] || 0) + 1; nRo++; }
+      if (g >= HI_WEEKEND) { /* à la demi-heure près : sur un marché calme, la première bougie arrive quelques minutes après l'ouverture */
+        var aw = ti + tzOffset(anchor.tz, ti * 60000), wr = Math.round(aw / 30) * 30, dd = new Date(wr * 60000), key = dd.getUTCDay() * 1440 + (wr % 1440), Y = roY[dd.getUTCFullYear()] || (roY[dd.getUTCFullYear()] = {});
+        Y[key] = (Y[key] || 0) + 1; }
       else if (g > HI_GAP) a.gaps++; }
   }
-  if (nRo) { var best = Object.keys(ro).sort(function (x, y) { return ro[y] - ro[x]; })[0]; a.reopen = { wd: Math.floor(best / 1440), min: best % 1440, count: ro[best], total: nRo }; }
+  a.reopenYears = Object.keys(roY).sort().map(function (y) {
+    var Y = roY[y], best = Object.keys(Y).sort(function (p, q) { return Y[q] - Y[p]; })[0], tot = 0; for (var x in Y) tot += Y[x];
+    return { year: y, wd: Math.floor(best / 1440), min: best % 1440, count: Y[best], total: tot };
+  });
+  var big = a.reopenYears.filter(function (r) { return r.total >= 4; }), use = big.length ? big : a.reopenYears;
+  if (use.length) {
+    var cnt = use.reduce(function (s, r) { return s + r.count; }, 0), tot = use.reduce(function (s, r) { return s + r.total; }, 0), last = use[use.length - 1];
+    a.reopen = { wd: last.wd, min: last.min, count: cnt, total: tot, score: use.reduce(function (s, r) { return s + r.count / r.total; }, 0) / use.length,
+      same: use.every(function (r) { return r.wd === last.wd && r.min === last.min; }), years: use };
+  }
   a.first = t[keep[0]]; a.last = t[keep[keep.length - 1]];
   return a;
 }
@@ -1208,57 +1269,71 @@ function covBlock(m, e) {
 }
 
 /* fenêtre d'import */
-/* les données Dukascopy sont rangées à part (« XAUUSD (Dukascopy) ») : jamais mélangées aux prix du courtier */
-var DUKA = " (Dukascopy)";
-function hiKey() { var m = $("hi-market").value; return S.hiRaw && S.hiRaw.source === "duka" ? m + DUKA : m; }
+/* les données d'une autre source que le courtier sont rangées à part (« XAUUSD (HistData) ») : jamais mélangées à ses prix */
+var SRC_SUFFIX = { duka: " (Dukascopy)", histdata: " (HistData)" }, SRC_RE = / \((Dukascopy|HistData)\)$/;
+function hiKey() { var m = $("hi-market").value; return m + (S.hiRaw && SRC_SUFFIX[S.hiRaw.source] || ""); }
 function hiSyncTz() {
   var raw = S.hiRaw, sel = $("hi-tz");
-  if (raw && (raw.absolute || raw.tzHint)) { sel.value = "utc"; sel.disabled = !!raw.absolute; return; }
+  if (raw && (raw.absolute || raw.tzHint)) { sel.value = raw.absolute ? "utc" : raw.tzHint; sel.disabled = !!raw.absolute; return; }
   var e = S.hiIdx && S.hiIdx.markets[hiKey()]; sel.disabled = false; sel.value = e && HI_ZONES[e.tz] ? e.tz : "ny7";
+}
+/* marché deviné d'après le nom du fichier (XAUUSD, GRXEUR = DAX, NSXUSD = Nasdaq…) */
+function hiGuessMarket(names) {
+  var s = names.join(" "), sel = $("hi-market"), opts = Array.prototype.map.call(sel.options, function (o) { return o.value; });
+  var rules = [[/xau|gold/i, /xau|gold|^or$/i], [/grx|ger|dax|deu|de40/i, /dax|ger|de40/i], [/nsx|nas|ustec|usatech|us100|ndx/i, /nas|ustec|us100|ndx/i], [/spx|us500|sp500/i, /spx|sp500|us500/i]];
+  for (var i = 0; i < rules.length; i++) if (rules[i][0].test(s)) { var m = opts.find(function (o) { return rules[i][1].test(o); }); if (m) { sel.value = m; return; } }
 }
 function hiErr(msg) { var p = $("hi-err"); p.textContent = msg || ""; p.hidden = !msg; }
 $("btn-hi").addEventListener("click", function () {
   var sel = $("hi-market"), names = S.set.markets.slice(); sel.textContent = "";
-  Object.keys(S.hiIdx ? S.hiIdx.markets : {}).forEach(function (m) { m = m.replace(DUKA, ""); if (names.indexOf(m) < 0) names.push(m); });
+  Object.keys(S.hiIdx ? S.hiIdx.markets : {}).forEach(function (m) { m = m.replace(SRC_RE, ""); if (names.indexOf(m) < 0) names.push(m); });
   names.forEach(function (m) { sel.appendChild(el("option", { value: m, text: m })); });
   $("hi-file").value = ""; S.hiRaw = null; S.hiA = null; hiSyncTz(); $("hi-res").textContent = ""; hiErr(""); $("hi-go").disabled = true;
   show("ov-histo", true); sel.focus();
 });
-$("hi-market").addEventListener("change", function () { hiSyncTz(); hiShow(); });
+$("hi-market").addEventListener("change", function () { hiSyncTz(); hiAutoTz(); hiShow(); });
 $("hi-tz").addEventListener("change", function () { S.hiTzAuto = null; hiShow(); });
 /* heure du serveur choisie automatiquement : celle où la reprise après le week-end tombe le plus souvent à la même heure de New York
    (les changements d'heure européens et américains ne tombent pas le même jour : seul le bon réglage reste stable toute l'année) */
 function hiAutoTz() {
-  var raw = S.hiRaw, sel = $("hi-tz"); S.hiTzAuto = null; if (!raw || raw.absolute || raw.tzHint) return;
-  function score(z) { var r = hiAnalyze(raw, z).reopen; return r ? r.count / r.total + (r.wd === 0 && r.min >= 960 && r.min <= 1200 ? .001 : 0) : 0; }
-  var cur = sel.value, best = cur, bs = score(cur);
-  Object.keys(HI_ZONES).forEach(function (z) { if (z === cur) return; var s = score(z); if (s > bs + 1e-9) { best = z; bs = s; } });
+  var raw = S.hiRaw, sel = $("hi-tz"); S.hiTzAuto = null; S.hiTzScores = null; if (!raw || raw.absolute) return;
+  var anchor = hiAnchor($("hi-market").value), scores = {};
+  function score(z) { var r = hiAnalyze(raw, z, anchor).reopen; return r ? r.score + (anchor.tz === "America/New_York" && r.wd === 0 && r.min >= 960 && r.min <= 1200 ? .001 : 0) : 0; }
+  var cur = sel.value, best = cur, bs = scores[cur] = score(cur);
+  Object.keys(HI_ZONES).forEach(function (z) { if (z === cur) return; var s = scores[z] = score(z); if (s > bs + 1e-9) { best = z; bs = s; } });
+  S.hiTzScores = scores; /* gardés pour dire si une reprise irrégulière vient des données ou du réglage */
   if (best !== cur) { sel.value = best; S.hiTzAuto = best; }
 }
 $("hi-cancel").addEventListener("click", function () { if (!S.hiImporting) show("ov-histo", false); });
 $("ov-histo").addEventListener("click", function (e) { if (e.target === this && !S.hiImporting) show("ov-histo", false); });
 $("hi-file").addEventListener("change", function () {
-  var f = this.files && this.files[0]; S.hiRaw = null; S.hiA = null; $("hi-go").disabled = true; hiErr(""); if (!f) { $("hi-res").textContent = ""; return; }
-  var res = $("hi-res"); res.textContent = ""; res.appendChild(el("p", { class: "tx-help", text: "Lecture de " + f.name + " (" + nf0.format(Math.round(f.size / 1048576 * 10) / 10) + " Mo)…" }));
+  var files = Array.prototype.slice.call(this.files || []); S.hiRaw = null; S.hiA = null; $("hi-go").disabled = true; hiErr(""); if (!files.length) { $("hi-res").textContent = ""; return; }
+  var size = files.reduce(function (s, f) { return s + f.size; }, 0), res = $("hi-res"); res.textContent = "";
+  res.appendChild(el("p", { class: "tx-help", text: "Lecture de " + (files.length > 1 ? files.length + " fichiers" : files[0].name) + " (" + nf0.format(Math.round(size / 1048576 * 10) / 10) + " Mo)…" }));
+  hiGuessMarket(files.map(function (f) { return f.name; }));
   setTimeout(function () {
-    hiReadText(f).then(function (txt) { S.hiRaw = hiParse(txt); hiSyncTz(); hiAutoTz(); hiShow(); }).catch(function () { res.textContent = ""; hiErr("Fichier illisible : exportez de nouveau les bougies (MT5 ou Dukascopy)."); });
+    Promise.all(files.map(hiReadText)).then(function (lists) {
+      var texts = [].concat.apply([], lists); if (!texts.length) throw new Error("vide");
+      S.hiRaw = hiMerge(texts.map(function (x) { return hiParse(x.text); })); hiSyncTz(); hiAutoTz(); hiShow();
+    }).catch(function () { res.textContent = ""; hiErr("Fichier illisible : choisissez un export de bougies (fichier .csv, ou l'archive .zip de HistData)."); });
   }, 30);
 });
 function hiShow() {
   var raw = S.hiRaw, res = $("hi-res"); if (!raw) return; res.textContent = ""; hiErr("");
-  var a = S.hiA = hiAnalyze(raw, $("hi-tz").value), ok = true;
+  var anc = hiAnchor($("hi-market").value), a = S.hiA = hiAnalyze(raw, $("hi-tz").value, anc), ok = true;
   if (!a.n) { hiErr("Aucune bougie reconnue. Le fichier doit venir de MT5 (Affichage > Symboles > Barres > Exporter les barres) ou de Dukascopy (format CSV)."); $("hi-go").disabled = true; return; }
   if (a.tf !== 1) { hiErr("Ce fichier contient des bougies de " + (a.tf || "plusieurs") + " minutes : exportez les bougies d'une minute (M1)."); ok = false; }
   var key = hiKey(), idxM = (S.hiIdx && S.hiIdx.markets[key] || {}).months || {}, ks = Object.keys(a.months).sort(), already = ks.filter(function (k) { return idxM[k]; }).length;
   var dl = el("dl", { class: "tx-kv" });
   function row(k, v) { dl.appendChild(el("dt", { text: k })); dl.appendChild(el("dd", { text: v })); }
-  row("Format reconnu", raw.source === "mt5" ? "MT5" : raw.source === "duka" ? "Dukascopy" + (raw.absolute || raw.tzHint ? " (heure UTC)" : "") : "Autre" + (raw.absolute ? " (heure UTC)" : ""));
+  row("Format reconnu", (raw.source === "mt5" ? "MT5" : raw.source === "duka" ? "Dukascopy" + (raw.absolute || raw.tzHint ? " (heure UTC)" : "") : raw.source === "histdata" ? "HistData" : "Autre" + (raw.absolute ? " (heure UTC)" : "")) + (raw.files > 1 ? " · " + raw.files + " fichiers" : ""));
+  if (raw.mixed) row("Attention", "fichiers de formats différents");
   row("Rangé sous", key);
   row("Bougies M1", nf0.format(a.n));
   row("Première (heure de New York)", hiDate(a.first));
   row("Dernière (heure de New York)", hiDate(a.last));
   row("Mois concernés", ks.length + (already ? ", dont " + already + " déjà importé" + (already > 1 ? "s" : "") + " (complété" + (already > 1 ? "s" : "") + ")" : ""));
-  row("Trous de plus de 4 h en semaine", a.gaps ? nf0.format(a.gaps) + " (jours fériés possibles)" : "Aucun");
+  row("Trous de plus de 4 h en semaine", a.gaps ? nf0.format(a.gaps) + " (jours fériés ou séances courtes)" : "Aucun");
   if (raw.flats) row("Bougies plates retirées", nf0.format(raw.flats) + " (marché fermé)");
   if (raw.skipped || a.dup) row("Lignes ignorées", nf0.format(raw.skipped + a.dup) + (a.dup ? " (dont " + nf0.format(a.dup) + " en double)" : ""));
   res.appendChild(dl);
@@ -1266,10 +1341,16 @@ function hiShow() {
   var r = a.reopen, msg, c = "tx-help is-ok";
   if (!r) { msg = "Pas de week-end dans le fichier : impossible de vérifier l'heure du serveur."; c = "tx-help"; }
   else {
-    var when = JOURS[r.wd] + " " + hm(r.min) + " à New York";
-    if (r.count < r.total * .85) { msg = "L'heure de reprise après le week-end varie au fil de l'année (" + when + " sur " + r.count + " semaines, une autre heure sur " + (r.total - r.count) + ") : " + (raw.absolute ? "le fichier contient peut-être des trous ou des jours fériés." : "l'heure du serveur choisie ne correspond sans doute pas à votre courtier. Essayez un autre réglage."); c = "tx-help is-warn"; }
+    var when = function (y) { return JOURS[y.wd] + " " + hm(y.min); }, weak = r.years.filter(function (y) { return y.count < y.total * .85; });
+    var sc = S.hiTzScores, curS = sc && sc[$("hi-tz").value], bestS = sc ? Math.max.apply(null, Object.keys(sc).map(function (z) { return sc[z]; })) : null;
+    if (weak.length && (raw.absolute || (sc && curS >= bestS - 1e-6))) { /* déjà le réglage le plus cohérent : ce sont les données qui sont irrégulières */
+      msg = "Reprise après le week-end irrégulière en " + weak.map(function (y) { return y.year; }).join(", ") + " (" + when(weak[0]) + " à " + anc.label + " sur " + weak[0].count + " semaines sur " + weak[0].total + ") : jours fériés ou dimanches incomplets dans les données. Le réglage d'heure choisi est le plus cohérent ; les autres années sont régulières.";
+      c = "tx-help";
+    }
+    else if (weak.length) { msg = "L'heure de reprise après le week-end varie " + (r.years.length > 1 ? "en " + weak.map(function (y) { return y.year; }).join(", ") : "au fil de l'année") + " (" + when(weak[0]) + " à " + anc.label + " sur " + weak[0].count + " semaines, une autre heure sur " + (weak[0].total - weak[0].count) + ") : " + (raw.absolute ? "le fichier contient peut-être des trous ou des jours fériés." : "l'heure du serveur choisie ne correspond sans doute pas à votre courtier. Essayez un autre réglage."); c = "tx-help is-warn"; }
     else {
-      msg = "Reprise après le week-end : " + when + ", identique sur " + r.count + " semaine" + (r.count > 1 ? "s" : "") + " sur " + r.total + ".";
+      msg = r.same ? "Reprise après le week-end : " + when(r) + " à " + anc.label + ", identique sur " + r.count + " semaine" + (r.count > 1 ? "s" : "") + " sur " + r.total + "."
+        : "Reprise après le week-end stable chaque année, mais les horaires du marché ont changé : " + r.years.map(function (y) { return y.year + " : " + when(y); }).join(", ") + " (heure de " + anc.label + ").";
       if (/xau|gold|nas|ustec|us100|usatech|nq/i.test($("hi-market").value) && (r.wd !== 0 || r.min < 16 * 60 || r.min > 20 * 60)) { msg += " L'or et le Nasdaq rouvrent en général le dimanche vers 18:00 à New York : vérifiez l'heure du serveur."; c = "tx-help is-warn"; }
     }
   }
@@ -1410,7 +1491,7 @@ function robotText(su) { return su.taken ? "Pris par le robot" : "Annulé : " + 
 function rvRender() {
   var r = S.bt && S.bt.res; if (!r) return;
   var done = r.review.filter(function (su) { return S.avis[su.id]; }).length;
-  $("bt-rv-sub").textContent = done + " revu" + (done > 1 ? "s" : "") + " sur " + r.review.length + " : les " + r.taken.length + " trades pris par le robot et " + (r.review.length - r.taken.length) + " setups annulés tirés au hasard. Le résultat s'affiche après votre avis.";
+  $("bt-rv-sub").textContent = done + " revu" + (done > 1 ? "s" : "") + " sur " + r.review.length + " : " + r.reviewTaken + " trades pris par le robot (sur " + nf0.format(r.taken.length) + ") et " + (r.review.length - r.reviewTaken) + " setups annulés, tirés au hasard. Le résultat s'affiche après votre avis.";
   var tb = $("bt-rv-body"); tb.textContent = "";
   function empty(b, t) { tb.appendChild(el("tr", {}, [el("td", { colspan: "6", class: "c-empty" }, [el("div", { class: "tx-empty is-compact" }, [el("b", { text: b }), el("span", { text: t })])])])); }
   if (S.avisErr) empty("Avis indisponibles", S.avisErr);

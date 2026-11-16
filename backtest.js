@@ -24,7 +24,8 @@ var RULES = {
   goneR: 1,                    /* annulation B : le prix est déjà à +1 R */
   strongBody: 1,               /* annulation D : retour avec un corps d'au moins 1 ATR */
   tpR: 2, beR: 1,              /* objectif 2 R ; stop au point d'entrée dès +1 R ou une prise de liquidité */
-  limits: { perDay: 3, lossStreak: 2, dayLossR: 2, weekLossR: 5 }
+  limits: { perDay: 3, lossStreak: 2, dayLossR: 2, weekLossR: 5 },
+  review: { taken: 60, cancelled: 30 } /* setups tirés au hasard pour la revue par le trader */
 };
 var TFS = [60, 30, 15, 5, 3, 1]; /* ordre de traitement d'une même minute : unités hautes d'abord */
 var REASONS = {
@@ -236,11 +237,13 @@ function run(m1, opts) {
   });
   setups.forEach(function (su) { if (!su.taken) st.byReason[su.reason] = (st.byReason[su.reason] || 0) + 1; });
   st.avg = st.n ? st.sum / st.n : null; st.wr = st.n ? st.win / st.n : null;
-  /* à revoir : tous les trades pris, plus un échantillon des setups annulés par une règle (au moins 20, ou la moitié des trades) */
-  var pool = setups.filter(function (su) { return REVIEWABLE.indexOf(su.reason) >= 0; }), r = rnd(4242), want = Math.min(pool.length, Math.max(20, Math.ceil(taken.length / 2)));
-  for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
-  var review = taken.concat(pool.slice(0, want)).sort(function (a, b) { return a.tS - b.tS; });
-  return { rules: R.version, setups: setups, taken: taken, review: review, counts: counts, stats: st };
+  /* à revoir : un tirage au hasard (toujours le même pour les mêmes données) de trades pris et de setups annulés par une règle,
+     limité pour rester faisable à la main (R.review) */
+  var r = rnd(4242);
+  function sample(list, n) { list = list.slice(); for (var i = list.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), tmp = list[i]; list[i] = list[j]; list[j] = tmp; } return list.slice(0, n); }
+  var revT = sample(taken, R.review.taken), revC = sample(setups.filter(function (su) { return REVIEWABLE.indexOf(su.reason) >= 0; }), R.review.cancelled);
+  var review = revT.concat(revC).sort(function (a, b) { return a.tS - b.tS; });
+  return { rules: R.version, setups: setups, taken: taken, review: review, reviewTaken: revT.length, counts: counts, stats: st };
 }
 
 window.TradamaxBT = { RULES: RULES, REASONS: REASONS, run: run, aggregate: aggregate, nyWall: nyWall, nyDayKey: nyDayKey };
