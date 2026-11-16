@@ -5,11 +5,12 @@
 (function () {
 "use strict";
 
-/* Règles v2 : section 8 du document de règles (réponses du trader du 16/11/2026). Distances en ATR 14.
+/* Règles v3 : section 8 du document de règles (réponses du trader du 16/11/2026). Distances en ATR 14.
    v2 : entrée par ordre limite sur le bord de la zone (haut du FVG/IFVG à l'achat), exécuté minute par minute ;
-   annulations D (retour violent tardif) et F (clôture de l'autre côté de la zone) supprimées. */
+   annulations D (retour violent tardif) et F (clôture de l'autre côté de la zone) supprimées.
+   v3 : pas d'entrée sur la bougie qui suit directement la formation de la zone (ordre exécutable à partir de la 2e). */
 var RULES = {
-  version: "v2 du 16/11/2026",
+  version: "v3 du 16/11/2026",
   obTfs: [3, 5, 15, 30, 60],   /* unités où l'on cherche l'OB */
   sweepTfs: [1, 3, 5],         /* unités de la prise de liquidité, du FVG/IFVG et de l'entrée */
   swingK: 2,                   /* sommet ou creux de swing : 2 bougies de chaque côté */
@@ -23,6 +24,7 @@ var RULES = {
   fvgMin: .3,                  /* écart minimal d'un FVG */
   ifvgLookback: 20,            /* un IFVG inverse un FVG opposé formé dans les 20 dernières bougies */
   maxBars: 5,                  /* FVG/IFVG puis entrée : entre 1 et 5 bougies (l'ordre limite reste actif 5 bougies) */
+  firstFillBar: 2,             /* on ne rentre pas directement : l'ordre ne s'exécute qu'à partir de la 2e bougie après la zone */
   goneR: 1,                    /* annulation B : le prix est déjà à +1 R du bord de la zone */
   tpR: 2, beR: 1,              /* objectif 2 R ; stop au point d'entrée dès +1 R ou une prise de liquidité */
   limits: { perDay: 3, lossStreak: 2, dayLossR: 2, weekLossR: 5 },
@@ -136,7 +138,7 @@ function detect(m, R, counts) {
     /* ordre limite posé en haut de la zone à sa création : on rejoue chaque minute de la bougie, dans l'ordre */
     for (var j = B.i0[k]; j <= B.i1[k]; j++) {
       if (!su.ob.valid && su.ob.tEnd != null && su.ob.tEnd <= m.t[j]) { end(s, su, k, "E", j); return; }
-      if (m.l[j] <= su.zone.top) { /* ordre exécuté (au prix d'ouverture si le prix saute par-dessus) */
+      if (dd >= R.firstFillBar && m.l[j] <= su.zone.top) { /* ordre exécuté (au prix d'ouverture si le prix saute par-dessus) ; jamais sur la 1re bougie */
         su.entry = Math.min(m.o[j], su.zone.top); su.kE = k; su.iE = j; su.tE = m.t[j] + 1; su.nth = dd; su.beLiq = nearestAbove(s.highs, su.entry);
         end(s, su, k, su.stop >= su.entry ? "G" : null, j); return;
       }

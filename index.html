@@ -657,6 +657,9 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-ov-z{fill:color-mix(in srgb,var(--c-warn) 18%,transparent);stroke:color-mix(in srgb,var(--c-warn) 70%,transparent);stroke-width:1}
 .pg-ov-l{stroke:var(--c-text-2);stroke-width:1.5;stroke-dasharray:5 4}
 .pg-ov-t{font:500 11px var(--f-sans);fill:var(--c-text-2)}
+.pg-ov-dot{fill:var(--c-text);stroke:var(--c-panel);stroke-width:2}
+.pg-ov-dot.is-pos{fill:var(--c-pos)} .pg-ov-dot.is-neg{fill:var(--c-neg)} .pg-ov-dot.is-be{fill:var(--c-text-2)}
+.tx-legend i.pg-lg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-text)}
 .tx-legend i.pg-lg-ob{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-info) 22%,transparent);box-shadow:inset 0 0 0 1px var(--c-info)}
 .tx-legend i.pg-lg-z{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-warn) 26%,transparent);box-shadow:inset 0 0 0 1px var(--c-warn)}
 .tx-legend i.pg-lg-l{background:repeating-linear-gradient(90deg,var(--c-text-2) 0 4px,transparent 4px 7px)}
@@ -1493,7 +1496,7 @@ code{font-family:var(--f-mono);font-size:.92em}
     <div class="pg-rv-body">
       <div class="pg-rv-bar">
         <div class="tx-seg" id="rv-tf" role="group" aria-label="Unité de temps du graphique"></div>
-        <div class="tx-legend" style="margin:0"><span><i class="pg-lg-ob"></i>OB</span><span><i class="pg-lg-z"></i>FVG ou IFVG</span><span><i class="pg-lg-l"></i>Liquidité prise</span><span>Heure de New York</span></div>
+        <div class="tx-legend" style="margin:0"><span><i class="pg-lg-ob"></i>OB</span><span><i class="pg-lg-z"></i>FVG ou IFVG</span><span><i class="pg-lg-l"></i>Liquidité prise</span><span><i class="pg-lg-dot"></i>Entrée et sortie (après l'avis)</span><span>Heure de New York</span></div>
       </div>
       <div class="pg-rv-chart" id="rv-chart" role="img" aria-label="Graphique du setup"></div>
       <div class="pg-rv-robot" id="rv-robot"></div>

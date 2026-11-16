@@ -1656,16 +1656,18 @@ function rvChart() {
     function barAt(t) { var k = lastLE(B.t, Math.floor(t / tf) * tf); return k < 0 ? null : wall[k]; }
     var mk = [], up = su.dir > 0, tSw = barAt(su.tS);
     if (tSw) mk.push({ time: tSw, position: up ? "belowBar" : "aboveBar", color: col.text2, shape: up ? "arrowUp" : "arrowDown", text: "Liquidité" });
-    if (showTrade && su.tE && rv.revealed) { var tE = barAt(su.tE - 1); if (tE) mk.push({ time: tE, position: up ? "belowBar" : "aboveBar", color: col.text, shape: "circle", text: "Entrée" }); }
-    if (rv.revealed && su.out && su.out.kind !== "fin") { var tX = barAt(su.out.t); if (tX) mk.push({ time: tX, position: up === (su.out.kind === "tp") ? "aboveBar" : "belowBar", color: su.out.kind === "tp" ? col.pos : su.out.kind === "sl" ? col.neg : col.text2, shape: "square", text: su.out.kind === "tp" ? "Objectif" : su.out.kind === "sl" ? "Stop" : "Point d'entrée" }); }
+    /* entrée et sortie : des points dessinés au prix exact (plus bas, par-dessus le graphique), pas des repères au-dessus des bougies */
     series.setMarkers(mk.sort(function (a, b) { return a.time - b.time; }));
     var dec = lastLE(B.t, Math.floor((su.tD - 1) / tf) * tf), last = rv.revealed ? B.t.length - 1 : dec;
     chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, dec - 45), to: Math.max(last, dec) + 8 });
     /* zones : OB, FVG/IFVG et niveau de liquidité pris, recalculés à chaque image (zoom, défilement) */
     var ov = svgEl("svg", { class: "pg-rv-ov", "aria-hidden": "true" }); box.appendChild(ov);
     var obR = svgEl("rect", { class: "pg-ov-ob", rx: 2 }), zR = svgEl("rect", { class: "pg-ov-z", rx: 2 }), lv = svgEl("line", { class: "pg-ov-l" }), obT = svgEl("text", { class: "pg-ov-t" }), zT = svgEl("text", { class: "pg-ov-t" });
+    var out = su.out, xk = out ? (out.kind === "tp" ? "is-pos" : out.kind === "sl" ? "is-neg" : "is-be") : "";
+    var eDot = svgEl("circle", { class: "pg-ov-dot", r: 0 }), xDot = svgEl("circle", { class: "pg-ov-dot " + xk, r: 0 });
+    function dot(c, show, t, price) { var x = show ? xAt(t) : null, y = show ? series.priceToCoordinate(price) : null; if (x == null || y == null || x < 0 || x > ts.width()) { c.setAttribute("r", 0); return; } c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", 4.5); }
     obT.textContent = "OB " + tfLabel(su.obTf); zT.textContent = su.zone.type + " " + tfLabel(su.tf);
-    [obR, zR, lv, obT, zT].forEach(function (x) { ov.appendChild(x); });
+    [obR, zR, lv, obT, zT, eDot, xDot].forEach(function (x) { ov.appendChild(x); });
     var tEnd = rv.revealed ? B.t[B.t.length - 1] : su.tD - 1, ts = chart.timeScale();
     function xAt(t) { var k = lastLE(B.t, t); return ts.logicalToCoordinate(k < 0 ? -1 : k); }
     function box2(r, label, t0, t1, top, bot) {
@@ -1682,6 +1684,8 @@ function rvChart() {
       box2(zR, zT, su.zone.t0, tEnd, su.zone.top, su.zone.bot);
       var lx0 = xAt(su.tL), lx1 = xAt(su.tS), ly = series.priceToCoordinate(su.L);
       if (lx0 != null && lx1 != null && ly != null) { lv.setAttribute("x1", Math.max(0, lx0)); lv.setAttribute("x2", Math.min(ts.width(), lx1)); lv.setAttribute("y1", ly); lv.setAttribute("y2", ly); }
+      dot(eDot, rv.revealed && showTrade && su.tE, su.tE - 1, su.entry);
+      dot(xDot, rv.revealed && out && out.kind !== "fin", out && out.t, out && out.price);
       rvRaf = requestAnimationFrame(frame);
     }
     frame();
