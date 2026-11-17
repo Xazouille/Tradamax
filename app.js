@@ -415,8 +415,8 @@ function renderOthers() {
 function kpi(box, label, val, c, hint) { box.appendChild(el("div", { class: "tx-stat" }, [el("div", { class: "tx-label", text: label }), el("div", { class: "v " + (c || ""), text: val }), el("div", { class: "h", text: hint || "" })])); }
 function renderKPIs(st) {
   var k = $("kpis"); k.textContent = "";
-  kpi(k, "Trades", String(st.n), "", st.n ? st.w + " gagnants · " + st.l + " perdants" : "—");
-  kpi(k, "Taux de réussite", st.wr == null ? "—" : pct(st.wr), "", st.avgW ? "Gain moyen " + eur(st.avgW) : "—");
+  kpi(k, "Trades", String(st.n), "", st.n ? st.w + " TP · " + st.l + " SL · " + (st.n - st.w - st.l) + " BE" : "—");
+  kpi(k, "Winrate", st.wr == null ? "—" : pct(st.wr), "", st.avgW ? "Gain moyen " + eur(st.avgW) : "—");
   kpi(k, "Profit factor", st.pf == null ? "—" : st.pf === Infinity ? "∞" : nf2.format(st.pf), st.pf == null ? "" : st.pf >= 1 ? "tx-pos" : "tx-neg", st.avgL ? "Perte moyenne " + eur(st.avgL) : "—");
   kpi(k, "Espérance / trade", st.exp == null ? "—" : seur(st.exp), cls(st.exp || 0), "Résultat moyen par trade");
   kpi(k, "R moyen", st.avgR == null ? "—" : rfmt(st.avgR), cls(st.avgR || 0), st.rs.length ? st.rs.length + " trades avec risque renseigné" : "Renseignez le risque");
@@ -432,7 +432,7 @@ function renderGroups(box, ts, key, order, subFn, labelFn) {
     var v = g[k], w = Math.abs(v.p) / mx * 50, sub = subFn(k);
     box.appendChild(el("div", { class: "tx-bar" }, [el("span", { class: "lab" }, [el("b", { text: labelFn ? labelFn(k) : k }), sub ? el("small", { text: sub }) : null]),
       el("span", { class: "tx-num " + cls(v.p), text: seur(v.p) }), el("div", { class: "track" }, [el("i", { class: v.p >= 0 ? "is-pos" : "is-neg", style: "width:" + w + "%" })]),
-      el("div", { class: "meta tx-num", text: v.n + " trade" + (v.n > 1 ? "s" : "") + " · réussite " + pct(v.w / v.n, 0) })]));
+      el("div", { class: "meta tx-num", text: v.n + " trade" + (v.n > 1 ? "s" : "") + " · winrate " + pct(v.w / v.n, 0) })]));
   });
 }
 function renderHist(rs) {
@@ -484,7 +484,7 @@ function renderCal() {
   var days = {}; ts.forEach(function (t) { if (t.date && t.date.indexOf(pre) === 0) { var k = Number(t.date.slice(8, 10)); days[k] = days[k] || { p: 0, n: 0 }; days[k].p += Number(t.pnl) || 0; days[k].n++; } });
   var mx = Math.max.apply(null, Object.keys(days).map(function (k) { return Math.abs(days[k].p); }).concat([1]));
   var tot = 0, nT = 0, gd = 0, bd = 0; Object.keys(days).forEach(function (k) { tot += days[k].p; nT += days[k].n; if (days[k].p > 0) gd++; else if (days[k].p < 0) bd++; });
-  $("cal-sub").textContent = nT ? seur(tot) + " sur le mois · " + gd + " jour" + (gd > 1 ? "s" : "") + " gagnant" + (gd > 1 ? "s" : "") + " · " + bd + " perdant" + (bd > 1 ? "s" : "") : "Aucun trade ce mois-ci";
+  $("cal-sub").textContent = nT ? seur(tot) + " sur le mois · " + gd + " jour" + (gd > 1 ? "s" : "") + " en gain · " + bd + " en perte" : "Aucun trade ce mois-ci";
   var box = $("cal"); box.textContent = "";
   ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].forEach(function (h) { box.appendChild(el("div", { class: "dh", text: h })); });
   box.appendChild(el("div", { class: "dh is-week", "data-short": "Sem.", text: "Semaine" }));
@@ -513,7 +513,7 @@ function renderRP(ts) {
   $("rp-sub").textContent = rs.length ? rs.length + " trades avec risque renseigné · objectif par défaut " + String(S.set.rPlanDefault).replace(".", ",") + " R" : "Renseignez le risque des trades pour activer cette analyse";
   $("rp-real").textContent = avgW == null ? "—" : rfmt(avgW); $("rp-real").className = "tx-hero " + (avgW != null && avgW >= avgP - .05 ? "tx-pos" : "");
   $("rp-vs").textContent = avgW == null ? "" : "réalisé, pour " + String(Math.round(avgP * 100) / 100).replace(".", ",") + " R prévus";
-  var n = rs.length || 1, parts = [{ k: "Objectif atteint", v: hit.length, c: "pos" }, { k: "Gagnant coupé avant l'objectif", v: early.length, c: "warn" }, { k: "Perte", v: loss.length, c: "neg" }];
+  var n = rs.length || 1, parts = [{ k: "Objectif atteint", v: hit.length, c: "pos" }, { k: "Gain coupé avant l'objectif", v: early.length, c: "warn" }, { k: "Perte", v: loss.length, c: "neg" }];
   var stk = $("rp-stack"); stk.textContent = ""; var lg = $("rp-legend"); lg.textContent = "";
   parts.forEach(function (p) { if (p.v) stk.appendChild(el("i", { style: "flex:" + p.v + " 1 0;background:var(--c-" + p.c + ")" }));
     lg.appendChild(el("div", { class: "lg" }, [el("span", { class: "sw", style: "background:var(--c-" + p.c + ")" }), el("span", { text: p.k }), el("span", { class: "tx-num tx-dim", text: rs.length ? p.v + " · " + pct(p.v / n, 0) : "—" })])); });
@@ -832,7 +832,7 @@ function renderProps() {
   var spent = S.props.reduce(function (s, p) { return s + toEur(Number(p.cout) || 0, p.devise); }, 0);
   var paid = S.payouts.reduce(function (s, p) { return s + toEur(Number(p.montant) || 0, p.devise); }, 0);
   kpi(k, "Comptes financés actifs", String(S.props.filter(function (p) { return p.statut === "Compte financé"; }).length), "", S.props.filter(function (p) { return p.statut === "Challenge en cours"; }).length + " challenge(s) en cours");
-  kpi(k, "Taux de réussite réel", done.length ? pct(valid.length / done.length, 0) : "—", "", done.length ? valid.length + " validé(s) sur " + done.length + " terminé(s)" : "Aucun challenge terminé");
+  kpi(k, "Winrate réel", done.length ? pct(valid.length / done.length, 0) : "—", "", done.length ? valid.length + " validé(s) sur " + done.length + " terminé(s)" : "Aucun challenge terminé");
   kpi(k, "Coût d'un compte validé", valid.length ? eur(spent / valid.length) : "—", "", "Dépenses ÷ comptes validés");
   kpi(k, "Dépensé en challenges", eur(spent), "", S.props.length + " achat(s)");
   kpi(k, "Versements reçus", eur(paid), paid > 0 ? "tx-pos" : "", S.payouts.length + " versement(s)");
@@ -1499,7 +1499,7 @@ function btRender() {
   var r = S.bt && S.bt.res; $("bt-out").hidden = !r; if (!r) return;
   var s = r.stats, k = $("bt-res-kpis"); k.textContent = "";
   kpi(k, "Trades pris", String(s.n), "", "sur " + nf0.format(r.setups.length) + " setups complets · " + S.bt.market);
-  kpi(k, "Taux de réussite", s.wr == null ? "—" : pct(s.wr), "", s.n ? s.win + " gagnants · " + s.loss + " perdants · " + s.be + " à zéro" : "—");
+  kpi(k, "Winrate", s.wr == null ? "—" : pct(s.wr), "", s.n ? s.win + " TP · " + s.loss + " SL · " + s.be + " BE" : "—");
   kpi(k, "Résultat", s.n ? rfmt(s.sum) : "—", cls(s.sum), s.avg == null ? "—" : "R moyen " + rfmt(s.avg));
   kpi(k, "Drawdown max", s.n ? "−" + nf2.format(s.maxdd) + " R" : "—", "", "Plus longue série de pertes : " + s.worst);
   var tsel = $("bt-trend").value; kpi(k, "Tendance", tsel === "0" ? "Aucune" : tfLabel(+tsel), "", tsel === "0" ? "Tous les sens pris" : (s.byReason.T || 0) + " setups contre la tendance écartés");
@@ -1509,7 +1509,7 @@ function btRender() {
     rb.appendChild(el("div", { class: "it" }, [el("span", { text: labels[c] || c }), el("span", { class: "tx-sub tx-num", text: c }), el("span", { class: "tx-num", text: nf0.format(rs[c]) })]));
   });
   var tb = $("bt-tf"); tb.textContent = "";
-  function trow(label, o) { tb.appendChild(el("tr", {}, [el("td", { "data-l": "Unité", text: label }), el("td", { class: "r tx-num", "data-l": "Trades", text: o ? String(o.n) : "0" }), el("td", { class: "r tx-num", "data-l": "Réussite", text: o && o.n ? pct(o.win / o.n, 0) : "—" }), el("td", { class: "r tx-num " + (o ? cls(o.sum) : ""), "data-l": "Résultat", text: o ? rfmt(o.sum) : "—" })])); }
+  function trow(label, o) { tb.appendChild(el("tr", {}, [el("td", { "data-l": "Unité", text: label }), el("td", { class: "r tx-num", "data-l": "Trades", text: o ? String(o.n) : "0" }), el("td", { class: "r tx-num", "data-l": "Winrate", text: o && o.n ? pct(o.win / o.n, 0) : "—" }), el("td", { class: "r tx-num " + (o ? cls(o.sum) : ""), "data-l": "Résultat", text: o ? rfmt(o.sum) : "—" })])); }
   BT.RULES.sweepTfs.forEach(function (tf) { trow("Prise de liquidité " + tfLabel(tf), s.byTf[tf]); });
   BT.RULES.obTfs.forEach(function (tf) { trow("OB " + tfLabel(tf), s.byObTf[tf]); });
   ["FVG", "FVG+IFVG"].forEach(function (z) { trow("Zone " + (z === "FVG+IFVG" ? "FVG et IFVG superposés" : "FVG seul"), s.byZone[z]); });
@@ -1784,7 +1784,7 @@ function renderCtl() {
   rows.slice().reverse().forEach(function (r) {
     var x = r.resultat || {};
     tb.appendChild(el("tr", {}, [el("td", { "data-l": "Marché", text: r.marche }), el("td", { "data-l": "Règles", text: r.regles }), el("td", { "data-l": "Période", text: r.periode }),
-      el("td", { class: "r tx-num", "data-l": "Trades", text: x.n == null ? "—" : nf0.format(x.n) }), el("td", { class: "r tx-num", "data-l": "Réussite", text: x.wr == null ? "—" : pct(x.wr) }),
+      el("td", { class: "r tx-num", "data-l": "Trades", text: x.n == null ? "—" : nf0.format(x.n) }), el("td", { class: "r tx-num", "data-l": "Winrate", text: x.wr == null ? "—" : pct(x.wr) }),
       el("td", { class: "r tx-num " + cls(x.sum || 0), "data-l": "Résultat", text: x.sum == null ? "—" : rfmt(x.sum) }), el("td", { class: "r tx-num " + cls(x.avg || 0), "data-l": "R moyen", text: x.avg == null ? "—" : rfmt(x.avg) }),
       el("td", { class: "r tx-num", "data-l": "Drawdown", text: x.maxdd == null ? "—" : "−" + nf2.format(x.maxdd) + " R" }), el("td", { class: "tx-num", "data-l": "Fait le", text: r.created_at ? frDate(String(r.created_at).slice(0, 10)) : "—" })]));
   });
@@ -1943,12 +1943,12 @@ function renderHome() {
     hmNote("hm-heat-note", "Lecture.", (top === "Out" ? "Les trades hors session représentent " : "La session " + SES_SHORT[top] + " concentre ") + pct(bySes[top] / r7.length, 0) + " des trades. Le " + JOURS[busy + 1] + " est le jour le plus chargé."); }
   S.hmR7 = r7; drawHomeEq(r7);
 
-  /* gagnants et perdants du mois */
-  hmNum("hm-w", stM.n ? stM.w : null, int, "tx-pos"); hmNum("hm-l", stM.n ? stM.l : null, int, "tx-neg");
-  [[".is-pos", stM.w], [".is-neg", stM.l]].forEach(function (x) { var col = $("hm-cmp").querySelector(x[0]), on = stM.n ? Math.round(x[1] / stM.n * 10) : 0; col.textContent = ""; for (var i = 0; i < 10; i++) col.appendChild(el("i", { class: i < on ? "on" : "" })); });
+  /* TP, SL et BE du mois */
+  hmNum("hm-w", stM.n ? stM.w : null, int, "tx-pos"); hmNum("hm-l", stM.n ? stM.l : null, int, "tx-neg"); hmNum("hm-be", stM.n ? stM.n - stM.w - stM.l : null, int);
+  [[".is-pos", stM.w], [".is-neg", stM.l], [".is-be", stM.n - stM.w - stM.l]].forEach(function (x) { var col = $("hm-cmp").querySelector(x[0]), on = stM.n ? Math.round(x[1] / stM.n * 10) : 0; col.textContent = ""; for (var i = 0; i < 10; i++) col.appendChild(el("i", { class: i < on ? "on" : "" })); });
   var lossR = inM.filter(function (t) { return t.pnl < 0; }).map(rOf).filter(function (r) { return r != null; });
   if (!stM.n) hmNote("hm-cmp-note", "Aucun trade", "en " + mName + " pour l'instant.");
-  else hmNote("hm-cmp-note", "Réussite " + pct(stM.wr, 0) + ".", lossR.length ? "Perte moyenne " + rfmt(lossR.reduce(function (a, b) { return a + b; }, 0) / lossR.length) + "." : stM.avgL ? "Perte moyenne " + eur(stM.avgL) + "." : "Aucune perte ce mois-ci.");
+  else hmNote("hm-cmp-note", "Winrate " + pct(stM.wr, 0) + ".", lossR.length ? "Perte moyenne " + rfmt(lossR.reduce(function (a, b) { return a + b; }, 0) / lossR.length) + "." : stM.avgL ? "Perte moyenne " + eur(stM.avgL) + "." : "Aucune perte ce mois-ci.");
 
   /* note du mois : la session qui porte le plus de gains, et le respect du plan dans cette session */
   var gains = {}, totG = 0, say = $("hm-say"), share = 0; say.textContent = "";
@@ -2089,9 +2089,10 @@ function homeMotion(intro) {
   H.ctx = gsap.context(function (self) {
     var q = self.selector;
     if (intro) {
-      var lines = new SplitText($("page-title"), { type: "lines", mask: "lines" }).lines;
+      var split = new SplitText($("page-title"), { type: "lines", mask: "lines" }), lines = split.lines;
       var tl = gsap.timeline({ delay: H.delay || 0, defaults: { ease: "power3.out" } });
-      tl.from(lines, { yPercent: 110, duration: 1.05, stagger: .1, ease: "expo.out" })
+      /* une fois les lignes montées, on retire les masques : ils coupaient le J et les jambages (g, p) */
+      tl.from(lines, { yPercent: 110, duration: 1.05, stagger: .1, ease: "expo.out", onComplete: function () { split.revert(); } })
         .from(head.querySelector('.pg-actions[data-for="accueil"]'), { y: 14, opacity: 0, duration: .7, stagger: .08 }, "-=.75")
         .from(q(".pg-tray"), { y: 56, opacity: 0, duration: 1, ease: "expo.out" }, "-=.6")
         .from(q(".pg-bn"), { y: 22, opacity: 0, duration: .7, stagger: .05 }, "-=.8")
@@ -2197,11 +2198,11 @@ function pageEnter(t) {
   if (!M.ready || t === "accueil" || t === "styleguide") return false;
   var tab = $("tab-" + t), head = $("page-head"), delay = M.navDelay || 0;
   M.ctx = gsap.context(function () {
-    var lines = new SplitText($("page-title"), { type: "lines", mask: "lines" }).lines;
+    var split = new SplitText($("page-title"), { type: "lines", mask: "lines" }), lines = split.lines;
     var items = blocks(tab), vh = window.innerHeight, above = [], below = [];
     items.forEach(function (e) { (e.getBoundingClientRect().top < vh - 40 ? above : below).push(e); });
     var tl = gsap.timeline({ delay: delay, defaults: { ease: "power3.out" } });
-    tl.from(lines, { yPercent: 110, duration: .95, stagger: .09, ease: "expo.out" })
+    tl.from(lines, { yPercent: 110, duration: .95, stagger: .09, ease: "expo.out", onComplete: function () { split.revert(); } })
       .from([$("page-date"), head.querySelector('.pg-actions[data-for="' + t + '"]')], { y: 16, opacity: 0, duration: .7, stagger: .07 }, "-=.85")
       .from("#session > div", { y: 30, opacity: 0, duration: .75, stagger: .07 }, "-=.65")
       .from(tab, { y: 70, opacity: 0, duration: 1, ease: "expo.out" }, "-=.7")
