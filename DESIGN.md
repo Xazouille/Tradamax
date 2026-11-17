@@ -7,7 +7,7 @@ Tous les composants sont visibles sur la page cachée `#styleguide` (après conn
 ## Principes
 
 1. **Les chiffres d'abord.** Un écran commence par ce qui se décide (état, drawdown, résultat du jour), puis les chiffres clés, puis le détail.
-2. **La couleur dit un état, jamais un décor.** Vert, rouge, orange et bleu sont réservés aux états. L'or est réservé à la marque et à l'action.
+2. **La couleur dit un état, jamais un décor.** Vert, rouge, orange et bleu sont réservés aux états. L'or est réservé à la marque et à l'action. Le vert et le rouge disent un gain ou une perte (et les états qui en découlent : palier de drawdown, statut d'un compte prop firm, TP ou SL, bougies) : jamais le sens d'un trade, le respect du plan, une annonce ou un avis.
 3. **Dense, avec de la matière.** Les panneaux sont posés sur le fond par un filet de 1 px et une ombre très légère. Le relief reste discret : un reflet en haut des panneaux en sombre, une ombre douce en clair. Jamais de dégradé de couleur pour décorer.
 4. **L'or se travaille comme un métal.** Il est toujours en dégradé (`--g-gold`), jamais en aplat, et il reste rare : le logo, le bouton principal, l'élément sélectionné, le filet en tête du bandeau de séance, la courbe principale.
 5. **Clair et sombre à égalité.** Le thème suit le système ; le bouton de l'en-tête mémorise un choix par appareil. Rien ne doit être lisible dans un seul des deux.
@@ -84,6 +84,11 @@ Graisses : 400 texte, 500 étiquette et bouton, 600 titre de panneau. Les grands
 - `prefers-reduced-motion` coupe toutes les animations et transitions.
 - **L'accueil est la seule page animée au défilement.** GSAP 3.15.0 (avec ScrollTrigger et SplitText) et Lenis 1.3.27 y sont chargés à la demande depuis jsDelivr, puis retirés quand on change d'onglet. L'entrée se joue une fois : lignes du titre qui montent, plateau puis cartes qui s'assemblent, cases et barres qui se remplissent, chiffres clés qui comptent depuis zéro, courbe qui se trace. Au défilement, le plateau du bento se redresse. Les autres pages restent sobres : survols et transitions courtes uniquement.
 - Une propriété animée par GSAP ne porte jamais de `transition` CSS (sinon l'animation reste bloquée sur son état de départ).
+- **Les autres pages n'ont que des micro-interactions**, dans l'esprit de shadcn/ui mais sans framework : survols discrets (fond, filet), focus visible, durées de 0,15 à 0,4 s.
+  - Changement d'onglet : l'en-tête puis le contenu montent de 8 px en 0,32 s (`pageIn`, Web Animations) ; le repère or du rail et de la barre du bas glisse jusqu'à l'onglet choisi (`pg-ind`).
+  - Chiffres clés : les tuiles (`tx-stat .v`) et les grands chiffres (`tx-hero`) comptent depuis zéro une seule fois, à l'arrivée sur un onglet ; le bandeau de séance au premier chargement. Jamais quand on change un filtre. Le format affiché est gardé ; heures et dates ne comptent pas (`countText`).
+  - Fenêtre de saisie : elle monte et s'éclaircit (`tx-rise`). Message court : il monte depuis le bas.
+- Tous les chiffres sont tabulaires (`font-variant-numeric: tabular-nums` sur `body`) : les colonnes restent alignées même hors police à chasse fixe.
 
 ## Composants
 
@@ -100,7 +105,7 @@ Préfixe `tx-`. Les variantes s'écrivent `is-…`.
 | Case à cocher | `tx-check` | |
 | Sélecteur segmenté | `tx-seg` avec `aria-pressed` | 2 à 5 choix exclusifs (période, jour). Au-delà : une liste. |
 | Pastille de statut | `tx-badge` + `is-pos`, `is-neg`, `is-warn`, `is-info` | Statut d'un compte, respect du plan. Sans variante : neutre (clôturé). |
-| Étiquette | `tx-badge is-plain` | Sens (Long en `is-pos`, Short en `is-neg`), fenêtre, marché. |
+| Étiquette | `tx-badge is-plain` | Sens (Long, Short, sans couleur), fenêtre, marché. |
 | Variation | `tx-delta` + `is-pos`, `is-neg` | Un écart chiffré à côté d'un chiffre principal (« +480 € · +3,2 % »). |
 | Rail latéral | `tx-side` > `tx-logo` + `tx-navitem` | Navigation à partir de 900 px. Icône et libellé court. |
 | Barre du bas | `tx-tabbar` > `tx-navitem` | Navigation sous 900 px, flottante. Cinq entrées au maximum, le reste dans « Plus ». |
@@ -156,6 +161,7 @@ Icônes : uniquement celles de la planche en tête de `index.html` (`<svg class=
 Les classes `pg-` décrivent la mise en page propre à Tradamax (elles ne sont pas des composants réutilisables). Elles sont en fin du `<style>` de `index.html`.
 
 - **Rail** (`pg-rail`, à partir de 900 px) : logo, Accueil, Journal, Prop firms, Annonces, Backtest, et Réglages en bas. **Barre du bas** (`pg-tabbar`, sous 900 px) : Accueil, Journal, Prop firms, Annonces, Backtest ; Réglages passe alors dans la barre du haut (bouton à icône `pg-only-sm`). Un bouton d'onglet porte `data-tab` ; Réglages ouvre une fenêtre de saisie (`#btn-settings` ou `data-open="settings"`).
+- **Connexion** (`pg-auth`) : le nom « Tradamax » en très grand (Instrument Serif, jusqu'à 216 px) avec le sur-titre « Outil interne de la SAS » et une phrase, la carte de connexion à droite (en dessous sur téléphone). Entrée en CSS : le nom monte, la carte suit. Aucun chiffre, rien de commercial : la page est publique.
 - **Barre du haut** (`pg-top`) : heures de Paris et de New York sur ordinateur, logo sur téléphone, utilisateur, thème, déconnexion.
 - **En-tête de page** (`pg-head`, commun à tous les onglets) : la date en sur-titre, le nom de la page (`#page-title`, mis à jour par `setTab`), et les actions de l'onglet (`pg-actions` avec `data-for="journal"`, `data-for="propfirms"`…).
 - **Accueil** (onglet par défaut après connexion, direction A du `design-lab/`) : l'en-tête passe en grand (`pg-head is-hero`, titre sur deux lignes avec une italique dorée, phrase d'introduction `pg-lede`, bouton « Nouveau trade »), puis le bandeau de séance, puis « Le mois en cours » sur un plateau en creux (`pg-tray`) en bento (`pg-bento` > `pg-bn`, cartes de tailles variées) : résultat du mois, R moyen, respect du plan (avec l'écart sur le mois précédent, neutre), activité par jour sur sept semaines (`pg-heat`, intensité d'or = nombre de trades, ce n'est ni un gain ni une perte), courbe des sept semaines (pastille sur le plus haut qui suit le pointeur), gagnants et perdants, note du mois (`pg-bn-gold`, la seule carte en or de l'écran), répartition par marché (`pg-donut`), palier de drawdown du compte réel (`pg-arc`, arc dans la couleur de l'état, jamais en or). Le sélecteur `#hm-acc` choisit le compte réel ou tous les comptes ; le drawdown reste toujours celui du compte réel. Les flèches rondes (`pg-bn-go`, `data-go`) mènent au journal.
