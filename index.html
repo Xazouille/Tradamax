@@ -691,6 +691,132 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-rv-result:empty{display:none}
 @media (max-width:560px){.pg-rv-chart{height:300px}.pg-rv-body{padding:var(--sp-3) var(--sp-4)}.pg-choice{grid-template-columns:minmax(0,1fr)}}
 
+/* accueil (direction A du design lab) : grand titre, bandeau de séance, puis le mois en cours en bento sur un plateau en creux.
+   Seule page animée au défilement : GSAP et Lenis y sont chargés à la demande, jamais ailleurs. */
+@media (min-width:900px){.pg-only-sm{display:none}}
+.pg-head.is-hero{padding-top:clamp(8px,2.6vw,40px);padding-bottom:var(--sp-2);gap:var(--sp-5) var(--sp-6)}
+.pg-head.is-hero>div:first-child{min-width:0;max-width:1000px}
+.pg-head.is-hero .tx-display{font-size:clamp(42px,6.2vw,104px);line-height:.96;letter-spacing:-.024em}
+.pg-lede{margin:var(--sp-4) 0 0;max-width:56ch;color:var(--c-text-2);font-size:clamp(14px,1.1vw,16px)}
+body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
+.pg-home-stage{perspective:1700px;padding-bottom:var(--sp-5)}
+.pg-home-tilt{transform-origin:50% 0}
+.pg-tray{border-radius:22px;padding:12px;background:var(--c-inset);border:1px solid var(--c-line);box-shadow:var(--shadow-2)}
+.pg-tray-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3);padding:2px 4px 12px}
+.pg-tray-id{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px var(--sp-3);margin-right:auto;min-width:0}
+.pg-bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
+.pg-bn{position:relative;display:flex;flex-direction:column;gap:14px;min-width:0;padding:18px;border-radius:16px;background-color:var(--c-panel);background-image:var(--g-sheen);border:1px solid var(--c-line);box-shadow:var(--shadow-1);transition:border-color .15s var(--ease)}
+.pg-bn:hover{border-color:var(--c-line-2)}
+.pg-bn-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.pg-bn-h>.tx-label{display:inline-flex;align-items:center;gap:7px;min-height:30px}
+.pg-bn-h>.tx-label .tx-ico{width:14px;height:14px}
+.pg-bn-go{display:grid;place-items:center;width:30px;height:30px;flex:none;padding:0;border-radius:50%;border:1px solid var(--c-line-2);background:transparent;color:var(--c-text-2);cursor:pointer;transition:color .15s var(--ease),border-color .15s var(--ease),transform .2s var(--ease)}
+.pg-bn-go .tx-ico{width:14px;height:14px}
+.pg-bn:hover .pg-bn-go,.pg-bn-go:focus-visible{color:var(--c-accent);border-color:var(--c-accent-fill)}
+.pg-bn-go:hover{transform:rotate(45deg)}
+@media (pointer:coarse){.pg-bn-go{width:40px;height:40px}}
+.pg-bn-big{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:clamp(28px,2.5vw,40px);font-weight:300;letter-spacing:-.045em;line-height:1.05;white-space:nowrap}
+.pg-bn-mid{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:30px;font-weight:300;letter-spacing:-.04em;line-height:1.05}
+.pg-bn-v{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-top:auto}
+.pg-bn-h .pg-bn-v{margin-top:6px}
+.pg-bn-note{display:flex;gap:10px;align-items:flex-start;margin:auto 0 0;padding:10px 12px;border-radius:10px;background:var(--c-panel-2);border:1px solid var(--c-line);font-size:var(--fs-2);color:var(--c-text-2);line-height:1.45}
+.pg-bn-note:empty{display:none}
+.pg-bn-note .tx-ico{margin-top:1px}
+.pg-bn-note b{color:var(--c-text);font-weight:600}
+.pg-bn-tag{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--c-line-2);font-size:var(--fs-2);color:var(--c-text-2)}
+.pg-bn-k{grid-column:span 3}
+.pg-bn-heat{grid-column:span 3;grid-row:span 2}
+.pg-bn-eq{grid-column:span 6}
+.pg-bn-cmp,.pg-bn-gold,.pg-bn-dd{grid-column:span 3}
+.pg-bn-mix{grid-column:span 6}
+/* activité : une case par jour ouvré, intensité d'or selon le nombre de trades (ce n'est pas un gain ni une perte) */
+.pg-heat-legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:var(--fs-1);color:var(--c-text-2)}
+.pg-heat-legend span{display:inline-flex;align-items:center;gap:6px}
+.pg-heat-legend i{width:10px;height:10px;border-radius:3px}
+.pg-heat{display:grid;grid-template-columns:auto repeat(5,minmax(0,1fr));gap:5px;align-items:center}
+.pg-heat .rl,.pg-heat .cl{font-family:var(--f-mono);font-size:var(--fs-1);color:var(--c-text-3)}
+.pg-heat .rl{padding-right:4px}
+.pg-heat .cl{text-align:center}
+.pg-heat .c{aspect-ratio:1.35;border-radius:6px}
+.pg-heat .c.is-fut{box-shadow:inset 0 0 0 1px var(--c-line);background:transparent}
+.pg-bn .h0{background:repeating-linear-gradient(135deg,var(--c-line-2) 0 1px,transparent 1px 5px);box-shadow:inset 0 0 0 1px var(--c-line)}
+.pg-bn .h1{background:color-mix(in srgb,var(--c-accent-fill) 26%,var(--c-panel))}
+.pg-bn .h2{background:color-mix(in srgb,var(--c-accent-fill) 58%,var(--c-panel))}
+.pg-bn .h3{background:var(--g-gold);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.pg-split{display:flex;gap:4px;height:6px}
+.pg-split i{height:100%;border-radius:3px;transform-origin:0 50%}
+.pg-split-l{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:8px}
+.pg-split-l b{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:400;font-size:19px;letter-spacing:-.03em}
+.pg-split-l span{display:flex;align-items:center;gap:6px;font-size:var(--fs-2);color:var(--c-text-2);line-height:1.3}
+.pg-split-l span i{width:7px;height:7px;border-radius:50%;flex:none}
+.pg-bn .s-London{background:color-mix(in srgb,var(--c-accent-fill) 50%,var(--c-panel))}
+.pg-bn .s-NYAM{background:var(--g-gold)}
+.pg-bn .s-NYPM{background:color-mix(in srgb,var(--c-accent-fill) 24%,var(--c-panel))}
+.pg-bn .s-Out{background:var(--c-line-2)}
+/* courbe de capital : pastille sur le plus haut, qui suit le pointeur */
+.pg-bn-chart .cap{fill:color-mix(in srgb,var(--c-text) 7%,transparent);stroke:var(--c-line-2)}
+.pg-bn-chart .pill{fill:var(--c-text)}
+.pg-bn-chart text.pill-t{font-size:12px;font-weight:500;fill:var(--c-bg)}
+.pg-bn-chart text.empty{font-family:var(--f-sans);font-size:var(--fs-3);fill:var(--c-text-2)}
+/* gagnants et perdants */
+.pg-cmp-n,.pg-cmp-b{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pg-cmp-n .tx-sub{display:block;margin-top:2px}
+.pg-cmp-b .col{display:flex;flex-direction:column-reverse;gap:4px}
+.pg-cmp-b i{height:7px;border-radius:3px;background:var(--c-inset);box-shadow:inset 0 0 0 1px var(--c-line);transform-origin:0 50%}
+.pg-cmp-b .is-pos i.on{background:var(--c-pos);box-shadow:none}
+.pg-cmp-b .is-neg i.on{background:var(--c-neg);box-shadow:none}
+/* note du mois : la seule carte en or de l'écran */
+.pg-bn-gold{background:var(--g-gold);border-color:var(--c-accent-lo);color:var(--c-on-accent);box-shadow:var(--shadow-gold);overflow:hidden}
+.pg-bn-gold:hover{border-color:var(--c-accent-lo)}
+.pg-bn-gold::after{content:"";position:absolute;top:-60%;right:-50%;width:120%;aspect-ratio:1;pointer-events:none;background:repeating-radial-gradient(circle at 100% 0,transparent 0 13px,rgba(26,19,4,.07) 14px,transparent 15px);-webkit-mask-image:radial-gradient(circle at 100% 0,#000,transparent 70%);mask-image:radial-gradient(circle at 100% 0,#000,transparent 70%)}
+.pg-bn-chip{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;min-height:26px;padding:0 10px;border-radius:999px;border:1px solid rgba(26,19,4,.28);font-size:var(--fs-2);font-weight:500}
+.pg-bn-chip .tx-ico{width:14px;height:14px}
+.pg-bn-say{position:relative;margin:0;font-size:clamp(18px,1.5vw,22px);line-height:1.28;font-weight:500;letter-spacing:-.015em}
+.pg-bn-pill{display:inline-block;padding:0 9px;border-radius:999px;background:rgba(26,19,4,.88);color:var(--c-accent-hi);font-size:.86em;line-height:1.35}
+.pg-bn-segs{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;margin-top:auto}
+.pg-bn-segs i{height:16px;border-radius:4px;background:rgba(26,19,4,.14)}
+.pg-bn-segs i.on{background:rgba(26,19,4,.82)}
+/* répartition par marché */
+.pg-mix{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px 28px;align-items:center}
+.pg-donut{position:relative;width:168px;aspect-ratio:1;max-width:100%}
+.pg-donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.pg-donut circle{fill:none;stroke-width:15}
+.pg-donut .trk{stroke:var(--c-inset)}
+.pg-donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pg-bn .m0{stroke:var(--c-accent-fill);background:var(--c-accent-fill)}
+.pg-bn .m1{stroke:color-mix(in srgb,var(--c-accent-fill) 52%,var(--c-panel));background:color-mix(in srgb,var(--c-accent-fill) 52%,var(--c-panel))}
+.pg-bn .m2{stroke:color-mix(in srgb,var(--c-accent-fill) 24%,var(--c-panel));background:color-mix(in srgb,var(--c-accent-fill) 24%,var(--c-panel))}
+.pg-bn .m3{stroke:var(--c-line-2);background:var(--c-line-2)}
+.pg-mix .tx-kv{font-size:14px;gap:14px 0}
+.pg-mix .tx-kv dt i{width:9px;height:9px;border-radius:50%;flex:none;align-self:center}
+/* palier de drawdown : arc segmenté dans la couleur de l'état (jamais en or) */
+.pg-arc{position:relative;margin-block:auto}
+.pg-arc svg{display:block;width:100%;max-width:270px;margin-inline:auto;overflow:visible}
+.pg-arc line{stroke-width:10;stroke-linecap:round;stroke:var(--c-inset)}
+.pg-arc line.on{stroke:var(--st,var(--c-text-2))}
+.pg-arc text{font-family:var(--f-mono);font-size:11px;fill:var(--c-text-3)}
+.pg-arc-c{position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center}
+.pg-arc-foot{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+@media (max-width:1100px){
+  .pg-bento{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .pg-bn-k{grid-column:span 2;order:-2}
+  .pg-bn-eq{grid-column:span 6;order:-1}
+  .pg-bn-heat{grid-column:span 3;grid-row:auto}
+  .pg-bn-dd{order:1}
+  .pg-bn-mix{grid-column:span 6;order:2}
+}
+@media (max-width:640px){
+  .pg-bento{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .pg-bn-k:first-child{grid-column:span 2}
+  .pg-bn-k{grid-column:span 1}
+  .pg-bn-eq,.pg-bn-heat,.pg-bn-cmp,.pg-bn-gold,.pg-bn-dd,.pg-bn-mix{grid-column:span 2}
+  .pg-tray{padding:8px;border-radius:18px}
+  .pg-bn{padding:14px}
+  .pg-bn-k .pg-bn-big{font-size:25px}
+  .pg-mix{grid-template-columns:minmax(0,1fr);justify-items:center}
+  .pg-mix .tx-kv{width:100%}
+}
+
 /* connexion et configuration manquante */
 .pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-left,0px))}
 .pg-auth-card{width:100%;max-width:410px;padding:34px 30px 26px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
@@ -735,6 +861,8 @@ code{font-family:var(--f-mono);font-size:.92em}
   <symbol id="i-droite" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-backtest" viewBox="0 0 24 24"><path d="M7 3v4M7 17v4M17 6v3M17 18v3M5 7h4v10H5zM15 9h4v9h-4z"/></symbol>
   <symbol id="i-versement" viewBox="0 0 24 24"><path d="M3 7h18v10H3zM12 10a2 2 0 1 0 0 4a2 2 0 0 0 0-4zM6.5 10v4M17.5 10v4"/></symbol>
+  <symbol id="i-accueil" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5M10 20v-6h4v6"/></symbol>
+  <symbol id="i-fleche" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></symbol>
 </svg>
 <div class="pg-cfg" id="cfg-err" hidden>
   <div class="tx-alert is-stop" role="alert"><svg class="tx-ico" aria-hidden="true"><use href="#i-stop"/></svg><div class="tx-alert-body"><b>Configuration manquante</b>Renseignez l'adresse et la clé de votre projet Supabase dans le fichier <code>config.js</code>, puis republiez le site (voir le guide README).</div></div>
@@ -763,7 +891,8 @@ code{font-family:var(--f-mono);font-size:.92em}
   <aside class="tx-side pg-rail">
     <span class="tx-logo" aria-hidden="true">T</span>
     <nav class="pg-rail-nav" aria-label="Sections">
-      <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
+      <button class="tx-navitem" type="button" data-tab="accueil" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-accueil"/></svg>Accueil</button>
+      <button class="tx-navitem" type="button" data-tab="journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
       <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
       <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
       <button class="tx-navitem" type="button" data-tab="backtest"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>Backtest</button>
@@ -778,13 +907,18 @@ code{font-family:var(--f-mono);font-size:.92em}
         <div class="pg-clocks" id="clocks"></div>
         <div class="pg-who">
           <span class="tx-sub" id="who"></span>
+          <button class="tx-btn is-ghost is-icon pg-only-sm" type="button" data-open="settings" aria-label="Réglages" title="Réglages"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg></button>
           <button class="tx-btn is-ghost is-icon" type="button" data-action="theme" aria-label="Basculer entre thème clair et thème sombre" title="Thème clair ou sombre"><svg class="tx-ico" aria-hidden="true"><use href="#i-theme"/></svg></button>
           <button class="tx-btn is-ghost pg-logout" id="btn-logout" type="button" aria-label="Se déconnecter" title="Se déconnecter"><svg class="tx-ico" aria-hidden="true"><use href="#i-sortie"/></svg><span class="pg-hide-sm">Se déconnecter</span></button>
         </div>
       </header>
 
       <div class="pg-head" id="page-head">
-        <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de trading</h1></div>
+        <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de trading</h1><p class="pg-lede" id="page-lede" hidden>Le point sur le mois en cours : résultat, discipline et risque, mis à jour en direct pour les deux associés.</p></div>
+        <div class="pg-actions" data-for="accueil" hidden>
+          <button class="tx-btn is-ghost" type="button" data-go="journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Ouvrir le journal</button>
+          <button class="tx-btn is-primary" id="btn-add-home" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau trade</button>
+        </div>
         <div class="pg-actions" data-for="journal">
           <button class="tx-btn" id="btn-import" type="button" aria-label="Importer un CSV" title="Importer un CSV"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg><span class="pg-hide-sm">Importer un CSV</span></button>
           <button class="tx-btn" id="btn-export" type="button" aria-label="Exporter" title="Exporter"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg><span class="pg-hide-sm">Exporter</span></button>
@@ -807,6 +941,80 @@ code{font-family:var(--f-mono);font-size:.92em}
       </section>
 
       <main class="pg-tabs">
+  <!-- ================= ACCUEIL (direction A du design lab : le mois en cours en bento) ================= -->
+  <section id="tab-accueil" class="tab" hidden>
+    <div class="pg-home-stage">
+      <div class="pg-home-tilt">
+        <div class="pg-tray">
+          <div class="pg-tray-head">
+            <div class="pg-tray-id"><h2 class="tx-title">Le mois en cours</h2><span class="tx-sub" id="hm-scope"></span></div>
+            <span class="tx-badge is-plain" id="hm-badge" hidden>Trades d'exemple</span>
+            <div class="tx-seg" id="hm-acc" role="group" aria-label="Comptes affichés">
+              <button type="button" data-v="sas" aria-pressed="true">Compte réel</button>
+              <button type="button" data-v="all" aria-pressed="false">Tous les comptes</button>
+            </div>
+          </div>
+          <div class="pg-bento">
+            <article class="pg-bn pg-bn-k">
+              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-versement"/></svg>Résultat du mois</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-bn-v"><span class="pg-bn-big" id="hm-res" data-count>—</span><span class="tx-delta" id="hm-res-d" hidden></span></div>
+              <div class="tx-sub" id="hm-res-h"></div>
+            </article>
+            <article class="pg-bn pg-bn-k">
+              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>R moyen par trade</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-bn-v"><span class="pg-bn-big" id="hm-r" data-count>—</span><span class="tx-delta" id="hm-r-d" hidden></span></div>
+              <div class="tx-sub" id="hm-r-h"></div>
+            </article>
+            <article class="pg-bn pg-bn-k">
+              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-ok"/></svg>Respect du plan</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-bn-v"><span class="pg-bn-big" id="hm-plan" data-count>—</span><span class="tx-delta" id="hm-plan-d" hidden></span></div>
+              <div class="tx-sub" id="hm-plan-h"></div>
+            </article>
+            <article class="pg-bn pg-bn-heat">
+              <div class="pg-bn-h"><span class="tx-label">Activité par jour</span><span class="tx-sub">7 semaines</span></div>
+              <div class="pg-heat-legend" aria-hidden="true"><span><i class="h0"></i>Aucun trade</span><span><i class="h1"></i>1</span><span><i class="h2"></i>2</span><span><i class="h3"></i>3 et plus</span></div>
+              <div class="pg-heat" id="hm-heat" role="img"></div>
+              <div class="pg-split" id="hm-split" aria-hidden="true"></div>
+              <div class="pg-split-l" id="hm-split-l"></div>
+              <p class="pg-bn-note" id="hm-heat-note"></p>
+            </article>
+            <article class="pg-bn pg-bn-eq">
+              <div class="pg-bn-h">
+                <div><span class="tx-label">Courbe de capital</span><div class="pg-bn-v"><span class="pg-bn-big" id="hm-eq-v" data-count>—</span><span class="tx-sub" id="hm-eq-h"></span></div></div>
+                <button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button>
+              </div>
+              <div class="tx-chart pg-bn-chart" id="hm-eq"></div>
+            </article>
+            <article class="pg-bn pg-bn-cmp">
+              <div class="pg-bn-h"><span class="tx-label">Gagnants et perdants</span></div>
+              <div class="pg-cmp-n"><div><span class="pg-bn-mid tx-pos" id="hm-w" data-count>—</span><span class="tx-sub">gagnants</span></div><div><span class="pg-bn-mid tx-neg" id="hm-l" data-count>—</span><span class="tx-sub">perdants</span></div></div>
+              <div class="pg-cmp-b" id="hm-cmp" aria-hidden="true"><div class="col is-pos"></div><div class="col is-neg"></div></div>
+              <p class="pg-bn-note" id="hm-cmp-note"></p>
+            </article>
+            <article class="pg-bn pg-bn-gold">
+              <span class="pg-bn-chip"><svg class="tx-ico" aria-hidden="true"><use href="#i-seance"/></svg>Note du mois</span>
+              <p class="pg-bn-say" id="hm-say"></p>
+              <div class="pg-bn-segs" id="hm-segs" aria-hidden="true"></div>
+            </article>
+            <article class="pg-bn pg-bn-mix">
+              <div class="pg-bn-h"><span class="tx-label">Répartition par marché</span><span class="pg-bn-tag" id="hm-mix-tag"></span></div>
+              <div class="pg-mix">
+                <div class="pg-donut"><svg viewBox="0 0 120 120" id="hm-donut" role="img"></svg><div class="pg-donut-c"><span class="pg-bn-mid" id="hm-mix-n" data-count>—</span><span class="tx-sub">trades</span></div></div>
+                <dl class="tx-kv" id="hm-mix-list"></dl>
+              </div>
+              <p class="pg-bn-note" id="hm-mix-note"></p>
+            </article>
+            <article class="pg-bn pg-bn-dd" id="hm-dd-card">
+              <div class="pg-bn-h"><span class="tx-label">Palier de drawdown</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-arc"><svg viewBox="0 0 240 150" id="hm-dd" role="img"></svg><div class="pg-arc-c"><span class="pg-bn-big" id="hm-dd-v" data-count>—</span></div></div>
+              <div class="pg-arc-foot"><span class="tx-badge" id="hm-dd-b" hidden></span><span class="tx-sub" id="hm-dd-h"></span></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= JOURNAL ================= -->
   <section id="tab-journal" class="tab">
     <div class="pg-toolbar" role="group" aria-label="Filtres">
@@ -1393,11 +1601,11 @@ code{font-family:var(--f-mono);font-size:.92em}
   </div>
 
   <nav class="tx-tabbar pg-tabbar" aria-label="Sections">
-    <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
+    <button class="tx-navitem" type="button" data-tab="accueil" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-accueil"/></svg>Accueil</button>
+    <button class="tx-navitem" type="button" data-tab="journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
     <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
     <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
     <button class="tx-navitem" type="button" data-tab="backtest"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>Backtest</button>
-    <button class="tx-navitem" type="button" data-open="settings"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</button>
   </nav>
 </div>
 
