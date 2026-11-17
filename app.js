@@ -408,7 +408,7 @@ function renderOthers() {
         el("span", { class: "pg-acc-actions" }, [capBtn,
           el("button", { class: "tx-btn is-ghost", type: "button", "aria-label": "Afficher le détail de " + name, text: cur ? "Affiché" : "Voir le détail" })])])]);
     capBtn.addEventListener("click", function (e) { e.stopPropagation(); openCapital(name); });
-    card.addEventListener("click", function () { S.f.account = name; S.shown = 30; renderJournal(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    card.addEventListener("click", function () { S.f.account = name; S.shown = 30; renderJournal(); if (M.lenis) M.lenis.scrollTo(0); else window.scrollTo({ top: 0, behavior: "smooth" }); });
     box.appendChild(card);
   });
 }
@@ -2047,7 +2047,7 @@ function drawHomeEq(ts) {
    Chargés à la demande depuis jsDelivr, versions épinglées, actifs seulement sur l'accueil et jamais avec le mouvement réduit. */
 var MOTION_JS = ["https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js", "https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js",
   "https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js", "https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"];
-var H = { seq: 0, ctx: null, lenis: null, raf: null, pend: false, ready: false, late: false, tm: null };
+var H = { seq: 0, ctx: null, pend: false, ready: false, late: false, tm: null, delay: 0 };
 function loadJS(u) { return new Promise(function (ok, ko) { var s = document.createElement("script"); s.src = u; s.onload = ok; s.onerror = function () { s.remove(); ko(new Error(u)); }; document.head.appendChild(s); }); }
 function loadMotion() {
   if (!loadMotion.p) {
@@ -2059,7 +2059,7 @@ function loadMotion() {
 }
 /* La page reste masquée le temps de charger les bibliothèques et les trades (1,2 s au plus), pour que l'entrée se joue en entier. */
 function homeEnter() {
-  var seq = ++H.seq; H.ready = false; H.late = false; H.pend = false;
+  var seq = ++H.seq; H.ready = false; H.late = false; H.pend = false; H.delay = M.navDelay || 0;
   if (REDUCED) return;
   document.body.classList.add("pg-pre-home");
   clearTimeout(H.tm);
@@ -2074,7 +2074,6 @@ function homeGo(seq) {
 function homeLeave() {
   H.seq++; H.pend = false; clearTimeout(H.tm); document.body.classList.remove("pg-pre-home");
   if (H.ctx) { H.ctx.revert(); H.ctx = null; }
-  if (H.lenis) { gsap.ticker.remove(H.raf); H.lenis.destroy(); H.lenis = null; }
 }
 function homeCount() {
   if (!H.ctx) return;
@@ -2091,7 +2090,7 @@ function homeMotion(intro) {
     var q = self.selector;
     if (intro) {
       var lines = new SplitText($("page-title"), { type: "lines", mask: "lines" }).lines;
-      var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      var tl = gsap.timeline({ delay: H.delay || 0, defaults: { ease: "power3.out" } });
       tl.from(lines, { yPercent: 110, duration: 1.05, stagger: .1, ease: "expo.out" })
         .from([$("page-lede"), head.querySelector('.pg-actions[data-for="accueil"]')], { y: 14, opacity: 0, duration: .7, stagger: .08 }, "-=.75")
         .from(q(".pg-tray"), { y: 56, opacity: 0, duration: 1, ease: "expo.out" }, "-=.6")
@@ -2108,9 +2107,6 @@ function homeMotion(intro) {
     /* plateau qui se redresse : sur ordinateur seulement (sur téléphone, le plateau très haut déborderait en s'inclinant) */
     if (window.matchMedia("(min-width: 900px)").matches) gsap.fromTo(q(".pg-home-tilt"), { rotateX: 9, scale: .97 }, { rotateX: 0, scale: 1, ease: "none", scrollTrigger: { trigger: q(".pg-home-stage")[0], start: "top 95%", end: "top 25%", scrub: .6 } });
   }, document.querySelector(".pg-in"));
-  H.lenis = new Lenis({ lerp: .12, prevent: function (node) { return !!(node.closest && node.closest(".tx-overlay")); } });
-  H.lenis.on("scroll", ScrollTrigger.update);
-  H.raf = function (t) { if (H.lenis) H.lenis.raf(t * 1000); }; gsap.ticker.add(H.raf);
 }
 $("btn-add-home").addEventListener("click", function () { openTrade(null); });
 document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.go; }); });
@@ -2161,31 +2157,127 @@ function flushCount() {
 window.addEventListener("resize", function () { clearTimeout(navInd._t); navInd._t = setTimeout(navInd, 120); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(navInd);
 
+/* ---------------- mouvement de toute l'application : rideau entre les pages, blocs qui s'assemblent, défilement doux ---------------- */
+/* GSAP et Lenis sont chargés à la connexion, jamais avec le mouvement réduit. Sans eux, l'application reste entière, sans animation. */
+var M = { boot: false, ready: false, lenis: null, ctx: null, tl: null, target: null, navDelay: 0, rest: [] };
+function motionBoot() {
+  if (REDUCED || M.boot) return; M.boot = true;
+  loadMotion().then(function () {
+    M.ready = true;
+    M.lenis = new Lenis({ lerp: .12, prevent: function (node) { return !!(node.closest && node.closest(".tx-overlay")); } });
+    M.lenis.on("scroll", ScrollTrigger.update); M.lenis.on("scroll", revealAtBottom);
+    gsap.ticker.add(function (t) { if (M.lenis) M.lenis.raf(t * 1000); });
+  }, function () { M.boot = false; });
+}
+function toTop() { window.scrollTo(0, 0); if (M.lenis) M.lenis.scrollTo(0, { immediate: true, force: true }); }
+function stRefresh() { if (!M.ready) return; clearTimeout(stRefresh._t); stRefresh._t = setTimeout(function () { ScrollTrigger.refresh(); revealAtBottom(); }, 150); }
+/* blocs d'une page : barre de filtres, alertes, tuiles, panneaux, en-têtes de section (jamais un bloc dans un bloc) */
+var BLOCKS = ".pg-toolbar, .tx-alert, .tx-stat, .tx-panel, .pg-section-head";
+function blocks(tab) {
+  return Array.prototype.filter.call(tab.querySelectorAll(BLOCKS), function (e) {
+    if (!e.offsetParent) return false;
+    var p = e.parentElement.closest(BLOCKS); return !(p && tab.contains(p));
+  });
+}
+function rowsOf(b) { return Array.prototype.slice.call(b.querySelectorAll("tbody tr"), 0, 14); }
+function reveal(list) {
+  /* chaque bloc n'est révélé qu'une fois (défilement et filet de sécurité peuvent le demander tous les deux) */
+  list = list.filter(function (b) { return M.rest.indexOf(b) >= 0; });
+  if (!M.ctx || !list.length) return;
+  list.forEach(function (b) { M.rest.splice(M.rest.indexOf(b), 1); });
+  M.ctx.add(function () {
+    gsap.to(list, { y: 0, opacity: 1, duration: .85, stagger: { amount: Math.min(.4, list.length * .08) }, ease: "power3.out", overwrite: true });
+    list.forEach(function (b, k) { var r = rowsOf(b); if (r.length) gsap.from(r, { opacity: 0, y: 12, duration: .45, stagger: { amount: .3 }, delay: .15 + Math.min(k, 4) * .08, ease: "power2.out" }); });
+  });
+}
+/* filet de sécurité : arrivé en bas de page, tout ce qui attend encore apparaît */
+function revealAtBottom() { if (!M.rest.length) return; var d = document.documentElement; if (window.scrollY + window.innerHeight >= d.scrollHeight - 8) reveal(M.rest.slice()); }
+/* entrée d'une page : titre en lignes masquées, en-tête, bandeau, plateau, puis les blocs visibles ; ceux plus bas montent au défilement */
+function pageEnter(t) {
+  if (!M.ready || t === "accueil" || t === "styleguide") return false;
+  var tab = $("tab-" + t), head = $("page-head"), delay = M.navDelay || 0;
+  M.ctx = gsap.context(function () {
+    var lines = new SplitText($("page-title"), { type: "lines", mask: "lines" }).lines;
+    var items = blocks(tab), vh = window.innerHeight, above = [], below = [];
+    items.forEach(function (e) { (e.getBoundingClientRect().top < vh - 40 ? above : below).push(e); });
+    var tl = gsap.timeline({ delay: delay, defaults: { ease: "power3.out" } });
+    tl.from(lines, { yPercent: 110, duration: .95, stagger: .09, ease: "expo.out" })
+      .from([$("page-date"), $("page-lede"), head.querySelector('.pg-actions[data-for="' + t + '"]')], { y: 16, opacity: 0, duration: .7, stagger: .07 }, "-=.85")
+      .from("#session > div", { y: 30, opacity: 0, duration: .75, stagger: .07 }, "-=.65")
+      .from(tab, { y: 70, opacity: 0, duration: 1, ease: "expo.out" }, "-=.7")
+      .from(above, { y: 40, opacity: 0, duration: .8, stagger: { amount: .45 } }, "-=.9");
+    above.forEach(function (b) { var r = rowsOf(b); if (r.length) tl.from(r, { opacity: 0, y: 12, duration: .45, stagger: { amount: .3 } }, "-=.6"); });
+    if (below.length) {
+      gsap.set(below, { y: 48, opacity: 0 }); M.rest = below.slice();
+      ScrollTrigger.batch(below, { start: "top 94%", once: true, onEnter: reveal });
+    }
+  }, document.querySelector(".pg-in"));
+  return true;
+}
+function pageLeave() { M.rest = []; if (M.ctx) { M.ctx.revert(); M.ctx = null; } }
+/* rideau : il monte avec le nom de la page, la page change dessous, puis il repart vers le haut */
+var CURT = { accueil: ["", "Accueil"], journal: ["Journal de ", "trading"], propfirms: ["Comptes ", "prop firm"], annonces: ["Annonces ", "économiques"], backtest: ["Backtest ", "du robot"] };
+function curtain(t) {
+  var c = $("curtain"), tt = $("curtain-t"), k = $("curtain-k"), h = CURT[t] || ["", TITLES[t]];
+  if (M.tl) M.tl.progress(1);
+  M.target = t;
+  /* le repère du menu part tout de suite vers la page choisie, pendant que le rideau monte */
+  document.querySelectorAll("[data-tab]").forEach(function (b) { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }); navInd();
+  tt.textContent = ""; if (h[0]) tt.appendChild(document.createTextNode(h[0])); tt.appendChild(el("em", { text: h[1] }));
+  k.textContent = $("page-date").textContent;
+  c.hidden = false;
+  M.tl = gsap.timeline({ onComplete: function () { c.hidden = true; M.tl = null; M.target = null; gsap.set([c, tt, k], { clearProps: "all" }); } });
+  M.tl.fromTo(c, { yPercent: 100 }, { yPercent: 0, duration: .5, ease: "expo.inOut" })
+    .fromTo(tt, { yPercent: 115, opacity: 1 }, { yPercent: 0, duration: .6, ease: "expo.out" }, .18)
+    .fromTo(k, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .45 }, .22)
+    .add(function () { M.navDelay = .5; setTab(t); M.navDelay = 0; toTop(); }, .62)
+    .to(c, { yPercent: -100, duration: .7, ease: "expo.inOut" }, .74)
+    .to([tt, k], { yPercent: -40, opacity: 0, duration: .4, ease: "power2.in" }, .74);
+}
+function go(t) {
+  if (TABS.indexOf(t) < 0) t = "accueil";
+  if (t === S.tab || (M.tl && M.target === t)) return;
+  if (!M.ready || !S.tab || t === "styleguide" || S.tab === "styleguide") { setTab(t); toTop(); return; }
+  curtain(t);
+}
+
 /* ---------------- navigation ---------------- */
 var TABS = ["accueil", "journal", "propfirms", "annonces", "backtest", "styleguide"]; /* styleguide : page cachée, absente du menu */
 var TITLES = { accueil: "Accueil", journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", backtest: "Backtest", styleguide: "Guide de style" };
+/* nom de la page en grand : une italique dorée par titre (l'accueil a son titre sur deux lignes, construit à part) */
+var HEADS = { journal: ["Journal de ", "trading"], propfirms: ["Comptes ", "prop firm"], annonces: ["Annonces ", "économiques"], backtest: ["Backtest ", "du robot"], styleguide: ["Guide de ", "style"] };
+var LEDES = {
+  accueil: "Le point sur le mois en cours : résultat, discipline et risque, mis à jour en direct pour les deux associés.",
+  journal: "Chaque trade enregistré, sa courbe, sa discipline et son calendrier. Filtrez par période, par compte et par marché.",
+  propfirms: "Challenges achetés, comptes financés et versements reçus. Montants convertis en euros au taux des Réglages.",
+  annonces: "Les annonces économiques à l'heure de Paris, et celles qui tombent dans vos fenêtres de trading.",
+  backtest: "Le robot applique les règles de la stratégie aux bougies d'une minute importées depuis MT5. Simulation sur le passé uniquement : aucun ordre n'est passé."
+};
 function setTab(t) {
   if (TABS.indexOf(t) < 0) t = "accueil";
   var same = t === S.tab, home = t === "accueil";
-  if (!same && S.tab === "accueil") homeLeave();
+  if (!same) { pageLeave(); if (S.tab === "accueil") homeLeave(); }
   S.tab = t;
   document.querySelectorAll("[data-tab]").forEach(function (b) { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   TABS.forEach(function (k) { $("tab-" + k).hidden = k !== t; });
   var head = $("page-head"), title = $("page-title");
-  head.classList.toggle("is-hero", home); $("page-lede").hidden = !home;
-  if (!home) title.textContent = TITLES[t];
-  else if (!same) { title.textContent = ""; title.appendChild(document.createTextNode("La séance entière,")); title.appendChild(el("br")); title.appendChild(el("em", { text: "sur un seul écran." })); }
+  head.classList.toggle("is-hero", t !== "styleguide"); head.classList.toggle("is-home", home); $("page-lede").hidden = t === "styleguide";
+  if (!same) {
+    title.textContent = ""; $("page-lede").textContent = LEDES[t] || "";
+    if (home) { title.appendChild(document.createTextNode("La séance entière,")); title.appendChild(el("br")); title.appendChild(el("em", { text: "sur un seul écran." })); }
+    else { title.appendChild(document.createTextNode(HEADS[t][0])); title.appendChild(el("em", { text: HEADS[t][1] })); }
+  }
   head.hidden = t === "styleguide"; document.title = "Tradamax · " + TITLES[t];
   document.querySelectorAll(".pg-actions[data-for]").forEach(function (g) { g.hidden = g.dataset.for !== t; });
   if (home) { if (!same) homeEnter(); renderHome(); }
   if (t === "journal") renderJournal(); if (t === "propfirms") renderProps(); if (t === "annonces") renderEco();
   if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); loadAvis(); loadCtl(); }
   renderSession();
-  if (!same && !home) { pageIn([head, $("tab-" + t)]); CNT.tab = t; flushCount(); }
-  navInd();
+  if (!same && !home) { if (!pageEnter(t)) pageIn([head, $("tab-" + t)]); CNT.tab = t; flushCount(); }
+  navInd(); stRefresh();
 }
 document.querySelectorAll("[data-tab]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.tab; }); });
-window.addEventListener("hashchange", function () { setTab(location.hash.slice(1)); window.scrollTo(0, 0); });
+window.addEventListener("hashchange", function () { go(location.hash.slice(1)); });
 document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; if (!$("ov-review").hidden) { rvClose(); return; } ["ov-shot", "ov-capital", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings", "ov-histo"].some(function (id) { if (id === "ov-histo" && S.hiImporting) return false; if (!$(id).hidden) { show(id, false); return true; } return false; }); });
 var ro, roW = {};
 try {
@@ -2255,10 +2347,10 @@ var timers = {};
 function reload(table) {
   clearTimeout(timers[table]);
   timers[table] = setTimeout(function () {
-    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; renameLegacy(); S.selSig = ""; if (S.tab === "journal") renderJournal(); if (S.tab === "accueil") renderHome(); renderSession(); flushCount(); }).catch(loadErr);
+    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; renameLegacy(); S.selSig = ""; if (S.tab === "journal") renderJournal(); if (S.tab === "accueil") renderHome(); renderSession(); flushCount(); stRefresh(); }).catch(loadErr);
     if (table === "reglages") S.sb.from("reglages").select("data").eq("id", 1).maybeSingle().then(function (res) { var d = res.data && res.data.data || {}; S.set = Object.assign(JSON.parse(JSON.stringify(DEF)), d); renameLegacy(); S.sample = makeSample(); S.selSig = ""; setTab(S.tab); });
-    if (table === "prop_comptes") fetchAll("prop_comptes", "created_at").then(function (rows) { S.props = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
-    if (table === "payouts") fetchAll("payouts", "date").then(function (rows) { S.payouts = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
+    if (table === "prop_comptes") fetchAll("prop_comptes", "created_at").then(function (rows) { S.props = rows; if (S.tab === "propfirms") renderProps(); stRefresh(); }).catch(loadErr);
+    if (table === "payouts") fetchAll("payouts", "date").then(function (rows) { S.payouts = rows; if (S.tab === "propfirms") renderProps(); stRefresh(); }).catch(loadErr);
   }, 250);
 }
 function loadErr() { $("status").textContent = "Données inaccessibles : vérifiez que votre e-mail figure dans la table des membres."; }
@@ -2273,7 +2365,7 @@ function startApp(session) {
     ["trades", "reglages", "prop_comptes", "payouts"].forEach(function (t) { channel.on("postgres_changes", { event: "*", schema: "public", table: t }, function () { reload(t); }); });
     channel.subscribe();
   }
-  renderRef(); renderClocks(); loadCal(); setTab(location.hash.slice(1) || "accueil");
+  renderRef(); renderClocks(); loadCal(); motionBoot(); setTab(location.hash.slice(1) || "accueil");
 }
 function stopApp() { if (S.tab === "accueil") homeLeave(); S.tab = ""; S.user = null; show("app", false); show("auth", true); if (channel) { S.sb.removeChannel(channel); channel = null; } }
 

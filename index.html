@@ -27,6 +27,7 @@ img{max-width:100%}
   --c-neg:#C52D3E; --c-neg-soft:rgba(197,45,62,.09);
   --c-warn:#A24C07; --c-warn-soft:rgba(190,96,12,.12);
   --c-info:#1D5FAE; --c-info-soft:rgba(29,95,174,.09);
+  --c-curtain:#14171C; --c-on-curtain:#F4F3EF;
   /* matière : or en dégradé, reflet des panneaux, lueurs et anneaux du fond, ombres */
   --g-gold:linear-gradient(180deg,var(--c-accent-hi),var(--c-accent-fill) 58%,var(--c-accent-lo));
   --g-sheen:none;
@@ -54,6 +55,7 @@ img{max-width:100%}
   --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
   --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
   --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --c-curtain:#121821; --c-on-curtain:#EEF1F5;
   --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
   --glow-a:rgba(226,180,87,.11); --glow-b:rgba(72,118,210,.14); --ring:rgba(226,180,87,.055);
   --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
@@ -70,6 +72,7 @@ img{max-width:100%}
   --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
   --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
   --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --c-curtain:#121821; --c-on-curtain:#EEF1F5;
   --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
   --glow-a:rgba(226,180,87,.11); --glow-b:rgba(72,118,210,.14); --ring:rgba(226,180,87,.055);
   --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
@@ -383,8 +386,8 @@ textarea.tx-input{height:auto;min-height:72px;padding:9px 11px;resize:vertical;l
 .tx-file::file-selector-button{margin-right:var(--sp-3);height:34px;padding:0 14px;border:1px solid var(--c-line-2);border-radius:var(--r-2);background:var(--c-raise);color:var(--c-text);font:500 13px var(--f-sans);cursor:pointer}
 .tx-file::file-selector-button:hover{background:var(--c-hover)}
 .tx-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:max(32px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(32px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:rgba(6,8,12,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:tx-fade .2s ease-out}
-.tx-overlay>.tx-dialog{animation:tx-rise .28s var(--ease)}
-@keyframes tx-rise{from{opacity:0;transform:translateY(12px) scale(.99)}}
+.tx-overlay>.tx-dialog{animation:tx-rise .45s cubic-bezier(.16,1,.3,1)}
+@keyframes tx-rise{from{opacity:0;transform:translateY(32px) scale(.95)}}
 .tx-dialog.is-wide{max-width:680px}
 .tx-dialog.is-media{max-width:980px}
 .tx-dialog-head .tx-sub{margin-top:4px}
@@ -534,8 +537,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-section{display:flex;flex-direction:column;gap:var(--sp-3)}
 .pg-section-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}
 .pg-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:var(--sp-4)}
-.pg-acc{cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease),transform .15s var(--ease)}
-.pg-acc:hover{border-color:var(--c-line-2);box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.pg-acc{cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)} /* pas de transition sur transform : GSAP anime l'entrée des cartes */
+.pg-acc:hover{border-color:var(--c-line-2);box-shadow:var(--shadow-2)}
 .pg-acc-name{min-width:0}
 .pg-acc .tx-account-foot{align-items:center}
 .pg-acc .tx-account-foot b{margin-left:var(--sp-2);font-weight:500}
@@ -697,7 +700,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 @media (max-width:480px){.pg-who #who{display:none}}
 .pg-head.is-hero{padding-top:clamp(8px,2.6vw,40px);padding-bottom:var(--sp-2);gap:var(--sp-5) var(--sp-6)}
 .pg-head.is-hero>div:first-child{min-width:0;max-width:1000px}
-.pg-head.is-hero .tx-display{font-size:clamp(42px,6.2vw,104px);line-height:.96;letter-spacing:-.024em}
+.pg-head.is-hero .tx-display{font-size:clamp(44px,5.4vw,92px);line-height:.96;letter-spacing:-.024em}
+.pg-head.is-home .tx-display{font-size:clamp(42px,6.2vw,104px)}
 .pg-lede{margin:var(--sp-4) 0 0;max-width:56ch;color:var(--c-text-2);font-size:clamp(14px,1.1vw,16px)}
 body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
 .pg-home-stage{perspective:1700px;padding-bottom:var(--sp-5);overflow-x:clip;overflow-clip-margin:24px}
@@ -839,6 +843,46 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
 @media (max-width:860px){.pg-auth-in{grid-template-columns:minmax(0,1fr);max-width:480px}.pg-auth-hero{gap:12px}.pg-auth-hero>.tx-logo{display:none}}
 .pg-cfg{max-width:640px;margin:80px auto;padding:0 16px}
 
+/* ===== Direction A sur toutes les pages (design lab du 17/11/2026) ===== */
+/* bandeau de séance : quatre cartes, chacune avec son icône et le filet or en tête */
+#session{gap:12px;background:none;border:0;border-radius:0;box-shadow:none;overflow:visible}
+#session::before{display:none}
+#session>div{position:relative;gap:6px;padding:14px 16px 15px;border:1px solid var(--c-line);border-radius:16px;background-color:var(--c-panel);background-image:var(--g-sheen);box-shadow:var(--shadow-1);overflow:hidden;transition:border-color .15s var(--ease)}
+#session>div::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,var(--c-accent-fill) 30%,var(--c-accent-hi) 50%,var(--c-accent-fill) 70%,transparent);opacity:.6}
+#session>div:hover{border-color:var(--c-line-2)}
+#session .tx-label{display:flex;align-items:center;gap:7px}
+#session .tx-label .tx-ico{width:14px;height:14px;flex:none;color:var(--c-text-2)}
+#session .v{font-size:clamp(22px,2vw,30px);font-weight:300;letter-spacing:-.045em;line-height:1.15}
+@media (max-width:720px){#session{gap:10px}#session>div,#session>div:nth-child(2n),#session>div:nth-child(-n+2){padding:12px 13px;border:1px solid var(--c-line)}#session .v{font-size:21px}}
+/* plateau en creux : le contenu de chaque page y est posé, comme sur l'accueil (le plateau n'est pas un panneau) */
+#tab-journal,#tab-propfirms,#tab-annonces,#tab-backtest{padding:14px;gap:14px;border-radius:24px;background:var(--c-inset);border:1px solid var(--c-line);box-shadow:var(--shadow-2)}
+@media (max-width:640px){#tab-journal,#tab-propfirms,#tab-annonces,#tab-backtest{padding:8px;gap:10px;border-radius:18px}}
+.pg-tabs .pg-toolbar,.pg-tabs .pg-section-head{padding:2px 4px}
+/* panneaux en cartes bento ; grands chiffres plus grands */
+.pg-tabs .tx-panel{border-radius:18px;padding:20px}
+.pg-tabs .tx-panel:not(.pg-acc){transition:border-color .2s var(--ease)}
+.pg-tabs .tx-panel:hover{border-color:var(--c-line-2)}
+.pg-tabs .tx-hero{font-size:clamp(34px,3.3vw,52px)}
+@media (max-width:640px){.pg-tabs .tx-panel{padding:14px;border-radius:14px}.pg-tabs .tx-hero{font-size:34px}}
+/* tuiles de chiffres : des cartes séparées, le chiffre en grand et en bas */
+.pg-tabs .tx-stats{gap:12px;background:none;border:0;border-radius:0;box-shadow:none;overflow:visible;grid-template-columns:repeat(auto-fit,minmax(min(168px,100%),1fr))}
+.pg-tabs .tx-stat{gap:6px;min-height:124px;padding:16px 18px 18px;border:1px solid var(--c-line);border-radius:16px;box-shadow:var(--shadow-1);transition:border-color .15s var(--ease)}
+.pg-tabs .tx-stat:hover{border-color:var(--c-line-2)}
+.pg-tabs .tx-stat .v{margin-top:auto;font-size:clamp(24px,2.1vw,34px);font-weight:300;letter-spacing:-.045em;line-height:1.1}
+@media (max-width:640px){.pg-tabs .tx-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pg-tabs .tx-stat{min-height:0;padding:13px 14px}.pg-tabs .tx-stat .v{font-size:22px}}
+/* tableaux : lignes plus aérées, repère or sur la ligne survolée */
+.pg-tabs .tx-table td{padding-top:13px;padding-bottom:13px}
+.pg-tabs .tx-table.is-click tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--c-accent-fill)}
+/* rideau de transition entre les pages : encre, anneaux gravés, nom de la page en grand (piloté par GSAP) */
+.pg-curtain{position:fixed;top:0;bottom:0;left:76px;right:0;z-index:45;display:flex;align-items:center;padding:0 clamp(24px,7vw,120px);background:var(--c-curtain);color:var(--c-on-curtain);overflow:hidden;box-shadow:0 -2px 0 var(--c-accent-fill),0 2px 0 var(--c-accent-fill)}
+.pg-curtain::after{content:"";position:absolute;right:0;bottom:0;width:min(900px,95%);aspect-ratio:1;pointer-events:none;background:repeating-radial-gradient(circle at 100% 100%,transparent 0 23px,rgba(226,180,87,.12) 24px,transparent 25px);-webkit-mask-image:radial-gradient(circle at 100% 100%,#000,transparent 70%);mask-image:radial-gradient(circle at 100% 100%,#000,transparent 70%)}
+.pg-curtain-in{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}
+.pg-curtain .tx-eyebrow{color:var(--c-accent-hi)}
+.pg-curtain-m{display:block;overflow:hidden;padding-bottom:.1em}
+.pg-curtain-t{display:block;font-family:var(--f-title);font-weight:400;font-size:clamp(54px,7.6vw,136px);line-height:.95;letter-spacing:-.03em;text-wrap:balance}
+.pg-curtain-t em{font-style:italic;color:var(--c-accent-hi)}
+@media (max-width:899px){.pg-curtain{left:0;z-index:38;padding:0 24px}}
+
 /* micro-interactions : chiffres tabulaires partout, repère de navigation qui glisse, message court qui monte */
 body{font-variant-numeric:tabular-nums}
 .pg-rail-nav{position:relative}
@@ -880,6 +924,7 @@ body{font-variant-numeric:tabular-nums}
   <symbol id="i-backtest" viewBox="0 0 24 24"><path d="M7 3v4M7 17v4M17 6v3M17 18v3M5 7h4v10H5zM15 9h4v9h-4z"/></symbol>
   <symbol id="i-versement" viewBox="0 0 24 24"><path d="M3 7h18v10H3zM12 10a2 2 0 1 0 0 4a2 2 0 0 0 0-4zM6.5 10v4M17.5 10v4"/></symbol>
   <symbol id="i-accueil" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5M10 20v-6h4v6"/></symbol>
+  <symbol id="i-dd" viewBox="0 0 24 24"><path d="M3 6l6 6 4-4 8 8M21 11v5h-5"/></symbol>
   <symbol id="i-fleche" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></symbol>
 </svg>
 <div class="pg-cfg" id="cfg-err" hidden>
@@ -956,10 +1001,10 @@ body{font-variant-numeric:tabular-nums}
       </div>
 
       <section class="tx-session" id="session" aria-label="Bandeau de séance">
-        <div><div class="tx-label">Drawdown réel</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
-        <div><div class="tx-label">Résultat du jour réel</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
-        <div><div class="tx-label">Prochaine fenêtre</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
-        <div><div class="tx-label">Annonce à risque</div><div class="v" id="ss-news">—</div><div class="h" id="ss-news-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-dd"/></svg>Drawdown réel</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-versement"/></svg>Résultat du jour réel</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-seance"/></svg>Prochaine fenêtre</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonce à risque</div><div class="v" id="ss-news">—</div><div class="h" id="ss-news-h"></div></div>
       </section>
 
       <main class="pg-tabs">
@@ -1138,7 +1183,6 @@ body{font-variant-numeric:tabular-nums}
 
   <!-- ================= PROP FIRMS ================= -->
   <section id="tab-propfirms" class="tab" hidden>
-    <p class="tx-sub pg-intro">Challenges achetés, comptes financés et versements reçus · montants convertis en euros au taux des Réglages</p>
     <section class="tx-stats" id="prop-kpis" aria-label="Indicateurs prop firm"></section>
     <section class="pg-section" aria-labelledby="prop-h">
       <div class="pg-section-head"><h2 class="tx-title" id="prop-h">Comptes</h2><span class="tx-sub" id="prop-count"></span></div>
@@ -1191,7 +1235,6 @@ body{font-variant-numeric:tabular-nums}
 
   <!-- ================= BACKTEST ================= -->
   <section id="tab-backtest" class="tab" hidden>
-    <p class="tx-sub pg-intro">Le robot applique les règles de la stratégie aux bougies d'une minute importées depuis MT5. Simulation sur le passé uniquement : aucun ordre n'est passé.</p>
     <section class="tx-panel">
       <div class="tx-panel-head"><div><h2 class="tx-title">Lancer le backtest</h2><div class="tx-sub" id="bt-rules"></div></div></div>
       <div class="pg-btrun">
@@ -1832,6 +1875,7 @@ body{font-variant-numeric:tabular-nums}
     <div class="tx-dialog-foot"><span class="tx-sub" id="shot-cap"></span><div class="pg-foot-r"><button class="tx-btn" id="shot-close" type="button">Fermer</button></div></div>
   </div>
 </div>
+<div class="pg-curtain" id="curtain" aria-hidden="true" hidden><div class="pg-curtain-in"><span class="tx-eyebrow" id="curtain-k"></span><span class="pg-curtain-m"><span class="pg-curtain-t" id="curtain-t"></span></span></div></div>
 <div class="tx-toast pg-toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="config.js"></script>
