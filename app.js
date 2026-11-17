@@ -1512,7 +1512,7 @@ function btRender() {
   function trow(label, o) { tb.appendChild(el("tr", {}, [el("td", { "data-l": "Unité", text: label }), el("td", { class: "r tx-num", "data-l": "Trades", text: o ? String(o.n) : "0" }), el("td", { class: "r tx-num", "data-l": "Réussite", text: o && o.n ? pct(o.win / o.n, 0) : "—" }), el("td", { class: "r tx-num " + (o ? cls(o.sum) : ""), "data-l": "Résultat", text: o ? rfmt(o.sum) : "—" })])); }
   BT.RULES.sweepTfs.forEach(function (tf) { trow("Prise de liquidité " + tfLabel(tf), s.byTf[tf]); });
   BT.RULES.obTfs.forEach(function (tf) { trow("OB " + tfLabel(tf), s.byObTf[tf]); });
-  ["FVG", "IFVG", "FVG+IFVG"].forEach(function (z) { trow("Zone " + (z === "FVG+IFVG" ? "FVG et IFVG superposés" : z), s.byZone[z]); });
+  ["FVG", "FVG+IFVG"].forEach(function (z) { trow("Zone " + (z === "FVG+IFVG" ? "FVG et IFVG superposés" : "FVG seul"), s.byZone[z]); });
   rvRender();
 }
 

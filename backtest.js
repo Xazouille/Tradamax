@@ -12,9 +12,11 @@
    v4 (d'après les 36 premiers avis du trader, 17/11/2026) : trades dans la tendance H1 seulement ; un OB ne vaut que si
         le déplacement qui le suit laisse un FVG ; le creux pris doit être significatif (plus bas de N bougies) et, quand
         plusieurs creux sont pris d'un coup, c'est le plus profond qui compte ; le FVG inversé doit s'être formé pendant le
-        mouvement vers la liquidité ; FVG et IFVG superposés repérés ; taille minimale du FVG relevée. */
+        mouvement vers la liquidité ; FVG et IFVG superposés repérés ; taille minimale du FVG relevée.
+   v5 (décision du gérant, 17/11/2026, après l'analyse des 524 trades v4) : jamais d'entrée sur un IFVG seul, la zone est
+        un FVG, superposé ou non à un IFVG ; aucun trade pendant la session asiatique (18 h–2 h, heure de New York). */
 var RULES = {
-  version: "v4 du 17/11/2026",
+  version: "v5 du 17/11/2026",
   obTfs: [3, 5, 15, 30, 60],   /* unités où l'on cherche l'OB */
   sweepTfs: [1, 3, 5],         /* unités de la prise de liquidité, du FVG/IFVG et de l'entrée */
   swingK: 2,                   /* sommet ou creux de swing : 2 bougies de chaque côté */
@@ -39,6 +41,7 @@ var RULES = {
   goneR: 1,                    /* annulation B : le prix est déjà à +1 R du bord de la zone */
   tpR: 2, beR: 1,              /* objectif 2 R ; stop au point d'entrée dès +1 R ou une prise de liquidité */
   trendTf: 15, trendFilter: true, /* v4 : tendance = dernière cassure de structure (M15 par défaut, au choix au lancement) ; trades dans ce sens seulement */
+  noTrade: [{ s: 1080, e: 120, label: "Asie" }], /* v5 : plages sans trade, en minutes de la journée de New York (18 h → 2 h) ; jugées au moment de la prise de liquidité */
   limits: { perDay: 3, lossStreak: 2, dayLossR: 2, weekLossR: 5 },
   review: { taken: 60, cancelled: 30 }, /* setups tirés au hasard pour la revue par le trader */
   /* période de contrôle : à partir de ce mois, les données ne servent jamais à régler les règles.
@@ -55,6 +58,7 @@ var REASONS = {
   E: "OB cassé avant l'entrée",
   G: "Stop du mauvais côté de l'entrée",
   R: "Stop trop proche de l'entrée (moins de 0,5 ATR)",
+  S: "Session asiatique (18 h–2 h, New York)",
   T: "Contre la tendance",
   P: "Position déjà ouverte",
   L1: "3 trades déjà pris ce jour-là",
@@ -66,9 +70,9 @@ var REASONS = {
   O: "OB écarté : pas de FVG dans son déplacement",
   Q: "Creux pris trop peu significatif"
 };
-var REVIEWABLE = ["A2", "B", "C", "E", "G", "R", "T"];
-/* type de zone d'entrée choisi au lancement ; le choix s'ajoute à la version */
-var ZONES = { both: "", fvg: " · FVG seul", ifvg: " · IFVG seul", overlap: " · FVG et IFVG superposés" };
+var REVIEWABLE = ["A2", "B", "C", "E", "G", "R", "S", "T"];
+/* zone d'entrée choisie au lancement : un FVG (superposé ou non à un IFVG), ou seulement les FVG superposés à un IFVG ; le choix s'ajoute à la version */
+var ZONES = { both: "", overlap: " · FVG et IFVG superposés" };
 /* unité de la tendance choisie au lancement (0 : sans filtre) ; le choix s'ajoute à la version */
 var TRENDS = { "15": "", "60": " · tendance H1", "240": " · tendance H4", "0": " · sans tendance" };
 
@@ -110,6 +114,9 @@ function mirror(m) {
   return { t: m.t, o: o, h: h, l: l, c: c };
 }
 function nearestAbove(stack, x) { for (var i = stack.length - 1; i >= 0; i--) if (stack[i].v > x) return stack[i].v; return null; }
+/* minute de la journée de New York (0 à 1439) et test d'une plage, qui peut passer minuit */
+function nyMinOfDay(tMin) { return ((nyWall(tMin) % 1440) + 1440) % 1440; }
+function inRange(wmin, r) { return r.s > r.e ? (wmin >= r.s || wmin < r.e) : (wmin >= r.s && wmin < r.e); }
 function isSwing(B, j, K, high) { for (var x = j - K; x <= j + K; x++) { if (x === j) continue; if (high ? B.h[x] >= B.h[j] : B.l[x] <= B.l[j]) return false; } return true; }
 
 /* ---- tendance : dernière cassure de structure sur l'unité de tendance (clôture au-delà du dernier sommet ou creux de swing).
@@ -166,7 +173,7 @@ function detect(m, R, counts, trend, want) {
   function end(s, su, k, reason, j) {
     /* moment de la décision : la minute précise (j) quand elle est connue, sinon la fin de la bougie */
     var B = s.B;
-    if (reason === null && su.ct) reason = "T"; /* setup complet mais contre la tendance : non pris, mais à revoir */
+    if (reason === null) { if (su.off) reason = "S"; else if (su.ct) reason = "T"; } /* setup complet mais hors session ou contre la tendance : non pris, mais à revoir */
     su.reason = reason;
     if (j != null) { su.iD = j; su.tD = m.t[j] + 1; } else { su.tD = B.t[k] + s.tf; su.iD = B.i1[k]; }
     if (s.pending === su) s.pending = null;
@@ -177,22 +184,20 @@ function detect(m, R, counts, trend, want) {
     var B = s.B, atr = s.atr[k], x;
     if (su.phase === "fvg") {
       var d = k - su.S; if (d < 1) return;
-      /* z1 : FVG tout neuf (3 bougies) ; z2 : IFVG, un FVG baissier formé pendant le mouvement vers la liquidité et traversé par la clôture */
+      /* z1 : FVG tout neuf (3 bougies), la seule zone d'entrée (v5 : jamais d'IFVG seul) ;
+         z2 : IFVG, un FVG baissier formé pendant le mouvement vers la liquidité et traversé par la clôture, retenu seulement s'il se superpose au FVG */
       var z1 = null, z2 = null, inv = null;
       if (k >= 2 && B.l[k] > B.h[k - 2] && B.l[k] - B.h[k - 2] >= R.fvgMin * atr) z1 = { type: "FVG", top: B.l[k], bot: B.h[k - 2], t0: B.t[k - 2], size: (B.l[k] - B.h[k - 2]) / atr };
-      if (R.zones !== "fvg") for (x = s.bear.length - 1; x >= 0; x--) {
+      if (z1) for (x = s.bear.length - 1; x >= 0; x--) {
         var f = s.bear[x]; if (f.used || f.k >= k || f.k > su.S) continue;
         if (R.ifvgScope === "move" ? f.k < su.moveK : f.k < k - R.ifvgLookback) continue;
-        if (B.c[k] > f.top) { inv = f; z2 = { type: "IFVG", top: f.top, bot: f.bot, t0: B.t[f.k - 2], size: (f.top - f.bot) / atr, age: k - f.k }; break; }
+        if (B.c[k] > f.top && z1.bot < f.top && f.bot < z1.top) { inv = f; z2 = { type: "IFVG", top: f.top, bot: f.bot, t0: B.t[f.k - 2], size: (f.top - f.bot) / atr, age: k - f.k }; break; }
       }
-      var ov = z1 && z2 && z1.bot < z2.top && z2.bot < z1.top, z = null;
-      if (R.zones === "overlap") { if (ov) z = z1; }
-      else if (R.zones === "ifvg") z = z2;
-      else z = z1 || z2;
+      var ov = !!(z1 && z2), z = null;
+      if (R.zones === "overlap") { if (ov) z = z1; } else z = z1;
       if (z) {
         z = Object.assign({}, z);
-        if (ov) { z.type = "FVG+IFVG"; z.parts = [z1, z2]; z.common = { top: Math.min(z1.top, z2.top), bot: Math.max(z1.bot, z2.bot) }; }
-        if (z.type === "IFVG" || ov) inv.used = true;
+        if (ov) { z.type = "FVG+IFVG"; z.parts = [z1, z2]; z.common = { top: Math.min(z1.top, z2.top), bot: Math.max(z1.bot, z2.bot) }; inv.used = true; }
         z.tC = B.t[k] + s.tf; su.zone = z; su.F = k; su.phase = "entry"; su.atr = atr;
         var hi = -Infinity; for (x = su.S; x <= k; x++) if (B.h[x] > hi) hi = B.h[x];
         su.opp = nearestAbove(s.highs, hi); su.risk0 = z.top - su.stop;
@@ -218,9 +223,10 @@ function detect(m, R, counts, trend, want) {
   function confirm(s, w, k) {
     if (s.pending && s.pending.phase === "entry") { counts.busy++; return; }
     if (s.pending) counts.replaced++;
-    var B = s.B, iS = B.i1[w.S], tr = trend ? trend.arr[iS] : 0;
+    var B = s.B, iS = B.i1[w.S], tr = trend ? trend.arr[iS] : 0, wmin = nyMinOfDay(B.t[w.S] + s.tf);
     var su = { tf: s.tf, S: w.S, iS: iS, tS: B.t[w.S], L: w.L, tL: B.t[w.Lk], depth: w.depth, ob: w.ob, stop: B.c[w.S], ext: B.l[w.S], phase: "fvg",
-      moveK: s.highs.length ? s.highs[s.highs.length - 1].k : Math.max(0, w.S - R.ifvgLookback), tr: tr, ct: !!(R.trendFilter && tr !== want) };
+      moveK: s.highs.length ? s.highs[s.highs.length - 1].k : Math.max(0, w.S - R.ifvgLookback), tr: tr, ct: !!(R.trendFilter && tr !== want),
+      off: (R.noTrade || []).some(function (r) { return inRange(wmin, r); }) }; /* prise de liquidité pendant une plage sans trade */
     s.pending = su; counts.sweeps++;
     for (var x = w.S + 1; x <= k && s.pending === su; x++) step(s, su, x);
   }
@@ -304,7 +310,7 @@ function run(m1, opts) {
     su.id = (opts.market || "") + "|" + (su.dir > 0 ? "A" : "V") + "|M" + su.tf + "|" + su.tS;
     su.obTf = su.ob.tf;
     var ch = trend.at(su.iS); su.trend = { tf: R.trendTf, dir: su.tr, t: ch ? ch.t : null, level: ch ? ch.level : null, ok: !su.ct };
-    if (su.entry != null && (su.reason === null || su.reason === "T" || su.reason === "R")) {
+    if (su.entry != null && (su.reason === null || su.reason === "T" || su.reason === "S" || su.reason === "R")) {
       su.risk = (su.entry - su.stop) * su.dir;
       if (su.risk > 0) { su.tp = su.entry + su.dir * R.tpR * su.risk; su.out = simulate(m1, su, R); }
     }
