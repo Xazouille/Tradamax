@@ -2218,7 +2218,7 @@ function pageLeave() { M.rest = []; if (M.ctx) { M.ctx.revert(); M.ctx = null; }
 /* rideau : il monte avec le nom de la page, la page change dessous, puis il repart vers le haut */
 var CURT = { accueil: ["", "Accueil"], journal: ["Journal de ", "trading"], propfirms: ["Comptes ", "prop firm"], annonces: ["Annonces ", "économiques"], backtest: ["Backtest ", "du robot"] };
 function curtain(t) {
-  var c = $("curtain"), tt = $("curtain-t"), k = $("curtain-k"), h = CURT[t] || ["", TITLES[t]];
+  var c = $("curtain"), tt = $("curtain-t"), k = $("curtain-k"), lg = c.querySelector(".pg-curtain-logo"), h = CURT[t] || ["", TITLES[t]];
   if (M.tl) M.tl.progress(1);
   M.target = t;
   /* le repère du menu part tout de suite vers la page choisie, pendant que le rideau monte */
@@ -2226,13 +2226,14 @@ function curtain(t) {
   tt.textContent = ""; if (h[0]) tt.appendChild(document.createTextNode(h[0])); tt.appendChild(el("em", { text: h[1] }));
   k.textContent = $("page-date").textContent;
   c.hidden = false;
-  M.tl = gsap.timeline({ onComplete: function () { c.hidden = true; M.tl = null; M.target = null; gsap.set([c, tt, k], { clearProps: "all" }); } });
+  M.tl = gsap.timeline({ onComplete: function () { c.hidden = true; M.tl = null; M.target = null; gsap.set([c, tt, k, lg], { clearProps: "all" }); } });
   M.tl.fromTo(c, { yPercent: 100 }, { yPercent: 0, duration: .5, ease: "expo.inOut" })
     .fromTo(tt, { yPercent: 115, opacity: 1 }, { yPercent: 0, duration: .6, ease: "expo.out" }, .18)
+    .fromTo(lg, { rotation: -140, scale: .4, opacity: 0 }, { rotation: 0, scale: 1, opacity: 1, duration: .75, ease: "back.out(1.7)" }, .12) /* la pièce arrive en tournant */
     .fromTo(k, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .45 }, .22)
     .add(function () { M.navDelay = .5; setTab(t); M.navDelay = 0; toTop(); }, .62)
     .to(c, { yPercent: -100, duration: .7, ease: "expo.inOut" }, .74)
-    .to([tt, k], { yPercent: -40, opacity: 0, duration: .4, ease: "power2.in" }, .74);
+    .to([lg, tt, k], { yPercent: -40, opacity: 0, duration: .4, ease: "power2.in" }, .74);
 }
 function go(t) {
   if (TABS.indexOf(t) < 0) t = "accueil";

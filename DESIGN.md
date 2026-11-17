@@ -97,7 +97,7 @@ Préfixe `tx-`. Les variantes s'écrivent `is-…`.
 | Composant | Classes | Quand l'utiliser |
 | --- | --- | --- |
 | En-tête de page | `tx-eyebrow` + `tx-display` | En haut de chaque écran : un sur-titre court (date, rubrique) et le nom de la page. |
-| Logo | `tx-logo` | Le « T » sur fond or, en tête du rail et sur l'écran de connexion. |
+| Logo | `tx-logo` | « Sceau » (choisi le 17/11/2026) : le T d'Instrument Serif frappé sur une pièce d'or au bord cannelé (`logo/tradamax.svg`, élément vide). En tête du rail, dans la barre du haut sur téléphone, sur l'écran de connexion et sur le rideau. Icône d'onglet : `logo/favicon.svg` (version simplifiée) et `favicon-32.png` ; écran d'accueil du téléphone : `apple-touch-icon.png`. Jamais déformé ni recoloré. |
 | Panneau | `tx-panel`, `tx-panel-head`, `tx-title`, `tx-sub` | Tout bloc de contenu. Pas de panneau dans un panneau. |
 | Liste libellé / valeur | `dl.tx-kv` | Détails chiffrés d'un panneau. Les points de conduite se posent seuls. |
 | Bouton | `tx-btn` + `is-primary`, `is-ghost`, `is-danger`, `is-icon` | Principal : une fois par écran. Discret (`is-ghost`) : annuler, fermer. Un bouton à icône seule porte un `aria-label`. |
