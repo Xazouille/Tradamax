@@ -485,7 +485,7 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-ring{display:flex;align-items:center;gap:var(--sp-4);margin:var(--sp-2) 0 var(--sp-4)}
 .pg-ring svg{flex:none}
 .pg-ring-track{stroke:var(--c-inset)}
-.pg-ring-val.is-pos{stroke:var(--c-pos)} .pg-ring-val.is-warn{stroke:var(--c-warn)} .pg-ring-val.is-neg{stroke:var(--c-neg)}
+.pg-ring-val.is-good{stroke:var(--c-text)} .pg-ring-val.is-warn{stroke:var(--c-warn)}
 .pg-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pg-mini{display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px var(--sp-3);border:1px solid var(--c-line);border-radius:10px;background:var(--c-panel-2)}
 .pg-mini .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:19px;letter-spacing:-.03em;white-space:nowrap}
@@ -584,8 +584,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-sens label{position:relative;display:flex;align-items:center;justify-content:center;height:36px;border:1px solid var(--c-ctl);border-radius:var(--r-2);background:var(--c-field);color:var(--c-text-2);font-weight:600;font-size:var(--fs-3);cursor:pointer;transition:background-color .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease)}
 .pg-sens input{position:absolute;opacity:0;pointer-events:none}
 .pg-sens label:has(input:focus-visible){outline:2px solid var(--c-focus);outline-offset:2px}
-.pg-sens label:has(input[value="Long"]:checked){background:var(--c-pos-soft);color:var(--c-pos);border-color:color-mix(in srgb,var(--c-pos) 55%,var(--c-line))}
-.pg-sens label:has(input[value="Short"]:checked){background:var(--c-neg-soft);color:var(--c-neg);border-color:color-mix(in srgb,var(--c-neg) 55%,var(--c-line))}
+.pg-sens label:hover{border-color:var(--c-text-2);color:var(--c-text)}
+.pg-sens label:has(input:checked){background:var(--c-accent-soft);color:var(--c-text);border-color:var(--c-accent-fill)} /* le sens n'est ni un gain ni une perte : sélection en or, comme les autres choix */
 @media (pointer:coarse){.pg-sens label{height:42px}}
 .pg-check-field{justify-content:flex-end;padding-bottom:8px}
 .pg-rprev{font-size:var(--fs-3)}
@@ -819,18 +819,35 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
 }
 
 /* connexion et configuration manquante */
-.pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-left,0px))}
-.pg-auth-card{width:100%;max-width:410px;padding:34px 30px 26px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
-.pg-auth-brand{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:26px;text-align:center}
-.pg-auth-brand>.tx-logo{width:54px;height:54px;border-radius:15px;font-size:36px}
-.pg-auth-title{font-size:44px}
-.pg-auth-brand .tx-label{margin-top:6px}
+.pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:clamp(24px,5vw,64px) max(16px,env(safe-area-inset-right,0px)) clamp(24px,5vw,64px) max(16px,env(safe-area-inset-left,0px))}
+.pg-auth-in{width:100%;max-width:1200px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,410px);gap:clamp(28px,6vw,96px);align-items:center}
+.pg-auth-hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}
+.pg-auth-hero>.tx-logo{width:54px;height:54px;border-radius:15px;font-size:36px}
+.pg-auth-title{font-size:clamp(64px,14.5vw,216px);line-height:.86;letter-spacing:-.04em}
+.pg-auth-lede{margin:0;max-width:44ch;color:var(--c-text-2);font-size:clamp(14px,1.15vw,17px)}
+.pg-auth-card{width:100%;padding:28px 26px 24px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
+.pg-auth-head{display:flex;flex-direction:column;gap:4px;margin-bottom:22px}
 .pg-auth-form{display:flex;flex-direction:column;gap:var(--sp-4)}
 .pg-auth-form>.tx-btn{width:100%}
 .pg-auth-form>.tx-btn.is-primary{min-height:40px;margin-top:var(--sp-1)}
 .pg-auth-form>.tx-help{margin:-4px 0}
-.pg-auth-note{margin:var(--sp-5) 0 0;padding-top:var(--sp-4);border-top:1px solid var(--c-line);text-align:center}
+/* entrée de l'écran de connexion : le nom monte, la carte suit (CSS seul, coupé par le mouvement réduit) */
+.pg-auth-hero>*{animation:pg-up .8s var(--ease) both}
+.pg-auth-hero>:nth-child(2){animation-delay:.06s} .pg-auth-hero>:nth-child(3){animation-delay:.12s} .pg-auth-hero>:nth-child(4){animation-delay:.2s}
+.pg-auth-card{animation:pg-up .8s .28s var(--ease) both}
+@keyframes pg-up{from{opacity:0;transform:translateY(18px)}}
+@media (max-width:860px){.pg-auth-in{grid-template-columns:minmax(0,1fr);max-width:480px}.pg-auth-hero{gap:12px}.pg-auth-hero>.tx-logo{display:none}}
 .pg-cfg{max-width:640px;margin:80px auto;padding:0 16px}
+
+/* micro-interactions : chiffres tabulaires partout, repère de navigation qui glisse, message court qui monte */
+body{font-variant-numeric:tabular-nums}
+.pg-rail-nav{position:relative}
+.pg-ind{position:absolute;top:0;left:0;pointer-events:none;background:var(--g-gold);box-shadow:0 0 12px color-mix(in srgb,var(--c-accent-fill) 70%,transparent);opacity:0;transition:transform .38s var(--ease),height .38s var(--ease),opacity .2s var(--ease)}
+.pg-rail-nav .pg-ind{left:-8px;width:3px;border-radius:0 3px 3px 0}
+.pg-tabbar .pg-ind{width:22px;height:3px;border-radius:0 0 3px 3px}
+.pg-rail-nav .tx-navitem[aria-current="page"]::before,.pg-tabbar .tx-navitem[aria-current="page"]::before{display:none}
+.pg-toast:not([hidden]){animation:pg-toast-in .3s var(--ease)}
+@keyframes pg-toast-in{from{opacity:0;transform:translate(-50%,12px)}}
 
 /* message court, fixé en bas de l'écran */
 .pg-toast{position:fixed;left:50%;bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 16px));transform:translateX(-50%);z-index:60;max-width:calc(100vw - 32px)}
@@ -871,19 +888,23 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
 
 <!-- ================= CONNEXION ================= -->
 <div class="pg-auth" id="auth" hidden>
-  <div class="tx-panel pg-auth-card">
-    <div class="pg-auth-brand">
+  <div class="pg-auth-in">
+    <div class="pg-auth-hero">
       <span class="tx-logo" aria-hidden="true">T</span>
-      <div><h1 class="tx-display pg-auth-title">Tradamax</h1><div class="tx-label">Journal</div></div>
+      <span class="tx-eyebrow">Outil interne de la SAS</span>
+      <h1 class="tx-display pg-auth-title">Tradamax</h1>
+      <p class="pg-auth-lede">Journal des trades, charte de risque, prop firms et annonces économiques, partagés en direct entre les deux associés.</p>
     </div>
-    <form class="pg-auth-form" id="login-form" novalidate>
-      <div class="tx-field"><label for="login-email">E-mail</label><input class="tx-input" id="login-email" type="email" autocomplete="username" required></div>
-      <div class="tx-field"><label for="login-pass">Mot de passe</label><input class="tx-input" id="login-pass" type="password" autocomplete="current-password"></div>
-      <p class="tx-help is-error" id="login-err" role="status" hidden></p>
-      <button class="tx-btn is-primary" type="submit" id="login-go">Se connecter</button>
-      <button class="tx-btn is-ghost" type="button" id="login-magic">Recevoir un lien par e-mail</button>
-    </form>
-    <p class="tx-sub pg-auth-note">Accès réservé aux associés de la SAS.</p>
+    <div class="tx-panel pg-auth-card">
+      <div class="pg-auth-head"><h2 class="tx-title">Connexion</h2><span class="tx-sub">Accès réservé aux associés de la SAS.</span></div>
+      <form class="pg-auth-form" id="login-form" novalidate>
+        <div class="tx-field"><label for="login-email">E-mail</label><input class="tx-input" id="login-email" type="email" autocomplete="username" required></div>
+        <div class="tx-field"><label for="login-pass">Mot de passe</label><input class="tx-input" id="login-pass" type="password" autocomplete="current-password"></div>
+        <p class="tx-help is-error" id="login-err" role="status" hidden></p>
+        <button class="tx-btn is-primary" type="submit" id="login-go">Se connecter</button>
+        <button class="tx-btn is-ghost" type="button" id="login-magic">Recevoir un lien par e-mail</button>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -1393,8 +1414,8 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
         <span class="tx-badge is-warn">Marge faible</span>
         <span class="tx-badge is-neg">Challenge échoué</span>
         <span class="tx-badge">Clôturé</span>
-        <span class="tx-badge is-plain is-pos">Long</span>
-        <span class="tx-badge is-plain is-neg">Short</span>
+        <span class="tx-badge is-plain">Long</span>
+        <span class="tx-badge is-plain">Short</span>
         <span class="tx-badge is-plain">NY AM</span>
         <span class="tx-delta is-pos">+3,2 %</span>
         <span class="tx-delta is-neg">−1,00 R</span>
@@ -1464,9 +1485,9 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
       <div class="tx-panel"><div class="tx-table-wrap"><table class="tx-table is-stack">
         <thead><tr><th>Date</th><th>Marché</th><th>Sens</th><th>Session</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th></tr></thead>
         <tbody>
-          <tr><td class="tx-num" data-l="Date">10/11/26 16:12</td><td data-l="Marché"><b>XAUUSD</b></td><td data-l="Sens"><span class="tx-badge is-plain is-pos">Long</span></td><td data-l="Fenêtre">NY AM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-pos" data-l="R">+2,00 R</td><td class="r tx-num tx-pos" data-l="Résultat">+300 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
-          <tr><td class="tx-num" data-l="Date">09/11/26 09:21</td><td data-l="Marché"><b>DAX</b></td><td data-l="Sens"><span class="tx-badge is-plain is-neg">Short</span></td><td data-l="Fenêtre">Londres</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,00 R</td><td class="r tx-num tx-neg" data-l="Résultat">−150 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
-          <tr><td class="tx-num" data-l="Date">06/11/26 20:40</td><td data-l="Marché"><b>Nasdaq</b></td><td data-l="Sens"><span class="tx-badge is-plain is-pos">Long</span></td><td data-l="Fenêtre">NY PM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,60 R</td><td class="r tx-num tx-neg" data-l="Résultat">−240 €</td><td data-l="Plan"><span class="tx-badge is-neg">Non respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">10/11/26 16:12</td><td data-l="Marché"><b>XAUUSD</b></td><td data-l="Sens"><span class="tx-badge is-plain">Long</span></td><td data-l="Fenêtre">NY AM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-pos" data-l="R">+2,00 R</td><td class="r tx-num tx-pos" data-l="Résultat">+300 €</td><td data-l="Plan"><span class="tx-badge">Respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">09/11/26 09:21</td><td data-l="Marché"><b>DAX</b></td><td data-l="Sens"><span class="tx-badge is-plain">Short</span></td><td data-l="Fenêtre">Londres</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,00 R</td><td class="r tx-num tx-neg" data-l="Résultat">−150 €</td><td data-l="Plan"><span class="tx-badge">Respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">06/11/26 20:40</td><td data-l="Marché"><b>Nasdaq</b></td><td data-l="Sens"><span class="tx-badge is-plain">Long</span></td><td data-l="Fenêtre">NY PM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,60 R</td><td class="r tx-num tx-neg" data-l="Résultat">−240 €</td><td data-l="Plan"><span class="tx-badge is-warn">Non respecté</span></td></tr>
         </tbody>
       </table></div></div>
     </div>

@@ -328,7 +328,7 @@ function renderJournal() {
 }
 function niceTicks(mn, mx, n) { var span = mx - mn, step = Math.pow(10, Math.floor(Math.log10(span / n))), e = span / n / step; step *= e >= 5 ? 5 : e >= 2 ? 2 : 1; var out = []; for (var v = Math.ceil(mn / step) * step; v <= mx + 1e-9; v += step) out.push(Math.abs(v) < 1e-9 ? 0 : v); return out; }
 function renderEquity(st) {
-  var tot = $("eq-total"); tot.textContent = st.n ? seur(st.total) : "—"; tot.className = "tx-hero " + cls(st.total);
+  var tot = $("eq-total"), tt = st.n ? seur(st.total) : "—"; if (!(tot._cnt && tot._cntTo === tt)) tot.textContent = tt; tot.className = "tx-hero " + cls(st.total); /* ne coupe pas le compteur s'il va déjà vers ce chiffre */
   $("eq-sub").textContent = st.n ? st.n + " trade" + (st.n > 1 ? "s" : "") + (st.cur != null ? " · capital " + eur(st.cur) : "") : "Aucun trade sur cette période";
   var box = $("eq-chart"); box.textContent = "";
   var W = Math.max(260, box.clientWidth || 600), H = W < 500 ? 190 : 240, pl = 2, pr = 56, pt = 14, pb = 26;
@@ -466,7 +466,7 @@ function renderPlan(ts) {
   $("plan-yes-n").textContent = yes.length + " trade" + (yes.length > 1 ? "s" : ""); $("plan-no-n").textContent = no.length + " trade" + (no.length > 1 ? "s" : "");
   var svg = $("plan-ring"); svg.textContent = ""; var R = 30, C = 2 * Math.PI * R;
   svg.appendChild(svgEl("circle", { cx: 37, cy: 37, r: R, fill: "none", class: "pg-ring-track", "stroke-width": 7 }));
-  if (p != null) svg.appendChild(svgEl("circle", { cx: 37, cy: 37, r: R, fill: "none", class: "pg-ring-val " + (p >= .8 ? "is-pos" : p >= .6 ? "is-warn" : "is-neg"), "stroke-width": 7, "stroke-linecap": "round", "stroke-dasharray": (C * p).toFixed(1) + " " + C.toFixed(1), transform: "rotate(-90 37 37)" }));
+  if (p != null) svg.appendChild(svgEl("circle", { cx: 37, cy: 37, r: R, fill: "none", class: "pg-ring-val " + (p >= .8 ? "is-good" : "is-warn"), "stroke-width": 7, "stroke-linecap": "round", "stroke-dasharray": (C * p).toFixed(1) + " " + C.toFixed(1), transform: "rotate(-90 37 37)" }));
 }
 function renderEmotions(ts) {
   var box = $("emotions"); box.textContent = ""; var g = {};
@@ -532,11 +532,11 @@ function renderTable(ts) {
     var tr = el("tr", { tabindex: 0 }, [
       el("td", { class: "c-date tx-num", text: frDate(t.date) }), el("td", { class: "c-time tx-num tx-dim", text: t.time || "" }),
       el("td", { class: "c-mk" }, [el("b", { text: t.market || "—" })]), el("td", { class: "c-acc tx-dim", text: t.account || "" }),
-      el("td", { class: "c-side" }, [el("span", { class: "tx-badge is-plain " + (t.side === "Short" ? "is-neg" : "is-pos"), text: t.side || "—" })]), el("td", { class: "c-win", text: winLabel(t.window) }),
+      el("td", { class: "c-side" }, [el("span", { class: "tx-badge is-plain", text: t.side || "—" })]), el("td", { class: "c-win", text: winLabel(t.window) }),
       el("td", { class: "c-risk r tx-num tx-dim", text: t.risk > 0 ? eur(t.risk) : "—" }),
       el("td", { class: "c-r r tx-num " + cls(r || 0) }, [rfmt(r), r != null ? el("span", { class: "pg-rsub", text: "/ " + String(rPlanOf(t)).replace(".", ",") }) : null]),
       el("td", { class: "c-pnl r tx-num " + cls(t.pnl), text: seur(t.pnl) }),
-      el("td", { class: "c-plan" }, [el("span", { class: "tx-badge " + (t.plan === false ? "is-neg" : "is-pos"), text: t.plan === false ? "Non respecté" : "Respecté" })]), shot]);
+      el("td", { class: "c-plan" }, [el("span", { class: "tx-badge" + (t.plan === false ? " is-warn" : ""), text: t.plan === false ? "Non respecté" : "Respecté" })]), shot]);
     tr.addEventListener("click", function (ev) { if (ev.target.classList.contains("thumb")) { openShot(t); return; } openTrade(t); });
     tr.addEventListener("keydown", function (ev) { if (ev.key === "Enter") openTrade(t); });
     tb.appendChild(tr);
@@ -869,7 +869,7 @@ function renderRef() {
   var tb = $("ref-tbody"); tb.textContent = ""; var dl = $("firm-list"); dl.textContent = "";
   FIRMS_REF.forEach(function (f) { dl.appendChild(el("option", { value: f[0] }));
     tb.appendChild(el("tr", {}, [el("td", { "data-l": "Firme" }, [el("b", { text: f[0] })]), el("td", { class: "tx-num", "data-l": "Challenge 50 000", text: f[1] }),
-      el("td", { "data-l": "Compte au nom de la SAS" }, [el("span", { class: "tx-badge" + (f[2].indexOf("Oui") === 0 ? " is-pos" : f[2] === "Non" ? " is-neg" : ""), text: f[2] })]),
+      el("td", { "data-l": "Compte au nom de la SAS" }, [el("span", { class: "tx-badge" + (f[2] === "Non" ? " is-warn" : ""), text: f[2] })]),
       el("td", { "data-l": "Commission sur l'or", text: f[3] }), el("td", { class: "tx-dim", "data-l": "À retenir", text: f[4] })])); });
 }
 function openProp(p) {
@@ -987,7 +987,7 @@ function renderEco() {
     var f = winFlag(x.d, x.ev.impact);
     ul.appendChild(el("li", { class: "pg-ev" }, [el("span", { class: "t", text: fmtParisTime.format(x.d) }),
       el("div", {}, [el("div", { class: "n", text: x.ev.title }), el("div", { class: "m" }, [impTag(x.ev.impact), el("span", { text: x.ev.country + (x.ev.forecast ? " · prévu " + x.ev.forecast + ", précédent " + (x.ev.previous || "—") : "") + " · " + marketsFor(x.ev.country) })])]),
-      f ? el("span", { class: "tx-badge " + (f.strong ? "is-neg" : "is-warn"), text: f.text }) : el("span")]));
+      f ? el("span", { class: "tx-badge " + (f.strong ? "is-warn" : "is-info"), text: f.text }) : el("span")]));
   });
   hol.forEach(function (x) { ul.appendChild(el("li", { class: "pg-ev" }, [el("span", { class: "t", text: "Férié" }), el("div", {}, [el("div", { class: "n", text: x.ev.title + " (" + x.ev.country + ")" }), el("div", { class: "m", text: "Liquidité réduite sur " + marketsFor(x.ev.country) })]), el("span")])); });
   if (ul.childNodes.length) recap.appendChild(ul);
@@ -999,7 +999,7 @@ function renderEco() {
     var f = winFlag(x.d, x.ev.impact);
     tb.appendChild(el("tr", {}, [el("td", { class: "tx-num", "data-l": "Heure Paris", text: fmtParisTime.format(x.d) }), el("td", { class: "tx-num tx-dim", "data-l": "Heure NY", text: nyTime(x.d) }), el("td", { "data-l": "Devise" }, [el("b", { text: x.ev.country })]),
       el("td", { "data-l": "Impact" }, [impTag(x.ev.impact)]),
-      el("td", { class: "c-title", "data-l": "Annonce" }, [el("span", { text: x.ev.title }), f ? el("span", { class: "tx-badge " + (f.strong ? "is-neg" : "is-warn"), text: f.text }) : null]),
+      el("td", { class: "c-title", "data-l": "Annonce" }, [el("span", { text: x.ev.title }), f ? el("span", { class: "tx-badge " + (f.strong ? "is-warn" : "is-info"), text: f.text }) : null]),
       el("td", { class: "r tx-num", "data-l": "Prévision", text: x.ev.forecast || "—" }), el("td", { class: "r tx-num tx-dim", "data-l": "Précédent", text: x.ev.previous || "—" }), el("td", { class: "tx-dim", "data-l": "Vos marchés", text: marketsFor(x.ev.country) })]));
   });
 }
@@ -1538,7 +1538,7 @@ function rvRender() {
       el("td", { "data-l": "Sens", text: sideLabel(su.dir) + (su.trend && su.trend.dir ? (su.trend.ok ? " · avec la tendance" : " · contre la tendance") : "") }),
       el("td", { "data-l": "Unités", text: "OB " + tfLabel(su.obTf) + " · " + tfLabel(su.tf) }),
       el("td", { "data-l": "Robot" }, [el("span", { class: "tx-badge " + (su.taken ? "is-info" : "is-plain"), title: robotText(su), text: su.taken ? "Pris" : "Annulé (" + su.reason + ")" })]),
-      el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge " + (a.avis === "refuse" ? "is-neg" : a.avis === "autrement" ? "is-warn" : "is-pos"), text: AVIS[a.avis] + (mine(a) ? " · vous" : "") }) : el("span", { class: "tx-dim", text: "À revoir" })]),
+      el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge" + (a.avis === "refuse" ? " is-warn" : a.avis === "autrement" ? " is-info" : ""), text: AVIS[a.avis] + (mine(a) ? " · vous" : "") }) : el("span", { class: "tx-dim", text: "À revoir" })]),
       el("td", { class: "c-act" }, [el("span", { class: "tx-sub", text: a ? "Revoir" : "Donner mon avis" })])
     ]);
     tr.addEventListener("click", function () { openReview(su); });
@@ -2116,6 +2116,51 @@ $("btn-add-home").addEventListener("click", function () { openTrade(null); });
 document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.go; }); });
 $("hm-acc").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; S.homeAcc = b.dataset.v; renderHome(); });
 
+/* ---------------- micro-interactions de l'application ---------------- */
+/* Sobres et courtes : l'onglet qui arrive glisse de quelques pixels, le repère de navigation se déplace,
+   les chiffres clés comptent une fois à l'arrivée sur un onglet. Rien avec le mouvement réduit. */
+function pageIn(els) {
+  if (REDUCED || !Element.prototype.animate) return;
+  els.forEach(function (e, i) { if (e && !e.hidden) e.animate([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 320, delay: i * 60, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }); });
+}
+function navInd() {
+  document.querySelectorAll(".pg-rail-nav, .pg-tabbar").forEach(function (nav) {
+    var cur = nav.querySelector('[data-tab][aria-current="page"]'), ind = nav.querySelector(".pg-ind"), rail = nav.classList.contains("pg-rail-nav");
+    if (!ind) { ind = el("i", { class: "pg-ind", "aria-hidden": "true" }); nav.appendChild(ind); }
+    if (!cur || !cur.offsetParent) { ind.style.opacity = "0"; return; }
+    var first = !ind.dataset.on; if (first) ind.style.transition = "none";
+    ind.style.opacity = "1"; ind.dataset.on = "1";
+    if (rail) { ind.style.transform = "translateY(" + (cur.offsetTop + 10) + "px)"; ind.style.height = (cur.offsetHeight - 20) + "px"; }
+    else ind.style.transform = "translateX(" + (cur.offsetLeft + cur.offsetWidth / 2 - 11) + "px)";
+    if (first) { void ind.offsetWidth; ind.style.transition = ""; }
+  });
+}
+/* compte depuis zéro en gardant le format affiché (« +1 366 € », « 45,8 % », « −1,50 R ») ; ignore heures, dates et tirets */
+function countText(e, dur) {
+  var txt = e.textContent, m = txt.match(/^([^\d∞]*?)(\d(?:[\d\s  ]*\d)?(?:,\d+)?)(.*)$/);
+  if (REDUCED || e._cnt || !m || /\d[:h\/]\d/.test(txt)) return;
+  var raw = m[2].replace(/[\s  ]/g, ""), dec = (raw.split(",")[1] || "").length, to = parseFloat(raw.replace(",", "."));
+  if (!isFinite(to) || !to) return;
+  var f = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: /[\s  ]/.test(m[2]) }), t0 = performance.now(), last = txt;
+  e._cnt = true; e._cntTo = txt;
+  (function step(now) {
+    if (e.textContent !== last) { e._cnt = false; return; } /* réécrit entre-temps (données reçues) : on s'arrête */
+    var k = Math.min(1, (now - t0) / dur);
+    last = k < 1 ? m[1] + f.format(to * (1 - Math.pow(1 - k, 3))) + m[3] : txt; e.textContent = last;
+    if (k < 1) requestAnimationFrame(step); else e._cnt = false;
+  })(t0);
+}
+var CNT = { tab: null, first: true };
+function flushCount() {
+  if (!S.loaded || REDUCED) return;
+  if (CNT.first) { CNT.first = false; document.querySelectorAll(".tx-session .v").forEach(function (e) { countText(e, 900); }); }
+  var t = CNT.tab; CNT.tab = null;
+  if (!t || t !== S.tab || t === "accueil") return;
+  $("tab-" + t).querySelectorAll(".tx-stat .v, .tx-hero").forEach(function (e) { countText(e, 900); });
+}
+window.addEventListener("resize", function () { clearTimeout(navInd._t); navInd._t = setTimeout(navInd, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(navInd);
+
 /* ---------------- navigation ---------------- */
 var TABS = ["accueil", "journal", "propfirms", "annonces", "backtest", "styleguide"]; /* styleguide : page cachée, absente du menu */
 var TITLES = { accueil: "Accueil", journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", backtest: "Backtest", styleguide: "Guide de style" };
@@ -2136,6 +2181,8 @@ function setTab(t) {
   if (t === "journal") renderJournal(); if (t === "propfirms") renderProps(); if (t === "annonces") renderEco();
   if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); loadAvis(); loadCtl(); }
   renderSession();
+  if (!same && !home) { pageIn([head, $("tab-" + t)]); CNT.tab = t; flushCount(); }
+  navInd();
 }
 document.querySelectorAll("[data-tab]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.tab; }); });
 window.addEventListener("hashchange", function () { setTab(location.hash.slice(1)); window.scrollTo(0, 0); });
@@ -2208,7 +2255,7 @@ var timers = {};
 function reload(table) {
   clearTimeout(timers[table]);
   timers[table] = setTimeout(function () {
-    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; renameLegacy(); S.selSig = ""; if (S.tab === "journal") renderJournal(); if (S.tab === "accueil") renderHome(); renderSession(); }).catch(loadErr);
+    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; renameLegacy(); S.selSig = ""; if (S.tab === "journal") renderJournal(); if (S.tab === "accueil") renderHome(); renderSession(); flushCount(); }).catch(loadErr);
     if (table === "reglages") S.sb.from("reglages").select("data").eq("id", 1).maybeSingle().then(function (res) { var d = res.data && res.data.data || {}; S.set = Object.assign(JSON.parse(JSON.stringify(DEF)), d); renameLegacy(); S.sample = makeSample(); S.selSig = ""; setTab(S.tab); });
     if (table === "prop_comptes") fetchAll("prop_comptes", "created_at").then(function (rows) { S.props = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
     if (table === "payouts") fetchAll("payouts", "date").then(function (rows) { S.payouts = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
