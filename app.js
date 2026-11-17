@@ -2105,7 +2105,8 @@ function homeMotion(intro) {
       tl.call(function () { var ln = document.querySelector("#hm-eq .line"); if (ln) ln.setAttribute("pathLength", "1"); }, null, 1);
       if (S.loaded) tl.call(homeCount, null, .6); else H.pend = true;
     }
-    gsap.fromTo(q(".pg-home-tilt"), { rotateX: 9, scale: .97 }, { rotateX: 0, scale: 1, ease: "none", scrollTrigger: { trigger: q(".pg-home-stage")[0], start: "top 95%", end: "top 25%", scrub: .6 } });
+    /* plateau qui se redresse : sur ordinateur seulement (sur téléphone, le plateau très haut déborderait en s'inclinant) */
+    if (window.matchMedia("(min-width: 900px)").matches) gsap.fromTo(q(".pg-home-tilt"), { rotateX: 9, scale: .97 }, { rotateX: 0, scale: 1, ease: "none", scrollTrigger: { trigger: q(".pg-home-stage")[0], start: "top 95%", end: "top 25%", scrub: .6 } });
   }, document.querySelector(".pg-in"));
   H.lenis = new Lenis({ lerp: .12, prevent: function (node) { return !!(node.closest && node.closest(".tx-overlay")); } });
   H.lenis.on("scroll", ScrollTrigger.update);

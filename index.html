@@ -694,12 +694,13 @@ code{font-family:var(--f-mono);font-size:.92em}
 /* accueil (direction A du design lab) : grand titre, bandeau de séance, puis le mois en cours en bento sur un plateau en creux.
    Seule page animée au défilement : GSAP et Lenis y sont chargés à la demande, jamais ailleurs. */
 @media (min-width:900px){.pg-only-sm{display:none}}
+@media (max-width:480px){.pg-who #who{display:none}}
 .pg-head.is-hero{padding-top:clamp(8px,2.6vw,40px);padding-bottom:var(--sp-2);gap:var(--sp-5) var(--sp-6)}
 .pg-head.is-hero>div:first-child{min-width:0;max-width:1000px}
 .pg-head.is-hero .tx-display{font-size:clamp(42px,6.2vw,104px);line-height:.96;letter-spacing:-.024em}
 .pg-lede{margin:var(--sp-4) 0 0;max-width:56ch;color:var(--c-text-2);font-size:clamp(14px,1.1vw,16px)}
 body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
-.pg-home-stage{perspective:1700px;padding-bottom:var(--sp-5)}
+.pg-home-stage{perspective:1700px;padding-bottom:var(--sp-5);overflow-x:clip;overflow-clip-margin:24px}
 .pg-home-tilt{transform-origin:50% 0}
 .pg-tray{border-radius:22px;padding:12px;background:var(--c-inset);border:1px solid var(--c-line);box-shadow:var(--shadow-2)}
 .pg-tray-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3);padding:2px 4px 12px}
@@ -961,7 +962,7 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
               <div class="tx-sub" id="hm-res-h"></div>
             </article>
             <article class="pg-bn pg-bn-k">
-              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>R moyen par trade</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>R moyen</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
               <div class="pg-bn-v"><span class="pg-bn-big" id="hm-r" data-count>—</span><span class="tx-delta" id="hm-r-d" hidden></span></div>
               <div class="tx-sub" id="hm-r-h"></div>
             </article>
