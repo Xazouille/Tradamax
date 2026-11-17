@@ -2,6 +2,7 @@
 
 Tradamax V1 reprend le journal actuel (tableau de bord, calendrier, R prévu, import/export) et ajoute :
 
+- **une page d'accueil** : le mois en cours d'un coup d'œil (résultat, R moyen, respect du plan, activité, courbe, répartition par marché, palier de drawdown) ;
 - **des données partagées** : vous voyez tous les deux les mêmes trades, en direct ;
 - **un onglet Prop firms** : challenges achetés, comptes financés, versements reçus, taux de réussite réel, repères du comparatif ;
 - **un onglet Annonces éco** : compte rendu du jour (USD et EUR), avec les annonces qui tombent dans vos fenêtres Silver Bullet ;

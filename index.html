@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap">
+<link rel="icon" href="logo/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="logo/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="logo/apple-touch-icon.png">
 <script>try{var t=localStorage.getItem("tradamax-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <style>
 html,body{margin:0}
@@ -27,6 +30,7 @@ img{max-width:100%}
   --c-neg:#C52D3E; --c-neg-soft:rgba(197,45,62,.09);
   --c-warn:#A24C07; --c-warn-soft:rgba(190,96,12,.12);
   --c-info:#1D5FAE; --c-info-soft:rgba(29,95,174,.09);
+  --c-curtain:#14171C; --c-on-curtain:#F4F3EF;
   /* matière : or en dégradé, reflet des panneaux, lueurs et anneaux du fond, ombres */
   --g-gold:linear-gradient(180deg,var(--c-accent-hi),var(--c-accent-fill) 58%,var(--c-accent-lo));
   --g-sheen:none;
@@ -54,6 +58,7 @@ img{max-width:100%}
   --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
   --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
   --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --c-curtain:#121821; --c-on-curtain:#EEF1F5;
   --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
   --glow-a:rgba(226,180,87,.11); --glow-b:rgba(72,118,210,.14); --ring:rgba(226,180,87,.055);
   --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
@@ -70,6 +75,7 @@ img{max-width:100%}
   --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
   --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
   --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --c-curtain:#121821; --c-on-curtain:#EEF1F5;
   --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
   --glow-a:rgba(226,180,87,.11); --glow-b:rgba(72,118,210,.14); --ring:rgba(226,180,87,.055);
   --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
@@ -97,7 +103,8 @@ body::after{top:0;right:0;width:min(760px,100vw);height:620px;background:repeati
 .tx-display em{font-style:italic;color:var(--c-accent)}
 .tx-eyebrow{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-1);letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--c-accent)}
 .tx-eyebrow::before{content:"";width:18px;height:1px;background:currentColor;opacity:.75}
-.tx-logo{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--g-gold);color:var(--c-on-accent);box-shadow:var(--shadow-gold);font-family:var(--f-title);font-size:25px;line-height:1}
+/* logo « Sceau » : le T frappé sur une pièce d'or (fichier logo/tradamax.svg) */
+.tx-logo{width:36px;height:36px;flex:none;display:block;border-radius:50%;background:url(logo/tradamax.svg) center/contain no-repeat;filter:drop-shadow(0 3px 8px rgba(207,160,60,.32))}
 
 /* panneau */
 .tx-panel{position:relative;background-color:var(--c-panel);background-image:var(--g-sheen);border:1px solid var(--c-line);border-radius:var(--r-3);padding:var(--sp-4);min-width:0;box-shadow:var(--shadow-1)}
@@ -383,8 +390,8 @@ textarea.tx-input{height:auto;min-height:72px;padding:9px 11px;resize:vertical;l
 .tx-file::file-selector-button{margin-right:var(--sp-3);height:34px;padding:0 14px;border:1px solid var(--c-line-2);border-radius:var(--r-2);background:var(--c-raise);color:var(--c-text);font:500 13px var(--f-sans);cursor:pointer}
 .tx-file::file-selector-button:hover{background:var(--c-hover)}
 .tx-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:max(32px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(32px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:rgba(6,8,12,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:tx-fade .2s ease-out}
-.tx-overlay>.tx-dialog{animation:tx-rise .28s var(--ease)}
-@keyframes tx-rise{from{opacity:0;transform:translateY(12px) scale(.99)}}
+.tx-overlay>.tx-dialog{animation:tx-rise .45s cubic-bezier(.16,1,.3,1)}
+@keyframes tx-rise{from{opacity:0;transform:translateY(32px) scale(.95)}}
 .tx-dialog.is-wide{max-width:680px}
 .tx-dialog.is-media{max-width:980px}
 .tx-dialog-head .tx-sub{margin-top:4px}
@@ -436,7 +443,7 @@ code{font-family:var(--f-mono);font-size:.92em}
 .tx-tabbar.pg-tabbar{display:none}
 .pg-top{display:flex;align-items:center;gap:var(--sp-3);min-height:36px}
 .pg-brand{display:none;align-items:center;gap:10px;min-width:0}
-.pg-brand .tx-logo{width:32px;height:32px;border-radius:9px;font-size:22px}
+.pg-brand .tx-logo{width:32px;height:32px}
 .pg-brand-name{font-family:var(--f-title);font-size:26px;line-height:1;letter-spacing:-.01em}
 .pg-clocks{display:flex;gap:var(--sp-5);font-size:var(--fs-2);color:var(--c-text-2)}
 .pg-clocks b{margin-left:7px;font-family:var(--f-mono);font-weight:500;color:var(--c-text);font-variant-numeric:tabular-nums}
@@ -485,7 +492,7 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-ring{display:flex;align-items:center;gap:var(--sp-4);margin:var(--sp-2) 0 var(--sp-4)}
 .pg-ring svg{flex:none}
 .pg-ring-track{stroke:var(--c-inset)}
-.pg-ring-val.is-pos{stroke:var(--c-pos)} .pg-ring-val.is-warn{stroke:var(--c-warn)} .pg-ring-val.is-neg{stroke:var(--c-neg)}
+.pg-ring-val.is-good{stroke:var(--c-text)} .pg-ring-val.is-warn{stroke:var(--c-warn)}
 .pg-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pg-mini{display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px var(--sp-3);border:1px solid var(--c-line);border-radius:10px;background:var(--c-panel-2)}
 .pg-mini .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:19px;letter-spacing:-.03em;white-space:nowrap}
@@ -534,8 +541,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-section{display:flex;flex-direction:column;gap:var(--sp-3)}
 .pg-section-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}
 .pg-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:var(--sp-4)}
-.pg-acc{cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease),transform .15s var(--ease)}
-.pg-acc:hover{border-color:var(--c-line-2);box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.pg-acc{cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)} /* pas de transition sur transform : GSAP anime l'entrée des cartes */
+.pg-acc:hover{border-color:var(--c-line-2);box-shadow:var(--shadow-2)}
 .pg-acc-name{min-width:0}
 .pg-acc .tx-account-foot{align-items:center}
 .pg-acc .tx-account-foot b{margin-left:var(--sp-2);font-weight:500}
@@ -584,8 +591,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-sens label{position:relative;display:flex;align-items:center;justify-content:center;height:36px;border:1px solid var(--c-ctl);border-radius:var(--r-2);background:var(--c-field);color:var(--c-text-2);font-weight:600;font-size:var(--fs-3);cursor:pointer;transition:background-color .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease)}
 .pg-sens input{position:absolute;opacity:0;pointer-events:none}
 .pg-sens label:has(input:focus-visible){outline:2px solid var(--c-focus);outline-offset:2px}
-.pg-sens label:has(input[value="Long"]:checked){background:var(--c-pos-soft);color:var(--c-pos);border-color:color-mix(in srgb,var(--c-pos) 55%,var(--c-line))}
-.pg-sens label:has(input[value="Short"]:checked){background:var(--c-neg-soft);color:var(--c-neg);border-color:color-mix(in srgb,var(--c-neg) 55%,var(--c-line))}
+.pg-sens label:hover{border-color:var(--c-text-2);color:var(--c-text)}
+.pg-sens label:has(input:checked){background:var(--c-accent-soft);color:var(--c-text);border-color:var(--c-accent-fill)} /* le sens n'est ni un gain ni une perte : sélection en or, comme les autres choix */
 @media (pointer:coarse){.pg-sens label{height:42px}}
 .pg-check-field{justify-content:flex-end;padding-bottom:8px}
 .pg-rprev{font-size:var(--fs-3)}
@@ -691,19 +698,204 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-rv-result:empty{display:none}
 @media (max-width:560px){.pg-rv-chart{height:300px}.pg-rv-body{padding:var(--sp-3) var(--sp-4)}.pg-choice{grid-template-columns:minmax(0,1fr)}}
 
+/* accueil (direction A du design lab) : grand titre, bandeau de séance, puis le mois en cours en bento sur un plateau en creux.
+   Seule page animée au défilement : GSAP et Lenis y sont chargés à la demande, jamais ailleurs. */
+@media (min-width:900px){.pg-only-sm{display:none}}
+@media (max-width:480px){.pg-who #who{display:none}}
+.pg-head.is-hero{padding-top:0;padding-bottom:var(--sp-2);gap:var(--sp-5) var(--sp-6)}
+.pg-head.is-hero .tx-eyebrow{font-size:13px;margin-bottom:4px} /* date un peu plus grande, collée au titre */
+.pg-head.is-hero>div:first-child{min-width:0;max-width:1000px}
+.pg-head.is-hero .tx-display{font-size:clamp(44px,5.4vw,92px);line-height:.96;letter-spacing:-.024em}
+.pg-head.is-home .tx-display{font-size:clamp(42px,6.2vw,104px)}
+body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
+.pg-home-stage{perspective:1700px;padding-bottom:var(--sp-5);overflow-x:clip;overflow-clip-margin:24px}
+.pg-home-tilt{transform-origin:50% 0}
+.pg-tray{border-radius:22px;padding:12px;background:var(--c-inset);border:1px solid var(--c-line);box-shadow:var(--shadow-2)}
+.pg-tray-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3);padding:2px 4px 12px}
+.pg-tray-id{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px var(--sp-3);margin-right:auto;min-width:0}
+.pg-bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
+.pg-bn{position:relative;display:flex;flex-direction:column;gap:14px;min-width:0;padding:18px;border-radius:16px;background-color:var(--c-panel);background-image:var(--g-sheen);border:1px solid var(--c-line);box-shadow:var(--shadow-1);transition:border-color .15s var(--ease)}
+.pg-bn:hover{border-color:var(--c-line-2)}
+.pg-bn-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.pg-bn-h>.tx-label{display:inline-flex;align-items:center;gap:7px;min-height:30px}
+.pg-bn-h>.tx-label .tx-ico{width:14px;height:14px}
+.pg-bn-go{display:grid;place-items:center;width:30px;height:30px;flex:none;padding:0;border-radius:50%;border:1px solid var(--c-line-2);background:transparent;color:var(--c-text-2);cursor:pointer;transition:color .15s var(--ease),border-color .15s var(--ease),transform .2s var(--ease)}
+.pg-bn-go .tx-ico{width:14px;height:14px}
+.pg-bn:hover .pg-bn-go,.pg-bn-go:focus-visible{color:var(--c-accent);border-color:var(--c-accent-fill)}
+.pg-bn-go:hover{transform:rotate(45deg)}
+@media (pointer:coarse){.pg-bn-go{width:40px;height:40px}}
+.pg-bn-big{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:clamp(28px,2.5vw,40px);font-weight:300;letter-spacing:-.045em;line-height:1.05;white-space:nowrap}
+.pg-bn-mid{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:30px;font-weight:300;letter-spacing:-.04em;line-height:1.05}
+.pg-bn-v{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-top:auto}
+.pg-bn-h .pg-bn-v{margin-top:6px}
+.pg-bn-note{display:flex;gap:10px;align-items:flex-start;margin:auto 0 0;padding:10px 12px;border-radius:10px;background:var(--c-panel-2);border:1px solid var(--c-line);font-size:var(--fs-2);color:var(--c-text-2);line-height:1.45}
+.pg-bn-note:empty{display:none}
+.pg-bn-note .tx-ico{margin-top:1px}
+.pg-bn-note b{color:var(--c-text);font-weight:600}
+.pg-bn-tag{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--c-line-2);font-size:var(--fs-2);color:var(--c-text-2)}
+.pg-bn-k{grid-column:span 3}
+.pg-bn-heat{grid-column:span 3;grid-row:span 2}
+.pg-bn-eq{grid-column:span 6}
+.pg-bn-cmp,.pg-bn-gold,.pg-bn-dd{grid-column:span 3}
+.pg-bn-mix{grid-column:span 6}
+/* activité : une case par jour ouvré, intensité d'or selon le nombre de trades (ce n'est pas un gain ni une perte) */
+.pg-heat-legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:var(--fs-1);color:var(--c-text-2)}
+.pg-heat-legend span{display:inline-flex;align-items:center;gap:6px}
+.pg-heat-legend i{width:10px;height:10px;border-radius:3px}
+.pg-heat{display:grid;grid-template-columns:auto repeat(5,minmax(0,1fr));gap:5px;align-items:center}
+.pg-heat .rl,.pg-heat .cl{font-family:var(--f-mono);font-size:var(--fs-1);color:var(--c-text-3)}
+.pg-heat .rl{padding-right:4px}
+.pg-heat .cl{text-align:center}
+.pg-heat .c{aspect-ratio:1.35;border-radius:6px}
+.pg-heat .c.is-fut{box-shadow:inset 0 0 0 1px var(--c-line);background:transparent}
+.pg-bn .h0{background:repeating-linear-gradient(135deg,var(--c-line-2) 0 1px,transparent 1px 5px);box-shadow:inset 0 0 0 1px var(--c-line)}
+.pg-bn .h1{background:color-mix(in srgb,var(--c-accent-fill) 26%,var(--c-panel))}
+.pg-bn .h2{background:color-mix(in srgb,var(--c-accent-fill) 58%,var(--c-panel))}
+.pg-bn .h3{background:var(--g-gold);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.pg-split{display:flex;gap:4px;height:6px}
+.pg-split i{height:100%;border-radius:3px;transform-origin:0 50%}
+.pg-split-l{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:8px}
+.pg-split-l b{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:400;font-size:19px;letter-spacing:-.03em}
+.pg-split-l span{display:flex;align-items:center;gap:6px;font-size:var(--fs-2);color:var(--c-text-2);line-height:1.3}
+.pg-split-l span i{width:7px;height:7px;border-radius:50%;flex:none}
+.pg-bn .s-London{background:color-mix(in srgb,var(--c-accent-fill) 50%,var(--c-panel))}
+.pg-bn .s-NYAM{background:var(--g-gold)}
+.pg-bn .s-NYPM{background:color-mix(in srgb,var(--c-accent-fill) 24%,var(--c-panel))}
+.pg-bn .s-Out{background:var(--c-line-2)}
+/* courbe de capital : pastille sur le plus haut, qui suit le pointeur */
+.pg-bn-chart .cap{fill:color-mix(in srgb,var(--c-text) 7%,transparent);stroke:var(--c-line-2)}
+.pg-bn-chart .pill{fill:var(--c-text)}
+.pg-bn-chart text.pill-t{font-size:12px;font-weight:500;fill:var(--c-bg)}
+.pg-bn-chart text.empty{font-family:var(--f-sans);font-size:var(--fs-3);fill:var(--c-text-2)}
+/* gagnants et perdants */
+.pg-cmp-n,.pg-cmp-b{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pg-cmp-n .tx-sub{display:block;margin-top:2px}
+.pg-cmp-b .col{display:flex;flex-direction:column-reverse;gap:4px}
+.pg-cmp-b i{height:7px;border-radius:3px;background:var(--c-inset);box-shadow:inset 0 0 0 1px var(--c-line);transform-origin:0 50%}
+.pg-cmp-b .is-pos i.on{background:var(--c-pos);box-shadow:none}
+.pg-cmp-b .is-neg i.on{background:var(--c-neg);box-shadow:none}
+/* note du mois : la seule carte en or de l'écran */
+.pg-bn-gold{background:var(--g-gold);border-color:var(--c-accent-lo);color:var(--c-on-accent);box-shadow:var(--shadow-gold);overflow:hidden}
+.pg-bn-gold:hover{border-color:var(--c-accent-lo)}
+.pg-bn-gold::after{content:"";position:absolute;top:-60%;right:-50%;width:120%;aspect-ratio:1;pointer-events:none;background:repeating-radial-gradient(circle at 100% 0,transparent 0 13px,rgba(26,19,4,.07) 14px,transparent 15px);-webkit-mask-image:radial-gradient(circle at 100% 0,#000,transparent 70%);mask-image:radial-gradient(circle at 100% 0,#000,transparent 70%)}
+.pg-bn-chip{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;min-height:26px;padding:0 10px;border-radius:999px;border:1px solid rgba(26,19,4,.28);font-size:var(--fs-2);font-weight:500}
+.pg-bn-chip .tx-ico{width:14px;height:14px}
+.pg-bn-say{position:relative;margin:0;font-size:clamp(18px,1.5vw,22px);line-height:1.28;font-weight:500;letter-spacing:-.015em}
+.pg-bn-pill{display:inline-block;padding:0 9px;border-radius:999px;background:rgba(26,19,4,.88);color:var(--c-accent-hi);font-size:.86em;line-height:1.35}
+.pg-bn-segs{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;margin-top:auto}
+.pg-bn-segs i{height:16px;border-radius:4px;background:rgba(26,19,4,.14)}
+.pg-bn-segs i.on{background:rgba(26,19,4,.82)}
+/* répartition par marché */
+.pg-mix{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px 28px;align-items:center}
+.pg-donut{position:relative;width:168px;aspect-ratio:1;max-width:100%}
+.pg-donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.pg-donut circle{fill:none;stroke-width:15}
+.pg-donut .trk{stroke:var(--c-inset)}
+.pg-donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pg-bn .m0{stroke:var(--c-accent-fill);background:var(--c-accent-fill)}
+.pg-bn .m1{stroke:color-mix(in srgb,var(--c-accent-fill) 52%,var(--c-panel));background:color-mix(in srgb,var(--c-accent-fill) 52%,var(--c-panel))}
+.pg-bn .m2{stroke:color-mix(in srgb,var(--c-accent-fill) 24%,var(--c-panel));background:color-mix(in srgb,var(--c-accent-fill) 24%,var(--c-panel))}
+.pg-bn .m3{stroke:var(--c-line-2);background:var(--c-line-2)}
+.pg-mix .tx-kv{font-size:14px;gap:14px 0}
+.pg-mix .tx-kv dt i{width:9px;height:9px;border-radius:50%;flex:none;align-self:center}
+/* palier de drawdown : arc segmenté dans la couleur de l'état (jamais en or) */
+.pg-arc{position:relative;margin-block:auto}
+.pg-arc svg{display:block;width:100%;max-width:270px;margin-inline:auto;overflow:visible}
+.pg-arc line{stroke-width:10;stroke-linecap:round;stroke:var(--c-inset)}
+.pg-arc line.on{stroke:var(--st,var(--c-text-2))}
+.pg-arc text{font-family:var(--f-mono);font-size:11px;fill:var(--c-text-3)}
+.pg-arc-c{position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center}
+.pg-arc-foot{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+@media (max-width:1100px){
+  .pg-bento{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .pg-bn-k{grid-column:span 2;order:-2}
+  .pg-bn-eq{grid-column:span 6;order:-1}
+  .pg-bn-heat{grid-column:span 3;grid-row:auto}
+  .pg-bn-dd{order:1}
+  .pg-bn-mix{grid-column:span 6;order:2}
+}
+@media (max-width:640px){
+  .pg-bento{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .pg-bn-k:first-child{grid-column:span 2}
+  .pg-bn-k{grid-column:span 1}
+  .pg-bn-eq,.pg-bn-heat,.pg-bn-cmp,.pg-bn-gold,.pg-bn-dd,.pg-bn-mix{grid-column:span 2}
+  .pg-tray{padding:8px;border-radius:18px}
+  .pg-bn{padding:14px}
+  .pg-bn-k .pg-bn-big{font-size:25px}
+  .pg-mix{grid-template-columns:minmax(0,1fr);justify-items:center}
+  .pg-mix .tx-kv{width:100%}
+}
+
 /* connexion et configuration manquante */
-.pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-left,0px))}
-.pg-auth-card{width:100%;max-width:410px;padding:34px 30px 26px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
-.pg-auth-brand{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:26px;text-align:center}
-.pg-auth-brand>.tx-logo{width:54px;height:54px;border-radius:15px;font-size:36px}
-.pg-auth-title{font-size:44px}
-.pg-auth-brand .tx-label{margin-top:6px}
+.pg-auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:clamp(24px,5vw,64px) max(16px,env(safe-area-inset-right,0px)) clamp(24px,5vw,64px) max(16px,env(safe-area-inset-left,0px))}
+.pg-auth-in{width:100%;max-width:1200px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,410px);gap:clamp(28px,6vw,96px);align-items:center}
+.pg-auth-hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}
+.pg-auth-hero>.tx-logo{width:76px;height:76px}
+.pg-auth-title{font-size:clamp(64px,14.5vw,216px);line-height:.86;letter-spacing:-.04em}
+.pg-auth-card{width:100%;padding:28px 26px 24px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
+.pg-auth-head{display:flex;flex-direction:column;gap:4px;margin-bottom:22px}
 .pg-auth-form{display:flex;flex-direction:column;gap:var(--sp-4)}
 .pg-auth-form>.tx-btn{width:100%}
 .pg-auth-form>.tx-btn.is-primary{min-height:40px;margin-top:var(--sp-1)}
 .pg-auth-form>.tx-help{margin:-4px 0}
-.pg-auth-note{margin:var(--sp-5) 0 0;padding-top:var(--sp-4);border-top:1px solid var(--c-line);text-align:center}
+/* entrée de l'écran de connexion : le nom monte, la carte suit (CSS seul, coupé par le mouvement réduit) */
+.pg-auth-hero>*{animation:pg-up .8s var(--ease) both}
+.pg-auth-hero>:nth-child(2){animation-delay:.06s} .pg-auth-hero>:nth-child(3){animation-delay:.12s}
+.pg-auth-card{animation:pg-up .8s .28s var(--ease) both}
+@keyframes pg-up{from{opacity:0;transform:translateY(18px)}}
+@media (max-width:860px){.pg-auth-in{grid-template-columns:minmax(0,1fr);max-width:480px}.pg-auth-hero{gap:12px}.pg-auth-hero>.tx-logo{width:52px;height:52px}}
 .pg-cfg{max-width:640px;margin:80px auto;padding:0 16px}
+
+/* ===== Direction A sur toutes les pages (design lab du 17/11/2026) ===== */
+/* bandeau de séance : quatre cartes, chacune avec son icône et le filet or en tête */
+#session{gap:12px;background:none;border:0;border-radius:0;box-shadow:none;overflow:visible}
+#session::before{display:none}
+#session>div{position:relative;gap:6px;padding:14px 16px 15px;border:1px solid var(--c-line);border-radius:16px;background-color:var(--c-panel);background-image:var(--g-sheen);box-shadow:var(--shadow-1);overflow:hidden;transition:border-color .15s var(--ease)}
+#session>div::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,var(--c-accent-fill) 30%,var(--c-accent-hi) 50%,var(--c-accent-fill) 70%,transparent);opacity:.6}
+#session>div:hover{border-color:var(--c-line-2)}
+#session .tx-label{display:flex;align-items:center;gap:7px}
+#session .tx-label .tx-ico{width:14px;height:14px;flex:none;color:var(--c-text-2)}
+#session .v{font-size:clamp(22px,2vw,30px);font-weight:300;letter-spacing:-.045em;line-height:1.15}
+@media (max-width:720px){#session{gap:10px}#session>div,#session>div:nth-child(2n),#session>div:nth-child(-n+2){padding:12px 13px;border:1px solid var(--c-line)}#session .v{font-size:21px}}
+/* plateau en creux : le contenu de chaque page y est posé, comme sur l'accueil (le plateau n'est pas un panneau) */
+#tab-journal,#tab-propfirms,#tab-annonces,#tab-backtest{padding:14px;gap:14px;border-radius:24px;background:var(--c-inset);border:1px solid var(--c-line);box-shadow:var(--shadow-2)}
+@media (max-width:640px){#tab-journal,#tab-propfirms,#tab-annonces,#tab-backtest{padding:8px;gap:10px;border-radius:18px}}
+.pg-tabs .pg-toolbar,.pg-tabs .pg-section-head{padding:2px 4px}
+/* panneaux en cartes bento ; grands chiffres plus grands */
+.pg-tabs .tx-panel{border-radius:18px;padding:20px}
+.pg-tabs .tx-panel:not(.pg-acc){transition:border-color .2s var(--ease)}
+.pg-tabs .tx-panel:hover{border-color:var(--c-line-2)}
+.pg-tabs .tx-hero{font-size:clamp(34px,3.3vw,52px)}
+@media (max-width:640px){.pg-tabs .tx-panel{padding:14px;border-radius:14px}.pg-tabs .tx-hero{font-size:34px}}
+/* tuiles de chiffres : des cartes séparées, le chiffre en grand et en bas */
+.pg-tabs .tx-stats{gap:12px;background:none;border:0;border-radius:0;box-shadow:none;overflow:visible;grid-template-columns:repeat(auto-fit,minmax(min(168px,100%),1fr))}
+.pg-tabs .tx-stat{gap:6px;min-height:124px;padding:16px 18px 18px;border:1px solid var(--c-line);border-radius:16px;box-shadow:var(--shadow-1);transition:border-color .15s var(--ease)}
+.pg-tabs .tx-stat:hover{border-color:var(--c-line-2)}
+.pg-tabs .tx-stat .v{margin-top:auto;font-size:clamp(24px,2.1vw,34px);font-weight:300;letter-spacing:-.045em;line-height:1.1}
+@media (max-width:640px){.pg-tabs .tx-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pg-tabs .tx-stat{min-height:0;padding:13px 14px}.pg-tabs .tx-stat .v{font-size:22px}}
+/* tableaux : lignes plus aérées, repère or sur la ligne survolée */
+.pg-tabs .tx-table td{padding-top:13px;padding-bottom:13px}
+.pg-tabs .tx-table.is-click tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--c-accent-fill)}
+/* rideau de transition entre les pages : encre, anneaux gravés, nom de la page en grand (piloté par GSAP) */
+.pg-curtain{position:fixed;top:0;bottom:0;left:76px;right:0;z-index:45;display:flex;align-items:center;padding:0 clamp(24px,7vw,120px);background:var(--c-curtain);color:var(--c-on-curtain);overflow:hidden;box-shadow:0 -2px 0 var(--c-accent-fill),0 2px 0 var(--c-accent-fill)}
+.pg-curtain::after{content:"";position:absolute;right:0;bottom:0;width:min(900px,95%);aspect-ratio:1;pointer-events:none;background:repeating-radial-gradient(circle at 100% 100%,transparent 0 23px,rgba(226,180,87,.12) 24px,transparent 25px);-webkit-mask-image:radial-gradient(circle at 100% 100%,#000,transparent 70%);mask-image:radial-gradient(circle at 100% 100%,#000,transparent 70%)}
+.pg-curtain-in{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}
+.pg-curtain .tx-eyebrow{color:var(--c-accent-hi)}
+.pg-curtain-logo{width:56px;height:56px;margin-bottom:6px}
+.pg-curtain-m{display:block;overflow:hidden;padding-bottom:.1em}
+.pg-curtain-t{display:block;font-family:var(--f-title);font-weight:400;font-size:clamp(54px,7.6vw,136px);line-height:.95;letter-spacing:-.03em;text-wrap:balance}
+.pg-curtain-t em{font-style:italic;color:var(--c-accent-hi)}
+@media (max-width:899px){.pg-curtain{left:0;z-index:38;padding:0 24px}}
+
+/* micro-interactions : chiffres tabulaires partout, repère de navigation qui glisse, message court qui monte */
+body{font-variant-numeric:tabular-nums}
+.pg-rail-nav{position:relative}
+.pg-ind{position:absolute;top:0;left:0;pointer-events:none;background:var(--g-gold);box-shadow:0 0 12px color-mix(in srgb,var(--c-accent-fill) 70%,transparent);opacity:0;transition:transform .38s var(--ease),height .38s var(--ease),opacity .2s var(--ease)}
+.pg-rail-nav .pg-ind{left:-8px;width:3px;border-radius:0 3px 3px 0}
+.pg-tabbar .pg-ind{width:22px;height:3px;border-radius:0 0 3px 3px}
+.pg-rail-nav .tx-navitem[aria-current="page"]::before,.pg-tabbar .tx-navitem[aria-current="page"]::before{display:none}
+.pg-toast:not([hidden]){animation:pg-toast-in .3s var(--ease)}
+@keyframes pg-toast-in{from{opacity:0;transform:translate(-50%,12px)}}
 
 /* message court, fixé en bas de l'écran */
 .pg-toast{position:fixed;left:50%;bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 16px));transform:translateX(-50%);z-index:60;max-width:calc(100vw - 32px)}
@@ -735,6 +927,9 @@ code{font-family:var(--f-mono);font-size:.92em}
   <symbol id="i-droite" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-backtest" viewBox="0 0 24 24"><path d="M7 3v4M7 17v4M17 6v3M17 18v3M5 7h4v10H5zM15 9h4v9h-4z"/></symbol>
   <symbol id="i-versement" viewBox="0 0 24 24"><path d="M3 7h18v10H3zM12 10a2 2 0 1 0 0 4a2 2 0 0 0 0-4zM6.5 10v4M17.5 10v4"/></symbol>
+  <symbol id="i-accueil" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5M10 20v-6h4v6"/></symbol>
+  <symbol id="i-dd" viewBox="0 0 24 24"><path d="M3 6l6 6 4-4 8 8M21 11v5h-5"/></symbol>
+  <symbol id="i-fleche" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></symbol>
 </svg>
 <div class="pg-cfg" id="cfg-err" hidden>
   <div class="tx-alert is-stop" role="alert"><svg class="tx-ico" aria-hidden="true"><use href="#i-stop"/></svg><div class="tx-alert-body"><b>Configuration manquante</b>Renseignez l'adresse et la clé de votre projet Supabase dans le fichier <code>config.js</code>, puis republiez le site (voir le guide README).</div></div>
@@ -742,28 +937,32 @@ code{font-family:var(--f-mono);font-size:.92em}
 
 <!-- ================= CONNEXION ================= -->
 <div class="pg-auth" id="auth" hidden>
-  <div class="tx-panel pg-auth-card">
-    <div class="pg-auth-brand">
-      <span class="tx-logo" aria-hidden="true">T</span>
-      <div><h1 class="tx-display pg-auth-title">Tradamax</h1><div class="tx-label">Journal</div></div>
+  <div class="pg-auth-in">
+    <div class="pg-auth-hero">
+      <span class="tx-logo" aria-hidden="true"></span>
+      <span class="tx-eyebrow">Outil interne de la SAS</span>
+      <h1 class="tx-display pg-auth-title">Tradamax</h1>
     </div>
-    <form class="pg-auth-form" id="login-form" novalidate>
-      <div class="tx-field"><label for="login-email">E-mail</label><input class="tx-input" id="login-email" type="email" autocomplete="username" required></div>
-      <div class="tx-field"><label for="login-pass">Mot de passe</label><input class="tx-input" id="login-pass" type="password" autocomplete="current-password"></div>
-      <p class="tx-help is-error" id="login-err" role="status" hidden></p>
-      <button class="tx-btn is-primary" type="submit" id="login-go">Se connecter</button>
-      <button class="tx-btn is-ghost" type="button" id="login-magic">Recevoir un lien par e-mail</button>
-    </form>
-    <p class="tx-sub pg-auth-note">Accès réservé aux associés de la SAS.</p>
+    <div class="tx-panel pg-auth-card">
+      <div class="pg-auth-head"><h2 class="tx-title">Connexion</h2><span class="tx-sub">Accès réservé aux associés de la SAS.</span></div>
+      <form class="pg-auth-form" id="login-form" novalidate>
+        <div class="tx-field"><label for="login-email">E-mail</label><input class="tx-input" id="login-email" type="email" autocomplete="username" required></div>
+        <div class="tx-field"><label for="login-pass">Mot de passe</label><input class="tx-input" id="login-pass" type="password" autocomplete="current-password"></div>
+        <p class="tx-help is-error" id="login-err" role="status" hidden></p>
+        <button class="tx-btn is-primary" type="submit" id="login-go">Se connecter</button>
+        <button class="tx-btn is-ghost" type="button" id="login-magic">Recevoir un lien par e-mail</button>
+      </form>
+    </div>
   </div>
 </div>
 
 <!-- ================= APPLICATION ================= -->
 <div class="pg-app" id="app" hidden>
   <aside class="tx-side pg-rail">
-    <span class="tx-logo" aria-hidden="true">T</span>
+    <span class="tx-logo" aria-hidden="true"></span>
     <nav class="pg-rail-nav" aria-label="Sections">
-      <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
+      <button class="tx-navitem" type="button" data-tab="accueil" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-accueil"/></svg>Accueil</button>
+      <button class="tx-navitem" type="button" data-tab="journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
       <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
       <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
       <button class="tx-navitem" type="button" data-tab="backtest"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>Backtest</button>
@@ -774,10 +973,11 @@ code{font-family:var(--f-mono);font-size:.92em}
   <div class="pg-main">
     <div class="pg-in">
       <header class="pg-top">
-        <div class="pg-brand"><span class="tx-logo" aria-hidden="true">T</span><span class="pg-brand-name">Tradamax</span></div>
+        <div class="pg-brand"><span class="tx-logo" aria-hidden="true"></span><span class="pg-brand-name">Tradamax</span></div>
         <div class="pg-clocks" id="clocks"></div>
         <div class="pg-who">
           <span class="tx-sub" id="who"></span>
+          <button class="tx-btn is-ghost is-icon pg-only-sm" type="button" data-open="settings" aria-label="Réglages" title="Réglages"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg></button>
           <button class="tx-btn is-ghost is-icon" type="button" data-action="theme" aria-label="Basculer entre thème clair et thème sombre" title="Thème clair ou sombre"><svg class="tx-ico" aria-hidden="true"><use href="#i-theme"/></svg></button>
           <button class="tx-btn is-ghost pg-logout" id="btn-logout" type="button" aria-label="Se déconnecter" title="Se déconnecter"><svg class="tx-ico" aria-hidden="true"><use href="#i-sortie"/></svg><span class="pg-hide-sm">Se déconnecter</span></button>
         </div>
@@ -785,6 +985,10 @@ code{font-family:var(--f-mono);font-size:.92em}
 
       <div class="pg-head" id="page-head">
         <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de trading</h1></div>
+        <div class="pg-actions" data-for="accueil" hidden>
+          <button class="tx-btn is-ghost" type="button" data-go="journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Ouvrir le journal</button>
+          <button class="tx-btn is-primary" id="btn-add-home" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau trade</button>
+        </div>
         <div class="pg-actions" data-for="journal">
           <button class="tx-btn" id="btn-import" type="button" aria-label="Importer un CSV" title="Importer un CSV"><svg class="tx-ico" aria-hidden="true"><use href="#i-import"/></svg><span class="pg-hide-sm">Importer un CSV</span></button>
           <button class="tx-btn" id="btn-export" type="button" aria-label="Exporter" title="Exporter"><svg class="tx-ico" aria-hidden="true"><use href="#i-export"/></svg><span class="pg-hide-sm">Exporter</span></button>
@@ -800,13 +1004,87 @@ code{font-family:var(--f-mono);font-size:.92em}
       </div>
 
       <section class="tx-session" id="session" aria-label="Bandeau de séance">
-        <div><div class="tx-label">Drawdown réel</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
-        <div><div class="tx-label">Résultat du jour réel</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
-        <div><div class="tx-label">Prochaine fenêtre</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
-        <div><div class="tx-label">Annonce à risque</div><div class="v" id="ss-news">—</div><div class="h" id="ss-news-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-dd"/></svg>Drawdown réel</div><div class="v" id="ss-dd">—</div><div class="h" id="ss-dd-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-versement"/></svg>Résultat du jour réel</div><div class="v" id="ss-day">—</div><div class="h" id="ss-day-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-seance"/></svg>Prochaine fenêtre</div><div class="v" id="ss-win">—</div><div class="h" id="ss-win-h"></div></div>
+        <div><div class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonce à risque</div><div class="v" id="ss-news">—</div><div class="h" id="ss-news-h"></div></div>
       </section>
 
       <main class="pg-tabs">
+  <!-- ================= ACCUEIL (direction A du design lab : le mois en cours en bento) ================= -->
+  <section id="tab-accueil" class="tab" hidden>
+    <div class="pg-home-stage">
+      <div class="pg-home-tilt">
+        <div class="pg-tray">
+          <div class="pg-tray-head">
+            <div class="pg-tray-id"><h2 class="tx-title">Le mois en cours</h2><span class="tx-sub" id="hm-scope"></span></div>
+            <span class="tx-badge is-plain" id="hm-badge" hidden>Trades d'exemple</span>
+            <div class="tx-seg" id="hm-acc" role="group" aria-label="Comptes affichés">
+              <button type="button" data-v="sas" aria-pressed="true">Compte réel</button>
+              <button type="button" data-v="all" aria-pressed="false">Tous les comptes</button>
+            </div>
+          </div>
+          <div class="pg-bento">
+            <article class="pg-bn pg-bn-k">
+              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-versement"/></svg>Résultat du mois</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-bn-v"><span class="pg-bn-big" id="hm-res" data-count>—</span><span class="tx-delta" id="hm-res-d" hidden></span></div>
+              <div class="tx-sub" id="hm-res-h"></div>
+            </article>
+            <article class="pg-bn pg-bn-k">
+              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>R moyen</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-bn-v"><span class="pg-bn-big" id="hm-r" data-count>—</span><span class="tx-delta" id="hm-r-d" hidden></span></div>
+              <div class="tx-sub" id="hm-r-h"></div>
+            </article>
+            <article class="pg-bn pg-bn-k">
+              <div class="pg-bn-h"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-ok"/></svg>Respect du plan</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-bn-v"><span class="pg-bn-big" id="hm-plan" data-count>—</span><span class="tx-delta" id="hm-plan-d" hidden></span></div>
+              <div class="tx-sub" id="hm-plan-h"></div>
+            </article>
+            <article class="pg-bn pg-bn-heat">
+              <div class="pg-bn-h"><span class="tx-label">Activité par jour</span><span class="tx-sub">7 semaines</span></div>
+              <div class="pg-heat-legend" aria-hidden="true"><span><i class="h0"></i>Aucun trade</span><span><i class="h1"></i>1</span><span><i class="h2"></i>2</span><span><i class="h3"></i>3 et plus</span></div>
+              <div class="pg-heat" id="hm-heat" role="img"></div>
+              <div class="pg-split" id="hm-split" aria-hidden="true"></div>
+              <div class="pg-split-l" id="hm-split-l"></div>
+              <p class="pg-bn-note" id="hm-heat-note"></p>
+            </article>
+            <article class="pg-bn pg-bn-eq">
+              <div class="pg-bn-h">
+                <div><span class="tx-label">Courbe de capital</span><div class="pg-bn-v"><span class="pg-bn-big" id="hm-eq-v" data-count>—</span><span class="tx-sub" id="hm-eq-h"></span></div></div>
+                <button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button>
+              </div>
+              <div class="tx-chart pg-bn-chart" id="hm-eq"></div>
+            </article>
+            <article class="pg-bn pg-bn-cmp">
+              <div class="pg-bn-h"><span class="tx-label">Gagnants et perdants</span></div>
+              <div class="pg-cmp-n"><div><span class="pg-bn-mid tx-pos" id="hm-w" data-count>—</span><span class="tx-sub">gagnants</span></div><div><span class="pg-bn-mid tx-neg" id="hm-l" data-count>—</span><span class="tx-sub">perdants</span></div></div>
+              <div class="pg-cmp-b" id="hm-cmp" aria-hidden="true"><div class="col is-pos"></div><div class="col is-neg"></div></div>
+              <p class="pg-bn-note" id="hm-cmp-note"></p>
+            </article>
+            <article class="pg-bn pg-bn-gold">
+              <span class="pg-bn-chip"><svg class="tx-ico" aria-hidden="true"><use href="#i-seance"/></svg>Note du mois</span>
+              <p class="pg-bn-say" id="hm-say"></p>
+              <div class="pg-bn-segs" id="hm-segs" aria-hidden="true"></div>
+            </article>
+            <article class="pg-bn pg-bn-mix">
+              <div class="pg-bn-h"><span class="tx-label">Répartition par marché</span><span class="pg-bn-tag" id="hm-mix-tag"></span></div>
+              <div class="pg-mix">
+                <div class="pg-donut"><svg viewBox="0 0 120 120" id="hm-donut" role="img"></svg><div class="pg-donut-c"><span class="pg-bn-mid" id="hm-mix-n" data-count>—</span><span class="tx-sub">trades</span></div></div>
+                <dl class="tx-kv" id="hm-mix-list"></dl>
+              </div>
+              <p class="pg-bn-note" id="hm-mix-note"></p>
+            </article>
+            <article class="pg-bn pg-bn-dd" id="hm-dd-card">
+              <div class="pg-bn-h"><span class="tx-label">Palier de drawdown</span><button class="pg-bn-go" type="button" data-go="journal" aria-label="Ouvrir le journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-fleche"/></svg></button></div>
+              <div class="pg-arc"><svg viewBox="0 0 240 150" id="hm-dd" role="img"></svg><div class="pg-arc-c"><span class="pg-bn-big" id="hm-dd-v" data-count>—</span></div></div>
+              <div class="pg-arc-foot"><span class="tx-badge" id="hm-dd-b" hidden></span><span class="tx-sub" id="hm-dd-h"></span></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= JOURNAL ================= -->
   <section id="tab-journal" class="tab">
     <div class="pg-toolbar" role="group" aria-label="Filtres">
@@ -908,7 +1186,6 @@ code{font-family:var(--f-mono);font-size:.92em}
 
   <!-- ================= PROP FIRMS ================= -->
   <section id="tab-propfirms" class="tab" hidden>
-    <p class="tx-sub pg-intro">Challenges achetés, comptes financés et versements reçus · montants convertis en euros au taux des Réglages</p>
     <section class="tx-stats" id="prop-kpis" aria-label="Indicateurs prop firm"></section>
     <section class="pg-section" aria-labelledby="prop-h">
       <div class="pg-section-head"><h2 class="tx-title" id="prop-h">Comptes</h2><span class="tx-sub" id="prop-count"></span></div>
@@ -961,7 +1238,6 @@ code{font-family:var(--f-mono);font-size:.92em}
 
   <!-- ================= BACKTEST ================= -->
   <section id="tab-backtest" class="tab" hidden>
-    <p class="tx-sub pg-intro">Le robot applique les règles de la stratégie aux bougies d'une minute importées depuis MT5. Simulation sur le passé uniquement : aucun ordre n'est passé.</p>
     <section class="tx-panel">
       <div class="tx-panel-head"><div><h2 class="tx-title">Lancer le backtest</h2><div class="tx-sub" id="bt-rules"></div></div></div>
       <div class="pg-btrun">
@@ -1067,7 +1343,7 @@ code{font-family:var(--f-mono);font-size:.92em}
     <div class="sg-sec"><h3>Aperçu d'un écran <span class="tx-sub">(les composants assemblés)</span></h3>
       <div class="sg-app">
         <nav class="tx-side" aria-label="Exemple de navigation">
-          <span class="tx-logo" aria-hidden="true">T</span>
+          <span class="tx-logo" aria-hidden="true"></span>
           <a class="tx-navitem" href="#styleguide" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</a>
           <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Comptes</a>
           <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</a>
@@ -1184,8 +1460,8 @@ code{font-family:var(--f-mono);font-size:.92em}
         <span class="tx-badge is-warn">Marge faible</span>
         <span class="tx-badge is-neg">Challenge échoué</span>
         <span class="tx-badge">Clôturé</span>
-        <span class="tx-badge is-plain is-pos">Long</span>
-        <span class="tx-badge is-plain is-neg">Short</span>
+        <span class="tx-badge is-plain">Long</span>
+        <span class="tx-badge is-plain">Short</span>
         <span class="tx-badge is-plain">NY AM</span>
         <span class="tx-delta is-pos">+3,2 %</span>
         <span class="tx-delta is-neg">−1,00 R</span>
@@ -1197,7 +1473,7 @@ code{font-family:var(--f-mono);font-size:.92em}
       <div class="sg-grid">
         <div class="sg-col"><div class="tx-sub">Rail latéral, à partir de 900 px</div>
           <div class="sg-frame"><nav class="tx-side" aria-label="Exemple de rail latéral">
-            <span class="tx-logo" aria-hidden="true">T</span>
+            <span class="tx-logo" aria-hidden="true"></span>
             <a class="tx-navitem" href="#styleguide" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</a>
             <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Comptes</a>
             <a class="tx-navitem" href="#styleguide"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</a>
@@ -1255,9 +1531,9 @@ code{font-family:var(--f-mono);font-size:.92em}
       <div class="tx-panel"><div class="tx-table-wrap"><table class="tx-table is-stack">
         <thead><tr><th>Date</th><th>Marché</th><th>Sens</th><th>Session</th><th class="r">Risque</th><th class="r">R</th><th class="r">Résultat</th><th>Plan</th></tr></thead>
         <tbody>
-          <tr><td class="tx-num" data-l="Date">10/11/26 16:12</td><td data-l="Marché"><b>XAUUSD</b></td><td data-l="Sens"><span class="tx-badge is-plain is-pos">Long</span></td><td data-l="Fenêtre">NY AM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-pos" data-l="R">+2,00 R</td><td class="r tx-num tx-pos" data-l="Résultat">+300 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
-          <tr><td class="tx-num" data-l="Date">09/11/26 09:21</td><td data-l="Marché"><b>DAX</b></td><td data-l="Sens"><span class="tx-badge is-plain is-neg">Short</span></td><td data-l="Fenêtre">Londres</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,00 R</td><td class="r tx-num tx-neg" data-l="Résultat">−150 €</td><td data-l="Plan"><span class="tx-badge is-pos">Respecté</span></td></tr>
-          <tr><td class="tx-num" data-l="Date">06/11/26 20:40</td><td data-l="Marché"><b>Nasdaq</b></td><td data-l="Sens"><span class="tx-badge is-plain is-pos">Long</span></td><td data-l="Fenêtre">NY PM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,60 R</td><td class="r tx-num tx-neg" data-l="Résultat">−240 €</td><td data-l="Plan"><span class="tx-badge is-neg">Non respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">10/11/26 16:12</td><td data-l="Marché"><b>XAUUSD</b></td><td data-l="Sens"><span class="tx-badge is-plain">Long</span></td><td data-l="Fenêtre">NY AM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-pos" data-l="R">+2,00 R</td><td class="r tx-num tx-pos" data-l="Résultat">+300 €</td><td data-l="Plan"><span class="tx-badge">Respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">09/11/26 09:21</td><td data-l="Marché"><b>DAX</b></td><td data-l="Sens"><span class="tx-badge is-plain">Short</span></td><td data-l="Fenêtre">Londres</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,00 R</td><td class="r tx-num tx-neg" data-l="Résultat">−150 €</td><td data-l="Plan"><span class="tx-badge">Respecté</span></td></tr>
+          <tr><td class="tx-num" data-l="Date">06/11/26 20:40</td><td data-l="Marché"><b>Nasdaq</b></td><td data-l="Sens"><span class="tx-badge is-plain">Long</span></td><td data-l="Fenêtre">NY PM</td><td class="r tx-num" data-l="Risque">150 €</td><td class="r tx-num tx-neg" data-l="R">−1,60 R</td><td class="r tx-num tx-neg" data-l="Résultat">−240 €</td><td data-l="Plan"><span class="tx-badge is-warn">Non respecté</span></td></tr>
         </tbody>
       </table></div></div>
     </div>
@@ -1393,11 +1669,11 @@ code{font-family:var(--f-mono);font-size:.92em}
   </div>
 
   <nav class="tx-tabbar pg-tabbar" aria-label="Sections">
-    <button class="tx-navitem" type="button" data-tab="journal" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
+    <button class="tx-navitem" type="button" data-tab="accueil" aria-current="page"><svg class="tx-ico" aria-hidden="true"><use href="#i-accueil"/></svg>Accueil</button>
+    <button class="tx-navitem" type="button" data-tab="journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Journal</button>
     <button class="tx-navitem" type="button" data-tab="propfirms"><svg class="tx-ico" aria-hidden="true"><use href="#i-comptes"/></svg>Prop firms</button>
     <button class="tx-navitem" type="button" data-tab="annonces"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg>Annonces</button>
     <button class="tx-navitem" type="button" data-tab="backtest"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>Backtest</button>
-    <button class="tx-navitem" type="button" data-open="settings"><svg class="tx-ico" aria-hidden="true"><use href="#i-reglages"/></svg>Réglages</button>
   </nav>
 </div>
 
@@ -1602,6 +1878,7 @@ code{font-family:var(--f-mono);font-size:.92em}
     <div class="tx-dialog-foot"><span class="tx-sub" id="shot-cap"></span><div class="pg-foot-r"><button class="tx-btn" id="shot-close" type="button">Fermer</button></div></div>
   </div>
 </div>
+<div class="pg-curtain" id="curtain" aria-hidden="true" hidden><div class="pg-curtain-in"><span class="tx-logo pg-curtain-logo" aria-hidden="true"></span><span class="tx-eyebrow" id="curtain-k"></span><span class="pg-curtain-m"><span class="pg-curtain-t" id="curtain-t"></span></span></div></div>
 <div class="tx-toast pg-toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="config.js"></script>

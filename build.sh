@@ -6,6 +6,7 @@ set -euo pipefail
 rm -rf site
 mkdir -p site/data
 cp index.html app.js backtest.js config.js site/
+cp -r logo site/
 
 URL="https://nfs.faireconomy.media/ff_calendar_thisweek.json"
 if curl -sSfL --retry 3 --max-time 30 "$URL" -o site/data/calendar.json \

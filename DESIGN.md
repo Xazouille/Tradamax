@@ -7,7 +7,7 @@ Tous les composants sont visibles sur la page cachée `#styleguide` (après conn
 ## Principes
 
 1. **Les chiffres d'abord.** Un écran commence par ce qui se décide (état, drawdown, résultat du jour), puis les chiffres clés, puis le détail.
-2. **La couleur dit un état, jamais un décor.** Vert, rouge, orange et bleu sont réservés aux états. L'or est réservé à la marque et à l'action.
+2. **La couleur dit un état, jamais un décor.** Vert, rouge, orange et bleu sont réservés aux états. L'or est réservé à la marque et à l'action. Le vert et le rouge disent un gain ou une perte (et les états qui en découlent : palier de drawdown, statut d'un compte prop firm, TP ou SL, bougies) : jamais le sens d'un trade, le respect du plan, une annonce ou un avis.
 3. **Dense, avec de la matière.** Les panneaux sont posés sur le fond par un filet de 1 px et une ombre très légère. Le relief reste discret : un reflet en haut des panneaux en sombre, une ombre douce en clair. Jamais de dégradé de couleur pour décorer.
 4. **L'or se travaille comme un métal.** Il est toujours en dégradé (`--g-gold`), jamais en aplat, et il reste rare : le logo, le bouton principal, l'élément sélectionné, le filet en tête du bandeau de séance, la courbe principale.
 5. **Clair et sombre à égalité.** Le thème suit le système ; le bouton de l'en-tête mémorise un choix par appareil. Rien ne doit être lisible dans un seul des deux.
@@ -65,7 +65,7 @@ Chiffres au format français (`Intl.NumberFormat("fr-FR")`), signe moins typogra
 | `--fs-4` | 15 px | Titre de panneau (`tx-title`) |
 | `--fs-5` | 22 px | Chiffre clé d'une tuile ou du bandeau de séance |
 | `--fs-6` | 34 px | Chiffre principal d'un écran (`tx-hero`), un seul par panneau |
-| — | 30 à 44 px | Nom de la page (`tx-display`), un seul par écran |
+| — | 44 à 92 px | Nom de la page (`tx-display` dans `pg-head is-hero`), un seul par écran, avec une italique dorée ; 42 à 104 px sur deux lignes pour l'accueil (`is-home`), 30 à 44 px pour les titres du guide de style |
 
 Graisses : 400 texte, 500 étiquette et bouton, 600 titre de panneau. Les grands chiffres sont fins (300 pour `tx-hero`, 400 pour un chiffre clé) et resserrés : c'est leur taille qui les met en avant, pas leur graisse. Pas de capitales hors étiquettes.
 
@@ -82,6 +82,13 @@ Graisses : 400 texte, 500 étiquette et bouton, 600 titre de panneau. Les grands
 - Les survols et les changements d'état durent 0,15 s (`--ease`).
 - Une jauge ou une barre se remplit à l'affichage ; une courbe se trace (attribut `pathLength="1"` sur le trait). Ces animations ne jouent qu'une fois et n'apportent aucune information.
 - `prefers-reduced-motion` coupe toutes les animations et transitions.
+- **GSAP 3.15.0 (avec ScrollTrigger et SplitText) et Lenis 1.3.27** sont chargés depuis jsDelivr à la connexion, pour toute l'application. Sans eux (réseau, mouvement réduit), l'application reste entière et immobile.
+- **Changement de page : le rideau** (`pg-curtain`, `curtain()` dans `app.js`). Un rideau d'encre (`--c-curtain`, filets or en haut et en bas, anneaux gravés) monte avec la date et le nom de la page en très grand, la page change dessous, puis il repart vers le haut (environ 1,4 s). Le repère or du menu (`pg-ind`) part dès le clic. Le bouton « retour » du navigateur passe aussi par le rideau.
+- **Entrée d'une page** (`pageEnter`) : les lignes du titre montent dans leur masque, puis la date, la phrase et les boutons, les quatre cartes du bandeau de séance, le plateau, et enfin les blocs visibles en cascade (barre de filtres, alertes, tuiles, panneaux ; les lignes des tableaux suivent). Les blocs plus bas montent quand ils arrivent à l'écran au défilement ; arrivé en bas de page, tout ce qui attend apparaît. Les chiffres clés comptent depuis zéro (`countText`) ; jamais quand on change un filtre.
+- **Accueil** : même principe avec sa propre scène (plateau qui se redresse au défilement sur ordinateur, cases, barres, anneau, chiffres qui comptent, courbe qui se trace).
+- Une propriété animée par GSAP ne porte jamais de `transition` CSS (sinon l'animation reste bloquée sur son état de départ) : les cartes changent de filet au survol, jamais de position.
+- Survols et focus restent discrets, dans l'esprit de shadcn/ui sans framework. Fenêtre de saisie : elle monte et grandit légèrement (`tx-rise`, 0,45 s). Message court : il monte depuis le bas.
+- Tous les chiffres sont tabulaires (`font-variant-numeric: tabular-nums` sur `body`) : les colonnes restent alignées même hors police à chasse fixe.
 
 ## Composants
 
@@ -90,7 +97,7 @@ Préfixe `tx-`. Les variantes s'écrivent `is-…`.
 | Composant | Classes | Quand l'utiliser |
 | --- | --- | --- |
 | En-tête de page | `tx-eyebrow` + `tx-display` | En haut de chaque écran : un sur-titre court (date, rubrique) et le nom de la page. |
-| Logo | `tx-logo` | Le « T » sur fond or, en tête du rail et sur l'écran de connexion. |
+| Logo | `tx-logo` | « Sceau » (choisi le 17/11/2026) : le T d'Instrument Serif frappé sur une pièce d'or au bord cannelé (`logo/tradamax.svg`, élément vide). En tête du rail, dans la barre du haut sur téléphone, sur l'écran de connexion et sur le rideau. Icône d'onglet : `logo/favicon.svg` (version simplifiée) et `favicon-32.png` ; écran d'accueil du téléphone : `apple-touch-icon.png`. Jamais déformé ni recoloré. |
 | Panneau | `tx-panel`, `tx-panel-head`, `tx-title`, `tx-sub` | Tout bloc de contenu. Pas de panneau dans un panneau. |
 | Liste libellé / valeur | `dl.tx-kv` | Détails chiffrés d'un panneau. Les points de conduite se posent seuls. |
 | Bouton | `tx-btn` + `is-primary`, `is-ghost`, `is-danger`, `is-icon` | Principal : une fois par écran. Discret (`is-ghost`) : annuler, fermer. Un bouton à icône seule porte un `aria-label`. |
@@ -98,7 +105,7 @@ Préfixe `tx-`. Les variantes s'écrivent `is-…`.
 | Case à cocher | `tx-check` | |
 | Sélecteur segmenté | `tx-seg` avec `aria-pressed` | 2 à 5 choix exclusifs (période, jour). Au-delà : une liste. |
 | Pastille de statut | `tx-badge` + `is-pos`, `is-neg`, `is-warn`, `is-info` | Statut d'un compte, respect du plan. Sans variante : neutre (clôturé). |
-| Étiquette | `tx-badge is-plain` | Sens (Long en `is-pos`, Short en `is-neg`), fenêtre, marché. |
+| Étiquette | `tx-badge is-plain` | Sens (Long, Short, sans couleur), fenêtre, marché. |
 | Variation | `tx-delta` + `is-pos`, `is-neg` | Un écart chiffré à côté d'un chiffre principal (« +480 € · +3,2 % »). |
 | Rail latéral | `tx-side` > `tx-logo` + `tx-navitem` | Navigation à partir de 900 px. Icône et libellé court. |
 | Barre du bas | `tx-tabbar` > `tx-navitem` | Navigation sous 900 px, flottante. Cinq entrées au maximum, le reste dans « Plus ». |
@@ -153,10 +160,14 @@ Icônes : uniquement celles de la planche en tête de `index.html` (`<svg class=
 
 Les classes `pg-` décrivent la mise en page propre à Tradamax (elles ne sont pas des composants réutilisables). Elles sont en fin du `<style>` de `index.html`.
 
-- **Rail** (`pg-rail`, à partir de 900 px) : logo, Journal, Prop firms, Annonces, Backtest, et Réglages en bas. **Barre du bas** (`pg-tabbar`, sous 900 px) : les mêmes entrées. Un bouton d'onglet porte `data-tab` ; Réglages ouvre une fenêtre de saisie (`#btn-settings` ou `data-open="settings"`).
+- **Rail** (`pg-rail`, à partir de 900 px) : logo, Accueil, Journal, Prop firms, Annonces, Backtest, et Réglages en bas. **Barre du bas** (`pg-tabbar`, sous 900 px) : Accueil, Journal, Prop firms, Annonces, Backtest ; Réglages passe alors dans la barre du haut (bouton à icône `pg-only-sm`). Un bouton d'onglet porte `data-tab` ; Réglages ouvre une fenêtre de saisie (`#btn-settings` ou `data-open="settings"`).
+- **Connexion** (`pg-auth`) : le nom « Tradamax » en très grand (Instrument Serif, jusqu'à 216 px) avec le sur-titre « Outil interne de la SAS », sans phrase dessous, la carte de connexion à droite (en dessous sur téléphone). Entrée en CSS : le nom monte, la carte suit. Aucun chiffre, rien de commercial : la page est publique.
 - **Barre du haut** (`pg-top`) : heures de Paris et de New York sur ordinateur, logo sur téléphone, utilisateur, thème, déconnexion.
 - **En-tête de page** (`pg-head`, commun à tous les onglets) : la date en sur-titre, le nom de la page (`#page-title`, mis à jour par `setTab`), et les actions de l'onglet (`pg-actions` avec `data-for="journal"`, `data-for="propfirms"`…).
-- **Bandeau de séance** (`#session`, sous l'en-tête, sur toutes les pages) : drawdown et résultat du jour calculés sur les trades enregistrés (jamais sur les exemples), prochaine fenêtre Silver Bullet calculée avec `Intl`, prochaine annonce forte USD ou EUR du jour. Rafraîchi toutes les 30 secondes.
+- **Accueil** (onglet par défaut après connexion, direction A du `design-lab/`) : l'en-tête passe en grand (`pg-head is-hero`, titre sur deux lignes avec une italique dorée, bouton « Nouveau trade »), puis le bandeau de séance, puis « Le mois en cours » sur un plateau en creux (`pg-tray`) en bento (`pg-bento` > `pg-bn`, cartes de tailles variées) : résultat du mois, R moyen, respect du plan (avec l'écart sur le mois précédent, neutre), activité par jour sur sept semaines (`pg-heat`, intensité d'or = nombre de trades, ce n'est ni un gain ni une perte), courbe des sept semaines (pastille sur le plus haut qui suit le pointeur), gagnants et perdants, note du mois (`pg-bn-gold`, la seule carte en or de l'écran), répartition par marché (`pg-donut`), palier de drawdown du compte réel (`pg-arc`, arc dans la couleur de l'état, jamais en or). Le sélecteur `#hm-acc` choisit le compte réel ou tous les comptes ; le drawdown reste toujours celui du compte réel. Les flèches rondes (`pg-bn-go`, `data-go`) mènent au journal.
+- **En-tête de chaque page** : la date (13 px, collée au titre) puis le nom de la page en grand avec une italique dorée (`HEADS` dans `app.js`). Pas de phrase sous le titre (décision du gérant, 17/11/2026).
+- **Plateau** : le contenu de chaque page est posé sur un plateau en creux (`--c-inset`, rayon 24 px) ; les panneaux y deviennent des cartes (rayon 18 px), les tuiles de chiffres des cartes séparées avec le chiffre en grand en bas. Le plateau n'est pas un panneau : la règle « pas de panneau dans un panneau » reste vraie.
+- **Bandeau de séance** (`#session`, sous l'en-tête, sur toutes les pages, en quatre cartes avec une icône chacune) : drawdown et résultat du jour calculés sur les trades enregistrés (jamais sur les exemples), prochaine fenêtre Silver Bullet calculée avec `Intl`, prochaine annonce forte USD ou EUR du jour. Rafraîchi toutes les 30 secondes.
 - **Journal des trades** (`pg-log`) : tableau sur ordinateur, fiche compacte sur trois lignes sous 640 px.
 - **Annonces** : compte rendu avec une frise de la journée en heure de Paris (fenêtres Silver Bullet en creux, annonces en points de couleur, trait « maintenant »), puis la liste détaillée.
 - **Backtest** : chiffres clés des données historiques, puis la couverture par marché (`pg-cov` : une ligne par année, un carré `pg-cov-cell` par mois, `is-full` importé, `is-part` incomplet, sans classe absent ; la grille porte `role="img"` et un `aria-label` qui liste les mois incomplets et manquants), puis la marche à suivre dans MT5 (`pg-steps`). L'import montre une barre d'avancement (`pg-progress`, `role="progressbar"`). Au-dessus : le lancement (`pg-btrun`), les résultats, la revue des setups (`pg-rv`) et le bilan des avis.

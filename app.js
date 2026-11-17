@@ -167,7 +167,7 @@ var S = {
   f: { period: "all", account: null, market: "all" }, q: "", shown: 30, selSig: "",
   calY: null, calM: null, editing: null, shotFile: null, shotPath: null, signed: {},
   props: [], payouts: [], editingProp: null, importRows: null, tmpM: null, tmpA: null,
-  cal: null, calUpdated: null, ecoDay: "today", tab: "journal",
+  cal: null, calUpdated: null, ecoDay: "today", tab: "", homeAcc: "sas", hmR7: [],
   hiIdx: null, hiErr: null, hiRaw: null, hiA: null, hiBusy: false,
   bt: null, btBusy: false, avis: {}, avisErr: null, rvFilter: "todo", rvShown: 30, rv: null, ctl: null, ctlErr: null, ctlBusy: false
 };
@@ -328,7 +328,7 @@ function renderJournal() {
 }
 function niceTicks(mn, mx, n) { var span = mx - mn, step = Math.pow(10, Math.floor(Math.log10(span / n))), e = span / n / step; step *= e >= 5 ? 5 : e >= 2 ? 2 : 1; var out = []; for (var v = Math.ceil(mn / step) * step; v <= mx + 1e-9; v += step) out.push(Math.abs(v) < 1e-9 ? 0 : v); return out; }
 function renderEquity(st) {
-  var tot = $("eq-total"); tot.textContent = st.n ? seur(st.total) : "—"; tot.className = "tx-hero " + cls(st.total);
+  var tot = $("eq-total"), tt = st.n ? seur(st.total) : "—"; if (!(tot._cnt && tot._cntTo === tt)) tot.textContent = tt; tot.className = "tx-hero " + cls(st.total); /* ne coupe pas le compteur s'il va déjà vers ce chiffre */
   $("eq-sub").textContent = st.n ? st.n + " trade" + (st.n > 1 ? "s" : "") + (st.cur != null ? " · capital " + eur(st.cur) : "") : "Aucun trade sur cette période";
   var box = $("eq-chart"); box.textContent = "";
   var W = Math.max(260, box.clientWidth || 600), H = W < 500 ? 190 : 240, pl = 2, pr = 56, pt = 14, pb = 26;
@@ -408,7 +408,7 @@ function renderOthers() {
         el("span", { class: "pg-acc-actions" }, [capBtn,
           el("button", { class: "tx-btn is-ghost", type: "button", "aria-label": "Afficher le détail de " + name, text: cur ? "Affiché" : "Voir le détail" })])])]);
     capBtn.addEventListener("click", function (e) { e.stopPropagation(); openCapital(name); });
-    card.addEventListener("click", function () { S.f.account = name; S.shown = 30; renderJournal(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    card.addEventListener("click", function () { S.f.account = name; S.shown = 30; renderJournal(); if (M.lenis) M.lenis.scrollTo(0); else window.scrollTo({ top: 0, behavior: "smooth" }); });
     box.appendChild(card);
   });
 }
@@ -466,7 +466,7 @@ function renderPlan(ts) {
   $("plan-yes-n").textContent = yes.length + " trade" + (yes.length > 1 ? "s" : ""); $("plan-no-n").textContent = no.length + " trade" + (no.length > 1 ? "s" : "");
   var svg = $("plan-ring"); svg.textContent = ""; var R = 30, C = 2 * Math.PI * R;
   svg.appendChild(svgEl("circle", { cx: 37, cy: 37, r: R, fill: "none", class: "pg-ring-track", "stroke-width": 7 }));
-  if (p != null) svg.appendChild(svgEl("circle", { cx: 37, cy: 37, r: R, fill: "none", class: "pg-ring-val " + (p >= .8 ? "is-pos" : p >= .6 ? "is-warn" : "is-neg"), "stroke-width": 7, "stroke-linecap": "round", "stroke-dasharray": (C * p).toFixed(1) + " " + C.toFixed(1), transform: "rotate(-90 37 37)" }));
+  if (p != null) svg.appendChild(svgEl("circle", { cx: 37, cy: 37, r: R, fill: "none", class: "pg-ring-val " + (p >= .8 ? "is-good" : "is-warn"), "stroke-width": 7, "stroke-linecap": "round", "stroke-dasharray": (C * p).toFixed(1) + " " + C.toFixed(1), transform: "rotate(-90 37 37)" }));
 }
 function renderEmotions(ts) {
   var box = $("emotions"); box.textContent = ""; var g = {};
@@ -532,11 +532,11 @@ function renderTable(ts) {
     var tr = el("tr", { tabindex: 0 }, [
       el("td", { class: "c-date tx-num", text: frDate(t.date) }), el("td", { class: "c-time tx-num tx-dim", text: t.time || "" }),
       el("td", { class: "c-mk" }, [el("b", { text: t.market || "—" })]), el("td", { class: "c-acc tx-dim", text: t.account || "" }),
-      el("td", { class: "c-side" }, [el("span", { class: "tx-badge is-plain " + (t.side === "Short" ? "is-neg" : "is-pos"), text: t.side || "—" })]), el("td", { class: "c-win", text: winLabel(t.window) }),
+      el("td", { class: "c-side" }, [el("span", { class: "tx-badge is-plain", text: t.side || "—" })]), el("td", { class: "c-win", text: winLabel(t.window) }),
       el("td", { class: "c-risk r tx-num tx-dim", text: t.risk > 0 ? eur(t.risk) : "—" }),
       el("td", { class: "c-r r tx-num " + cls(r || 0) }, [rfmt(r), r != null ? el("span", { class: "pg-rsub", text: "/ " + String(rPlanOf(t)).replace(".", ",") }) : null]),
       el("td", { class: "c-pnl r tx-num " + cls(t.pnl), text: seur(t.pnl) }),
-      el("td", { class: "c-plan" }, [el("span", { class: "tx-badge " + (t.plan === false ? "is-neg" : "is-pos"), text: t.plan === false ? "Non respecté" : "Respecté" })]), shot]);
+      el("td", { class: "c-plan" }, [el("span", { class: "tx-badge" + (t.plan === false ? " is-warn" : ""), text: t.plan === false ? "Non respecté" : "Respecté" })]), shot]);
     tr.addEventListener("click", function (ev) { if (ev.target.classList.contains("thumb")) { openShot(t); return; } openTrade(t); });
     tr.addEventListener("keydown", function (ev) { if (ev.key === "Enter") openTrade(t); });
     tb.appendChild(tr);
@@ -869,7 +869,7 @@ function renderRef() {
   var tb = $("ref-tbody"); tb.textContent = ""; var dl = $("firm-list"); dl.textContent = "";
   FIRMS_REF.forEach(function (f) { dl.appendChild(el("option", { value: f[0] }));
     tb.appendChild(el("tr", {}, [el("td", { "data-l": "Firme" }, [el("b", { text: f[0] })]), el("td", { class: "tx-num", "data-l": "Challenge 50 000", text: f[1] }),
-      el("td", { "data-l": "Compte au nom de la SAS" }, [el("span", { class: "tx-badge" + (f[2].indexOf("Oui") === 0 ? " is-pos" : f[2] === "Non" ? " is-neg" : ""), text: f[2] })]),
+      el("td", { "data-l": "Compte au nom de la SAS" }, [el("span", { class: "tx-badge" + (f[2] === "Non" ? " is-warn" : ""), text: f[2] })]),
       el("td", { "data-l": "Commission sur l'or", text: f[3] }), el("td", { class: "tx-dim", "data-l": "À retenir", text: f[4] })])); });
 }
 function openProp(p) {
@@ -987,7 +987,7 @@ function renderEco() {
     var f = winFlag(x.d, x.ev.impact);
     ul.appendChild(el("li", { class: "pg-ev" }, [el("span", { class: "t", text: fmtParisTime.format(x.d) }),
       el("div", {}, [el("div", { class: "n", text: x.ev.title }), el("div", { class: "m" }, [impTag(x.ev.impact), el("span", { text: x.ev.country + (x.ev.forecast ? " · prévu " + x.ev.forecast + ", précédent " + (x.ev.previous || "—") : "") + " · " + marketsFor(x.ev.country) })])]),
-      f ? el("span", { class: "tx-badge " + (f.strong ? "is-neg" : "is-warn"), text: f.text }) : el("span")]));
+      f ? el("span", { class: "tx-badge " + (f.strong ? "is-warn" : "is-info"), text: f.text }) : el("span")]));
   });
   hol.forEach(function (x) { ul.appendChild(el("li", { class: "pg-ev" }, [el("span", { class: "t", text: "Férié" }), el("div", {}, [el("div", { class: "n", text: x.ev.title + " (" + x.ev.country + ")" }), el("div", { class: "m", text: "Liquidité réduite sur " + marketsFor(x.ev.country) })]), el("span")])); });
   if (ul.childNodes.length) recap.appendChild(ul);
@@ -999,7 +999,7 @@ function renderEco() {
     var f = winFlag(x.d, x.ev.impact);
     tb.appendChild(el("tr", {}, [el("td", { class: "tx-num", "data-l": "Heure Paris", text: fmtParisTime.format(x.d) }), el("td", { class: "tx-num tx-dim", "data-l": "Heure NY", text: nyTime(x.d) }), el("td", { "data-l": "Devise" }, [el("b", { text: x.ev.country })]),
       el("td", { "data-l": "Impact" }, [impTag(x.ev.impact)]),
-      el("td", { class: "c-title", "data-l": "Annonce" }, [el("span", { text: x.ev.title }), f ? el("span", { class: "tx-badge " + (f.strong ? "is-neg" : "is-warn"), text: f.text }) : null]),
+      el("td", { class: "c-title", "data-l": "Annonce" }, [el("span", { text: x.ev.title }), f ? el("span", { class: "tx-badge " + (f.strong ? "is-warn" : "is-info"), text: f.text }) : null]),
       el("td", { class: "r tx-num", "data-l": "Prévision", text: x.ev.forecast || "—" }), el("td", { class: "r tx-num tx-dim", "data-l": "Précédent", text: x.ev.previous || "—" }), el("td", { class: "tx-dim", "data-l": "Vos marchés", text: marketsFor(x.ev.country) })]));
   });
 }
@@ -1538,7 +1538,7 @@ function rvRender() {
       el("td", { "data-l": "Sens", text: sideLabel(su.dir) + (su.trend && su.trend.dir ? (su.trend.ok ? " · avec la tendance" : " · contre la tendance") : "") }),
       el("td", { "data-l": "Unités", text: "OB " + tfLabel(su.obTf) + " · " + tfLabel(su.tf) }),
       el("td", { "data-l": "Robot" }, [el("span", { class: "tx-badge " + (su.taken ? "is-info" : "is-plain"), title: robotText(su), text: su.taken ? "Pris" : "Annulé (" + su.reason + ")" })]),
-      el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge " + (a.avis === "refuse" ? "is-neg" : a.avis === "autrement" ? "is-warn" : "is-pos"), text: AVIS[a.avis] + (mine(a) ? " · vous" : "") }) : el("span", { class: "tx-dim", text: "À revoir" })]),
+      el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge" + (a.avis === "refuse" ? " is-warn" : a.avis === "autrement" ? " is-info" : ""), text: AVIS[a.avis] + (mine(a) ? " · vous" : "") }) : el("span", { class: "tx-dim", text: "À revoir" })]),
       el("td", { class: "c-act" }, [el("span", { class: "tx-sub", text: a ? "Revoir" : "Donner mon avis" })])
     ]);
     tr.addEventListener("click", function () { openReview(su); });
@@ -1872,30 +1872,415 @@ $("bt-export").addEventListener("click", function () {
   download("tradamax-avis-backtest-" + todayISO() + ".csv", lines.join("\n"));
 });
 
+/* ---------------- accueil : le mois en cours en bento (direction A du design lab) ---------------- */
+/* Compte réel par défaut (comme le bandeau de séance), ou tous les comptes. Les exemples s'affichent tant qu'aucun trade n'est enregistré. */
+var SES_SHORT = { London: "Londres", NYAM: "NY matin", NYPM: "NY après-midi", Out: "Hors session" };
+var SES_KEYS = ["London", "NYAM", "NYPM", "Out"];
+var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+function sesKey(t) { return SES_SHORT[t.window] ? t.window : "Out"; }
+function isoAdd(iso, days) { var p = iso.split("-").map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2] + days)).toISOString().slice(0, 10); }
+function isoWd(iso) { var p = iso.split("-").map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); }
+function isoWeek(iso) { var p = iso.split("-").map(Number), d = new Date(Date.UTC(p[0], p[1] - 1, p[2])); d.setUTCDate(d.getUTCDate() + 3 - (d.getUTCDay() + 6) % 7); var y = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d - y) / 864e5 - 3 + (y.getUTCDay() + 6) % 7) / 7); }
+function prevMonth(k) { var y = Number(k.slice(0, 4)), m = Number(k.slice(5)) - 1; if (!m) { m = 12; y--; } return y + "-" + String(m).padStart(2, "0"); }
+function spct(v, d) { return (v > 0 ? "+" : v < 0 ? "−" : "") + pct(Math.abs(v), d); }
+function cap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function plural(n, w) { return n + " " + w + (n > 1 ? "s" : ""); }
+function int(v) { return String(Math.round(v)); }
+/* chiffre clé : écrit tout de suite, puis compté depuis zéro à l'arrivée sur la page (homeCount) */
+function hmNum(id, v, f, c) { var e = $(id); if (e._tw) { e._tw.kill(); e._tw = null; } e._v = v; e._f = f; e.textContent = v == null ? "—" : f(v); e.className = e.className.split(" ")[0] + (c ? " " + c : ""); }
+function hmDelta(id, text, c) { var e = $(id); e.hidden = !text; e.textContent = text || ""; e.className = "tx-delta" + (c ? " " + c : ""); }
+function hmNote(id, bold, text) { var p = $(id); p.textContent = ""; if (!bold && !text) return; p.appendChild(icon("i-info")); p.appendChild(el("span", {}, [bold ? el("b", { text: bold }) : null, bold && text ? " " : null, text || null])); }
+function renderHome() {
+  var today = todayISO(), mk = today.slice(0, 7), pk = prevMonth(mk), mName = MOIS[Number(mk.slice(5)) - 1], pName = MOIS[Number(pk.slice(5)) - 1];
+  var real = S.homeAcc !== "all", names = sasNames();
+  var all = source().filter(function (t) { return !real || names.indexOf(t.account) >= 0; }).slice().sort(byDT);
+  var inM = all.filter(function (t) { return t.date.slice(0, 7) === mk; }), inP = all.filter(function (t) { return t.date.slice(0, 7) === pk; });
+  var stM = stats(inM, null, []), stP = stats(inP, null, []);
+  $("hm-badge").hidden = !S.useSample;
+  $("hm-scope").textContent = (real ? (names.length ? names.join(", ") : "Aucun compte réel dans les Réglages") : "Tous les comptes") + " · " + mName + " " + mk.slice(0, 4);
+  document.querySelectorAll("#hm-acc button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === (real ? "sas" : "all"))); });
+
+  /* résultat du mois ; rendement sur le capital du compte réel au 1er du mois (ajouts et retraits compris) */
+  var capStart = null, first = mk + "-01";
+  if (real && names.length) {
+    var cap = names.reduce(function (a, n) { return a + (accCap(n) || 0); }, 0) || null;
+    if (cap) { var mv = names.reduce(function (a, n) { return a.concat(accMoves(n)); }, []);
+      capStart = stats(all.filter(function (t) { return t.date < first; }), cap, mv.filter(function (m) { return String(m.date) < first; })).cur; }
+  }
+  hmNum("hm-res", stM.n ? stM.total : null, seur, cls(stM.total));
+  hmDelta("hm-res-d", stM.n && capStart > 0 ? spct(stM.total / capStart) : "", stM.total > 0 ? "is-pos" : stM.total < 0 ? "is-neg" : "");
+  $("hm-res-h").textContent = stM.n ? plural(stM.n, "trade") + " en " + mName : "Aucun trade en " + mName;
+  hmNum("hm-r", stM.avgR, rfmt, cls(stM.avgR || 0));
+  var dR = stM.avgR != null && stP.avgR != null ? stM.avgR - stP.avgR : null;
+  hmDelta("hm-r-d", dR == null ? "" : rfmt(dR).replace(" R", ""), "");
+  $("hm-r-h").textContent = stP.avgR != null ? cap1(pName) + " : " + rfmt(stP.avgR) : stM.rs.length ? plural(stM.rs.length, "trade") + " avec risque renseigné" : "Renseignez le risque des trades";
+  function planOf(ts) { return ts.length ? ts.filter(function (t) { return t.plan; }).length / ts.length : null; }
+  var pM = planOf(inM), pP = planOf(inP), dP = pM != null && pP != null ? Math.round((pM - pP) * 100) : null;
+  hmNum("hm-plan", pM, function (v) { return pct(v, 0); });
+  hmDelta("hm-plan-d", dP == null ? "" : (dP > 0 ? "+" : dP < 0 ? "−" : "") + Math.abs(dP) + " pts", "");
+  $("hm-plan-h").textContent = pP != null ? cap1(pName) + " : " + pct(pP, 0) : stM.n ? "Plan suivi sur " + inM.filter(function (t) { return t.plan; }).length + " trades sur " + stM.n : "Aucun trade en " + mName;
+
+  /* activité des sept dernières semaines : nombre de trades par jour ouvré, puis répartition par session */
+  var mon = isoAdd(today, -((isoWd(today) + 6) % 7)), start = isoAdd(mon, -42), r7 = all.filter(function (t) { return t.date >= start && t.date <= today; });
+  var cnt = {}, perWd = [0, 0, 0, 0, 0], hb = $("hm-heat"); r7.forEach(function (t) { cnt[t.date] = (cnt[t.date] || 0) + 1; });
+  hb.textContent = ""; hb.appendChild(el("span", { class: "rl" }));
+  ["Lun", "Mar", "Mer", "Jeu", "Ven"].forEach(function (d) { hb.appendChild(el("span", { class: "cl", text: d })); });
+  for (var w = 0; w < 7; w++) {
+    var ws = isoAdd(start, w * 7); hb.appendChild(el("span", { class: "rl", text: "S" + isoWeek(ws) }));
+    for (var d = 0; d < 5; d++) { var iso = isoAdd(ws, d), c = cnt[iso] || 0, fut = iso > today; perWd[d] += c;
+      hb.appendChild(el("i", { class: "c " + (fut ? "is-fut" : "h" + Math.min(c, 3)), title: frDate(iso) + " : " + (fut ? "à venir" : c ? plural(c, "trade") : "aucun trade") })); }
+  }
+  var busy = perWd.indexOf(Math.max.apply(null, perWd));
+  hb.setAttribute("aria-label", "Trades par jour ouvré sur les sept dernières semaines : " + plural(r7.length, "trade") + (r7.length ? ", jour le plus chargé : le " + JOURS[busy + 1] : ""));
+  var bySes = {}; r7.forEach(function (t) { var k = sesKey(t); bySes[k] = (bySes[k] || 0) + 1; });
+  var keys = SES_KEYS.filter(function (k) { return bySes[k]; }), sb = $("hm-split"), sl = $("hm-split-l");
+  sb.textContent = ""; sl.textContent = ""; sl.style.setProperty("--n", Math.max(1, keys.length));
+  keys.forEach(function (k) { var sh = bySes[k] / r7.length;
+    sb.appendChild(el("i", { class: "s-" + k, style: "width:" + (sh * 100).toFixed(1) + "%" }));
+    sl.appendChild(el("div", {}, [el("b", { text: pct(sh, 0) }), el("span", {}, [el("i", { class: "s-" + k }), SES_SHORT[k]])])); });
+  if (!r7.length) hmNote("hm-heat-note", "Aucun trade", "sur les sept dernières semaines.");
+  else { var top = keys.slice().sort(function (a, b) { return bySes[b] - bySes[a]; })[0];
+    hmNote("hm-heat-note", "Lecture.", (top === "Out" ? "Les trades hors session représentent " : "La session " + SES_SHORT[top] + " concentre ") + pct(bySes[top] / r7.length, 0) + " des trades. Le " + JOURS[busy + 1] + " est le jour le plus chargé."); }
+  S.hmR7 = r7; drawHomeEq(r7);
+
+  /* gagnants et perdants du mois */
+  hmNum("hm-w", stM.n ? stM.w : null, int, "tx-pos"); hmNum("hm-l", stM.n ? stM.l : null, int, "tx-neg");
+  [[".is-pos", stM.w], [".is-neg", stM.l]].forEach(function (x) { var col = $("hm-cmp").querySelector(x[0]), on = stM.n ? Math.round(x[1] / stM.n * 10) : 0; col.textContent = ""; for (var i = 0; i < 10; i++) col.appendChild(el("i", { class: i < on ? "on" : "" })); });
+  var lossR = inM.filter(function (t) { return t.pnl < 0; }).map(rOf).filter(function (r) { return r != null; });
+  if (!stM.n) hmNote("hm-cmp-note", "Aucun trade", "en " + mName + " pour l'instant.");
+  else hmNote("hm-cmp-note", "Réussite " + pct(stM.wr, 0) + ".", lossR.length ? "Perte moyenne " + rfmt(lossR.reduce(function (a, b) { return a + b; }, 0) / lossR.length) + "." : stM.avgL ? "Perte moyenne " + eur(stM.avgL) + "." : "Aucune perte ce mois-ci.");
+
+  /* note du mois : la session qui porte le plus de gains, et le respect du plan dans cette session */
+  var gains = {}, totG = 0, say = $("hm-say"), share = 0; say.textContent = "";
+  inM.forEach(function (t) { var p = Number(t.pnl) || 0; if (p > 0) { var k = sesKey(t); gains[k] = (gains[k] || 0) + p; totG += p; } });
+  if (!stM.n) { var nw = nextWindow(new Date()); say.textContent = "Aucun trade en " + mName + " pour l'instant." + (!nw ? "" : nw.live ? " La fenêtre " + nw.w.label + " est en cours." : " Prochaine fenêtre : " + nw.w.label + " à " + fmtParisTime.format(nw.start) + "."); }
+  else if (!totG) { var pn = inM.filter(function (t) { return t.plan; }).length; share = pn / stM.n; say.textContent = "Pas encore de gain ce mois-ci. Le plan a été suivi sur " + pn + " trade" + (pn > 1 ? "s" : "") + " sur " + stM.n + "."; }
+  else {
+    var best = Object.keys(gains).sort(function (a, b) { return gains[b] - gains[a]; })[0], sesT = inM.filter(function (t) { return sesKey(t) === best; }), sp = sesT.filter(function (t) { return t.plan; }).length;
+    share = gains[best] / totG;
+    say.appendChild(document.createTextNode(best === "Out" ? "Les trades hors session portent " : "La session " + SES_SHORT[best] + " porte "));
+    say.appendChild(el("span", { class: "pg-bn-pill tx-num", text: pct(share, 0) }));
+    say.appendChild(document.createTextNode(" des gains du mois, plan suivi sur " + sp + " trade" + (sp > 1 ? "s" : "") + " sur " + sesT.length + "."));
+  }
+  var sg = $("hm-segs"), onS = Math.round(share * 12); sg.textContent = ""; for (var s12 = 0; s12 < 12; s12++) sg.appendChild(el("i", { class: s12 < onS ? "on" : "" }));
+
+  /* répartition des trades du mois par marché (au-delà de quatre, le reste dans « Autres ») */
+  var byM = {}; inM.forEach(function (t) { var k = t.market || "—"; (byM[k] = byM[k] || { n: 0, p: 0 }).n++; byM[k].p += Number(t.pnl) || 0; });
+  var mks = Object.keys(byM).sort(function (a, b) { return byM[b].n - byM[a].n; });
+  if (mks.length > 4) { var rest = { n: 0, p: 0 }; mks.slice(3).forEach(function (k) { rest.n += byM[k].n; rest.p += byM[k].p; }); mks = mks.slice(0, 3); byM.Autres = rest; mks.push("Autres"); }
+  $("hm-mix-tag").textContent = cap1(mName);
+  hmNum("hm-mix-n", stM.n, int);
+  var dn = $("hm-donut"), acc = 0, gap = mks.length > 1 ? 1.6 : 0; dn.textContent = "";
+  dn.appendChild(svgEl("circle", { class: "trk", cx: 60, cy: 60, r: 50, pathLength: 100 }));
+  mks.forEach(function (k, i) { var sh = byM[k].n / stM.n * 100;
+    dn.appendChild(svgEl("circle", { class: "seg m" + i, cx: 60, cy: 60, r: 50, pathLength: 100, "stroke-dasharray": Math.max(0, sh - gap).toFixed(2) + " " + (100 - sh + gap).toFixed(2), "stroke-dashoffset": (-acc).toFixed(2) })); acc += sh; });
+  dn.setAttribute("aria-label", stM.n ? "Trades du mois par marché : " + mks.map(function (k) { return k + " " + pct(byM[k].n / stM.n, 0); }).join(", ") : "Aucun trade ce mois-ci");
+  var dl = $("hm-mix-list"); dl.textContent = "";
+  mks.forEach(function (k, i) { dl.appendChild(el("dt", {}, [el("i", { class: "m" + i }), k])); dl.appendChild(el("dd", { text: pct(byM[k].n / stM.n, 0) })); });
+  if (mks.length) hmNote("hm-mix-note", "Note.", mks[0] + " représente " + pct(byM[mks[0]].n / stM.n, 0) + " des trades du mois, pour un résultat de " + seur(byM[mks[0]].p) + ".");
+  else hmNote("hm-mix-note", "Aucun trade", "en " + mName + " pour l'instant.");
+
+  /* palier de drawdown : toujours le compte réel, comme le bandeau de séance ; arc dans la couleur de l'état */
+  var capS = names.reduce(function (a, n) { return a + (accCap(n) || 0); }, 0) || null;
+  var mine = source().filter(function (t) { return names.indexOf(t.account) >= 0; }).sort(byDT);
+  var sd = stats(mine, capS, names.reduce(function (a, n) { return a.concat(accMoves(n)); }, []));
+  var okDD = !!(names.length && mine.length && sd.ddNow != null), dd = okDD ? sd.ddNow : 0, st = ddState(dd), badge = $("hm-dd-b");
+  $("hm-dd-card").className = "pg-bn pg-bn-dd" + (okDD ? " is-" + st.k : "");
+  hmNum("hm-dd-v", okDD ? dd : null, function (v) { return v > 0 ? "−" + pct(v) : pct(0); });
+  badge.hidden = !okDD; badge.className = "tx-badge " + { ok: "is-pos", caution: "is-warn", stop: "is-neg" }[st.k];
+  badge.textContent = st.lvl ? "Palier −" + Math.round(st.lvl.p * 100) + " % · " + st.lvl.l : "Normal";
+  $("hm-dd-h").textContent = !names.length ? "Aucun compte réel dans les Réglages" : !mine.length ? "Aucun trade sur le compte réel" : sd.ddNow == null ? "Capital du compte réel à renseigner" : "Compte réel, depuis son plus haut historique";
+  var arc = $("hm-dd"), N = 21, onN = okDD && dd > 0 ? Math.max(1, Math.round(Math.min(1, dd / GAUGE_MAX) * N)) : 0, cx = 120, cy = 124; arc.textContent = "";
+  function ang(f) { return (-100 + 200 * f) * Math.PI / 180; }
+  for (var j = 0; j < N; j++) { var a = ang(j / (N - 1));
+    arc.appendChild(svgEl("line", { class: j < onN ? "on" : "", x1: (cx + 78 * Math.sin(a)).toFixed(1), y1: (cy - 78 * Math.cos(a)).toFixed(1), x2: (cx + 100 * Math.sin(a)).toFixed(1), y2: (cy - 100 * Math.cos(a)).toFixed(1) })); }
+  PALIERS.forEach(function (p) { var a = ang(p.p / GAUGE_MAX), t = svgEl("text", { x: (cx + 118 * Math.sin(a)).toFixed(1), y: (cy - 118 * Math.cos(a) + 4).toFixed(1), "text-anchor": "middle" }); t.textContent = "−" + Math.round(p.p * 100) + " %"; arc.appendChild(t); });
+  arc.setAttribute("aria-label", okDD ? "Drawdown du compte réel : " + $("hm-dd-v").textContent + ", " + badge.textContent : "Drawdown du compte réel indisponible");
+
+  if (H.pend && S.loaded && H.ctx) { H.pend = false; homeCount(); }
+  homeGo(H.seq);
+}
+/* courbe des sept dernières semaines : pastille sur le plus haut, qui suit le pointeur */
+function drawHomeEq(ts) {
+  var box = $("hm-eq"); box.textContent = "";
+  var tot = ts.reduce(function (a, t) { return a + (Number(t.pnl) || 0); }, 0);
+  hmNum("hm-eq-v", ts.length ? tot : null, seur, cls(tot));
+  $("hm-eq-h").textContent = ts.length ? plural(ts.length, "trade") + " · 7 semaines" : "7 semaines";
+  var W = Math.max(260, box.clientWidth || 600), H = W < 480 ? 190 : 224, pl = 2, pr = 56, pt = 42, pb = 26;
+  var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": ts.length ? "Résultat cumulé sur sept semaines : " + seur(tot) + " en " + plural(ts.length, "trade") : "Aucun trade sur sept semaines" });
+  box.appendChild(svg);
+  if (!ts.length) { var e = svgEl("text", { x: W / 2, y: H / 2, "text-anchor": "middle", class: "empty" }); e.textContent = "La courbe apparaîtra après le premier trade"; svg.appendChild(e); return; }
+  var pts = [{ cum: 0, t: null }], cum = 0; ts.forEach(function (t) { cum += Number(t.pnl) || 0; pts.push({ cum: cum, t: t }); });
+  var vals = pts.map(function (p) { return p.cum; }), mn = Math.min(0, Math.min.apply(null, vals)), mx = Math.max(0, Math.max.apply(null, vals));
+  if (mx === mn) mx += 1; var padv = (mx - mn) * .08; mn -= padv; mx += padv;
+  var n = pts.length - 1, x = function (i) { return pl + (W - pl - pr) * i / n; }, y = function (v) { return pt + (H - pt - pb) * (1 - (v - mn) / (mx - mn)); };
+  var grid = svgEl("g", { class: "grid" }); svg.appendChild(grid);
+  niceTicks(mn, mx, 4).forEach(function (v) {
+    var ln = svgEl("line", { x1: pl, x2: W - pr, y1: y(v), y2: y(v) }); if (v === 0) ln.setAttribute("class", "zero"); grid.appendChild(ln);
+    var t = svgEl("text", { x: W - pr + 10, y: y(v) + 4 }); t.textContent = seur(v).replace(" €", ""); svg.appendChild(t);
+  });
+  var line = pts.map(function (p, k) { return (k ? "L" : "M") + x(k).toFixed(1) + " " + y(p.cum).toFixed(1); }).join(" ");
+  var hi = 1; for (var k = 2; k <= n; k++) if (pts[k].cum > pts[hi].cum) hi = k;
+  var cap = svgEl("rect", { class: "cap", width: 18, rx: 9 }); svg.appendChild(cap);
+  svg.appendChild(svgEl("path", { d: line + " L" + x(n).toFixed(1) + " " + y(mn).toFixed(1) + " L" + x(0) + " " + y(mn).toFixed(1) + " Z", class: "area" }));
+  svg.appendChild(svgEl("path", { d: line, class: "line" }));
+  svg.appendChild(svgEl("circle", { cx: x(n), cy: y(pts[n].cum), r: 9, class: "halo" }));
+  svg.appendChild(svgEl("circle", { cx: x(n), cy: y(pts[n].cum), r: 4.5, class: "dot" }));
+  (n > 1 ? [1, n] : [n]).forEach(function (k, j, arr) { var t = svgEl("text", { x: x(k), y: H - 6, "text-anchor": arr.length > 1 && !j ? "start" : "end" }); t.textContent = frDate(pts[k].t.date); svg.appendChild(t); });
+  var pill = svgEl("rect", { class: "pill", height: 24, rx: 12 }), pillT = svgEl("text", { class: "pill-t", "text-anchor": "middle" }), hd = svgEl("circle", { class: "dot", r: 4 });
+  svg.appendChild(hd); svg.appendChild(pill); svg.appendChild(pillT);
+  function place(k, hover) {
+    var p = pts[k], px = x(k), py = y(p.cum), label = seur(p.cum) + (hover ? " · " + frDate(p.t.date) : ""), pw = label.length * 7.3 + 20, cxp = Math.max(pw / 2 + 2, Math.min(W - pw / 2 - 2, px));
+    cap.setAttribute("x", (px - 9).toFixed(1)); cap.setAttribute("y", (py - 4).toFixed(1)); cap.setAttribute("height", Math.max(0, H - pb - py + 4).toFixed(1));
+    pill.setAttribute("x", (cxp - pw / 2).toFixed(1)); pill.setAttribute("y", (py - 36).toFixed(1)); pill.setAttribute("width", pw.toFixed(1));
+    pillT.setAttribute("x", cxp.toFixed(1)); pillT.setAttribute("y", (py - 19.5).toFixed(1)); pillT.textContent = label;
+    hd.setAttribute("cx", px.toFixed(1)); hd.setAttribute("cy", py.toFixed(1));
+  }
+  place(hi, false);
+  var ov = svgEl("rect", { x: pl, y: 0, width: W - pl - pr, height: H, fill: "transparent" }); svg.appendChild(ov);
+  function move(ev) { var r = svg.getBoundingClientRect(), k = Math.round(((ev.clientX - r.left) * W / r.width - pl) / (W - pl - pr) * n); place(Math.max(1, Math.min(n, k)), true); }
+  ov.addEventListener("pointermove", move); ov.addEventListener("pointerdown", move);
+  ov.addEventListener("pointerleave", function () { place(hi, false); });
+}
+
+/* Mouvement de l'accueil : GSAP (titre, cartes, chiffres qui comptent, plateau qui se redresse) et Lenis (défilement doux).
+   Chargés à la demande depuis jsDelivr, versions épinglées, actifs seulement sur l'accueil et jamais avec le mouvement réduit. */
+var MOTION_JS = ["https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js", "https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js",
+  "https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js", "https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"];
+var H = { seq: 0, ctx: null, pend: false, ready: false, late: false, tm: null, delay: 0 };
+function loadJS(u) { return new Promise(function (ok, ko) { var s = document.createElement("script"); s.src = u; s.onload = ok; s.onerror = function () { s.remove(); ko(new Error(u)); }; document.head.appendChild(s); }); }
+function loadMotion() {
+  if (!loadMotion.p) {
+    loadMotion.p = (window.gsap ? Promise.resolve() : loadJS(MOTION_JS[0])).then(function () { return Promise.all(MOTION_JS.slice(1).map(loadJS)); })
+      .then(function () { gsap.registerPlugin(ScrollTrigger, SplitText); gsap.ticker.lagSmoothing(0); });
+    loadMotion.p.catch(function () { loadMotion.p = null; });
+  }
+  return loadMotion.p;
+}
+/* La page reste masquée le temps de charger les bibliothèques et les trades (1,2 s au plus), pour que l'entrée se joue en entier. */
+function homeEnter() {
+  var seq = ++H.seq; H.ready = false; H.late = false; H.pend = false; H.delay = M.navDelay || 0;
+  if (REDUCED) return;
+  document.body.classList.add("pg-pre-home");
+  clearTimeout(H.tm);
+  H.tm = setTimeout(function () { if (seq !== H.seq) return; H.late = true; document.body.classList.remove("pg-pre-home"); homeGo(seq); }, 1200);
+  loadMotion().then(function () { if (seq !== H.seq) return; H.ready = true; homeGo(seq); },
+    function () { if (seq !== H.seq) return; clearTimeout(H.tm); document.body.classList.remove("pg-pre-home"); });
+}
+function homeGo(seq) {
+  if (seq !== H.seq || !H.ready || H.ctx || S.tab !== "accueil" || (!S.loaded && !H.late)) return;
+  clearTimeout(H.tm); homeMotion(!H.late); document.body.classList.remove("pg-pre-home");
+}
+function homeLeave() {
+  H.seq++; H.pend = false; clearTimeout(H.tm); document.body.classList.remove("pg-pre-home");
+  if (H.ctx) { H.ctx.revert(); H.ctx = null; }
+}
+function homeCount() {
+  if (!H.ctx) return;
+  H.ctx.add(function () {
+    document.querySelectorAll("#tab-accueil [data-count]").forEach(function (e, i) {
+      if (e._v == null) return; var o = { v: 0 }, to = e._v, f = e._f;
+      e._tw = gsap.to(o, { v: to, duration: 1.4, delay: i * .04, ease: "power3.out", onUpdate: function () { e.textContent = f(o.v); }, onComplete: function () { e.textContent = f(to); e._tw = null; } });
+    });
+  });
+}
+function homeMotion(intro) {
+  var head = $("page-head");
+  H.ctx = gsap.context(function (self) {
+    var q = self.selector;
+    if (intro) {
+      var lines = new SplitText($("page-title"), { type: "lines", mask: "lines" }).lines;
+      var tl = gsap.timeline({ delay: H.delay || 0, defaults: { ease: "power3.out" } });
+      tl.from(lines, { yPercent: 110, duration: 1.05, stagger: .1, ease: "expo.out" })
+        .from(head.querySelector('.pg-actions[data-for="accueil"]'), { y: 14, opacity: 0, duration: .7, stagger: .08 }, "-=.75")
+        .from(q(".pg-tray"), { y: 56, opacity: 0, duration: 1, ease: "expo.out" }, "-=.6")
+        .from(q(".pg-bn"), { y: 22, opacity: 0, duration: .7, stagger: .05 }, "-=.8")
+        .from(q("#hm-heat .c"), { scale: .4, opacity: 0, duration: .35, stagger: .008 }, "-=.5")
+        .from(q("#hm-split i, #hm-cmp i"), { scaleX: 0, duration: .6, stagger: .012 }, "<")
+        .from(q("#hm-dd line"), { opacity: 0, duration: .25, stagger: .025 }, "<")
+        .from(q("#hm-segs i"), { opacity: 0, y: 6, duration: .3, stagger: .03 }, "<")
+        .fromTo(q("#hm-donut .seg"), { strokeDasharray: "0 100" }, { strokeDasharray: function (i, c) { return c.getAttribute("stroke-dasharray"); }, duration: 1.1, stagger: .12, ease: "power2.out" }, "<");
+      /* la courbe se trace avec l'animation du système de design (pathLength="1") au moment où sa carte apparaît */
+      tl.call(function () { var ln = document.querySelector("#hm-eq .line"); if (ln) ln.setAttribute("pathLength", "1"); }, null, 1);
+      if (S.loaded) tl.call(homeCount, null, .6); else H.pend = true;
+    }
+    /* plateau qui se redresse : sur ordinateur seulement (sur téléphone, le plateau très haut déborderait en s'inclinant) */
+    if (window.matchMedia("(min-width: 900px)").matches) gsap.fromTo(q(".pg-home-tilt"), { rotateX: 9, scale: .97 }, { rotateX: 0, scale: 1, ease: "none", scrollTrigger: { trigger: q(".pg-home-stage")[0], start: "top 95%", end: "top 25%", scrub: .6 } });
+  }, document.querySelector(".pg-in"));
+}
+$("btn-add-home").addEventListener("click", function () { openTrade(null); });
+document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.go; }); });
+$("hm-acc").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; S.homeAcc = b.dataset.v; renderHome(); });
+
+/* ---------------- micro-interactions de l'application ---------------- */
+/* Sobres et courtes : l'onglet qui arrive glisse de quelques pixels, le repère de navigation se déplace,
+   les chiffres clés comptent une fois à l'arrivée sur un onglet. Rien avec le mouvement réduit. */
+function pageIn(els) {
+  if (REDUCED || !Element.prototype.animate) return;
+  els.forEach(function (e, i) { if (e && !e.hidden) e.animate([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 320, delay: i * 60, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }); });
+}
+function navInd() {
+  document.querySelectorAll(".pg-rail-nav, .pg-tabbar").forEach(function (nav) {
+    var cur = nav.querySelector('[data-tab][aria-current="page"]'), ind = nav.querySelector(".pg-ind"), rail = nav.classList.contains("pg-rail-nav");
+    if (!ind) { ind = el("i", { class: "pg-ind", "aria-hidden": "true" }); nav.appendChild(ind); }
+    if (!cur || !cur.offsetParent) { ind.style.opacity = "0"; return; }
+    var first = !ind.dataset.on; if (first) ind.style.transition = "none";
+    ind.style.opacity = "1"; ind.dataset.on = "1";
+    if (rail) { ind.style.transform = "translateY(" + (cur.offsetTop + 10) + "px)"; ind.style.height = (cur.offsetHeight - 20) + "px"; }
+    else ind.style.transform = "translateX(" + (cur.offsetLeft + cur.offsetWidth / 2 - 11) + "px)";
+    if (first) { void ind.offsetWidth; ind.style.transition = ""; }
+  });
+}
+/* compte depuis zéro en gardant le format affiché (« +1 366 € », « 45,8 % », « −1,50 R ») ; ignore heures, dates et tirets */
+function countText(e, dur) {
+  var txt = e.textContent, m = txt.match(/^([^\d∞]*?)(\d(?:[\d\s  ]*\d)?(?:,\d+)?)(.*)$/);
+  if (REDUCED || e._cnt || !m || /\d[:h\/]\d/.test(txt)) return;
+  var raw = m[2].replace(/[\s  ]/g, ""), dec = (raw.split(",")[1] || "").length, to = parseFloat(raw.replace(",", "."));
+  if (!isFinite(to) || !to) return;
+  var f = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: /[\s  ]/.test(m[2]) }), t0 = performance.now(), last = txt;
+  e._cnt = true; e._cntTo = txt;
+  (function step(now) {
+    if (e.textContent !== last) { e._cnt = false; return; } /* réécrit entre-temps (données reçues) : on s'arrête */
+    var k = Math.min(1, (now - t0) / dur);
+    last = k < 1 ? m[1] + f.format(to * (1 - Math.pow(1 - k, 3))) + m[3] : txt; e.textContent = last;
+    if (k < 1) requestAnimationFrame(step); else e._cnt = false;
+  })(t0);
+}
+var CNT = { tab: null, first: true };
+function flushCount() {
+  if (!S.loaded || REDUCED) return;
+  if (CNT.first) { CNT.first = false; document.querySelectorAll(".tx-session .v").forEach(function (e) { countText(e, 900); }); }
+  var t = CNT.tab; CNT.tab = null;
+  if (!t || t !== S.tab || t === "accueil") return;
+  $("tab-" + t).querySelectorAll(".tx-stat .v, .tx-hero").forEach(function (e) { countText(e, 900); });
+}
+window.addEventListener("resize", function () { clearTimeout(navInd._t); navInd._t = setTimeout(navInd, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(navInd);
+
+/* ---------------- mouvement de toute l'application : rideau entre les pages, blocs qui s'assemblent, défilement doux ---------------- */
+/* GSAP et Lenis sont chargés à la connexion, jamais avec le mouvement réduit. Sans eux, l'application reste entière, sans animation. */
+var M = { boot: false, ready: false, lenis: null, ctx: null, tl: null, target: null, navDelay: 0, rest: [] };
+function motionBoot() {
+  if (REDUCED || M.boot) return; M.boot = true;
+  loadMotion().then(function () {
+    M.ready = true;
+    M.lenis = new Lenis({ lerp: .12, prevent: function (node) { return !!(node.closest && node.closest(".tx-overlay")); } });
+    M.lenis.on("scroll", ScrollTrigger.update); M.lenis.on("scroll", revealAtBottom);
+    gsap.ticker.add(function (t) { if (M.lenis) M.lenis.raf(t * 1000); });
+  }, function () { M.boot = false; });
+}
+function toTop() { window.scrollTo(0, 0); if (M.lenis) M.lenis.scrollTo(0, { immediate: true, force: true }); }
+function stRefresh() { if (!M.ready) return; clearTimeout(stRefresh._t); stRefresh._t = setTimeout(function () { ScrollTrigger.refresh(); revealAtBottom(); }, 150); }
+/* blocs d'une page : barre de filtres, alertes, tuiles, panneaux, en-têtes de section (jamais un bloc dans un bloc) */
+var BLOCKS = ".pg-toolbar, .tx-alert, .tx-stat, .tx-panel, .pg-section-head";
+function blocks(tab) {
+  return Array.prototype.filter.call(tab.querySelectorAll(BLOCKS), function (e) {
+    if (!e.offsetParent) return false;
+    var p = e.parentElement.closest(BLOCKS); return !(p && tab.contains(p));
+  });
+}
+function rowsOf(b) { return Array.prototype.slice.call(b.querySelectorAll("tbody tr"), 0, 14); }
+function reveal(list) {
+  /* chaque bloc n'est révélé qu'une fois (défilement et filet de sécurité peuvent le demander tous les deux) */
+  list = list.filter(function (b) { return M.rest.indexOf(b) >= 0; });
+  if (!M.ctx || !list.length) return;
+  list.forEach(function (b) { M.rest.splice(M.rest.indexOf(b), 1); });
+  M.ctx.add(function () {
+    gsap.to(list, { y: 0, opacity: 1, duration: .85, stagger: { amount: Math.min(.4, list.length * .08) }, ease: "power3.out", overwrite: true });
+    list.forEach(function (b, k) { var r = rowsOf(b); if (r.length) gsap.from(r, { opacity: 0, y: 12, duration: .45, stagger: { amount: .3 }, delay: .15 + Math.min(k, 4) * .08, ease: "power2.out" }); });
+  });
+}
+/* filet de sécurité : arrivé en bas de page, tout ce qui attend encore apparaît */
+function revealAtBottom() { if (!M.rest.length) return; var d = document.documentElement; if (window.scrollY + window.innerHeight >= d.scrollHeight - 8) reveal(M.rest.slice()); }
+/* entrée d'une page : titre en lignes masquées, en-tête, bandeau, plateau, puis les blocs visibles ; ceux plus bas montent au défilement */
+function pageEnter(t) {
+  if (!M.ready || t === "accueil" || t === "styleguide") return false;
+  var tab = $("tab-" + t), head = $("page-head"), delay = M.navDelay || 0;
+  M.ctx = gsap.context(function () {
+    var lines = new SplitText($("page-title"), { type: "lines", mask: "lines" }).lines;
+    var items = blocks(tab), vh = window.innerHeight, above = [], below = [];
+    items.forEach(function (e) { (e.getBoundingClientRect().top < vh - 40 ? above : below).push(e); });
+    var tl = gsap.timeline({ delay: delay, defaults: { ease: "power3.out" } });
+    tl.from(lines, { yPercent: 110, duration: .95, stagger: .09, ease: "expo.out" })
+      .from([$("page-date"), head.querySelector('.pg-actions[data-for="' + t + '"]')], { y: 16, opacity: 0, duration: .7, stagger: .07 }, "-=.85")
+      .from("#session > div", { y: 30, opacity: 0, duration: .75, stagger: .07 }, "-=.65")
+      .from(tab, { y: 70, opacity: 0, duration: 1, ease: "expo.out" }, "-=.7")
+      .from(above, { y: 40, opacity: 0, duration: .8, stagger: { amount: .45 } }, "-=.9");
+    above.forEach(function (b) { var r = rowsOf(b); if (r.length) tl.from(r, { opacity: 0, y: 12, duration: .45, stagger: { amount: .3 } }, "-=.6"); });
+    if (below.length) {
+      gsap.set(below, { y: 48, opacity: 0 }); M.rest = below.slice();
+      ScrollTrigger.batch(below, { start: "top 94%", once: true, onEnter: reveal });
+    }
+  }, document.querySelector(".pg-in"));
+  return true;
+}
+function pageLeave() { M.rest = []; if (M.ctx) { M.ctx.revert(); M.ctx = null; } }
+/* rideau : il monte avec le nom de la page, la page change dessous, puis il repart vers le haut */
+var CURT = { accueil: ["", "Accueil"], journal: ["Journal de ", "trading"], propfirms: ["Comptes ", "prop firm"], annonces: ["Annonces ", "économiques"], backtest: ["Backtest ", "du robot"] };
+function curtain(t) {
+  var c = $("curtain"), tt = $("curtain-t"), k = $("curtain-k"), lg = c.querySelector(".pg-curtain-logo"), h = CURT[t] || ["", TITLES[t]];
+  if (M.tl) M.tl.progress(1);
+  M.target = t;
+  /* le repère du menu part tout de suite vers la page choisie, pendant que le rideau monte */
+  document.querySelectorAll("[data-tab]").forEach(function (b) { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }); navInd();
+  tt.textContent = ""; if (h[0]) tt.appendChild(document.createTextNode(h[0])); tt.appendChild(el("em", { text: h[1] }));
+  k.textContent = $("page-date").textContent;
+  c.hidden = false;
+  M.tl = gsap.timeline({ onComplete: function () { c.hidden = true; M.tl = null; M.target = null; gsap.set([c, tt, k, lg], { clearProps: "all" }); } });
+  M.tl.fromTo(c, { yPercent: 100 }, { yPercent: 0, duration: .5, ease: "expo.inOut" })
+    .fromTo(tt, { yPercent: 115, opacity: 1 }, { yPercent: 0, duration: .6, ease: "expo.out" }, .18)
+    .fromTo(lg, { rotation: -140, scale: .4, opacity: 0 }, { rotation: 0, scale: 1, opacity: 1, duration: .75, ease: "back.out(1.7)" }, .12) /* la pièce arrive en tournant */
+    .fromTo(k, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .45 }, .22)
+    .add(function () { M.navDelay = .5; setTab(t); M.navDelay = 0; toTop(); }, .62)
+    .to(c, { yPercent: -100, duration: .7, ease: "expo.inOut" }, .74)
+    .to([lg, tt, k], { yPercent: -40, opacity: 0, duration: .4, ease: "power2.in" }, .74);
+}
+function go(t) {
+  if (TABS.indexOf(t) < 0) t = "accueil";
+  if (t === S.tab || (M.tl && M.target === t)) return;
+  if (!M.ready || !S.tab || t === "styleguide" || S.tab === "styleguide") { setTab(t); toTop(); return; }
+  curtain(t);
+}
+
 /* ---------------- navigation ---------------- */
-var TABS = ["journal", "propfirms", "annonces", "backtest", "styleguide"]; /* styleguide : page cachée, absente du menu */
-var TITLES = { journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", backtest: "Backtest", styleguide: "Guide de style" };
+var TABS = ["accueil", "journal", "propfirms", "annonces", "backtest", "styleguide"]; /* styleguide : page cachée, absente du menu */
+var TITLES = { accueil: "Accueil", journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", backtest: "Backtest", styleguide: "Guide de style" };
+/* nom de la page en grand : une italique dorée par titre (l'accueil a son titre sur deux lignes, construit à part) */
+var HEADS = { journal: ["Journal de ", "trading"], propfirms: ["Comptes ", "prop firm"], annonces: ["Annonces ", "économiques"], backtest: ["Backtest ", "du robot"], styleguide: ["Guide de ", "style"] };
 function setTab(t) {
-  if (TABS.indexOf(t) < 0) t = "journal"; S.tab = t;
+  if (TABS.indexOf(t) < 0) t = "accueil";
+  var same = t === S.tab, home = t === "accueil";
+  if (!same) { pageLeave(); if (S.tab === "accueil") homeLeave(); }
+  S.tab = t;
   document.querySelectorAll("[data-tab]").forEach(function (b) { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   TABS.forEach(function (k) { $("tab-" + k).hidden = k !== t; });
-  $("page-title").textContent = TITLES[t]; $("page-head").hidden = t === "styleguide"; document.title = "Tradamax · " + TITLES[t];
+  var head = $("page-head"), title = $("page-title");
+  head.classList.toggle("is-hero", t !== "styleguide"); head.classList.toggle("is-home", home);
+  if (!same) {
+    title.textContent = "";
+    if (home) { title.appendChild(document.createTextNode("La séance entière,")); title.appendChild(el("br")); title.appendChild(el("em", { text: "sur un seul écran." })); }
+    else { title.appendChild(document.createTextNode(HEADS[t][0])); title.appendChild(el("em", { text: HEADS[t][1] })); }
+  }
+  head.hidden = t === "styleguide"; document.title = "Tradamax · " + TITLES[t];
   document.querySelectorAll(".pg-actions[data-for]").forEach(function (g) { g.hidden = g.dataset.for !== t; });
+  if (home) { if (!same) homeEnter(); renderHome(); }
   if (t === "journal") renderJournal(); if (t === "propfirms") renderProps(); if (t === "annonces") renderEco();
   if (t === "backtest") { renderBacktest(); if (!S.hiBusy) hiRefresh(); loadAvis(); loadCtl(); }
   renderSession();
+  if (!same && !home) { if (!pageEnter(t)) pageIn([head, $("tab-" + t)]); CNT.tab = t; flushCount(); }
+  navInd(); stRefresh();
 }
 document.querySelectorAll("[data-tab]").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.dataset.tab; }); });
-window.addEventListener("hashchange", function () { setTab(location.hash.slice(1)); window.scrollTo(0, 0); });
+window.addEventListener("hashchange", function () { go(location.hash.slice(1)); });
 document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; if (!$("ov-review").hidden) { rvClose(); return; } ["ov-shot", "ov-capital", "ov-trade", "ov-prop", "ov-payout", "ov-import", "ov-settings", "ov-histo"].some(function (id) { if (id === "ov-histo" && S.hiImporting) return false; if (!$(id).hidden) { show(id, false); return true; } return false; }); });
 var ro, roW = {};
 try {
   ro = new ResizeObserver(function (entries) {
     var changed = false; entries.forEach(function (en) { var w = Math.round(en.contentRect.width); if (roW[en.target.id] !== w) { roW[en.target.id] = w; changed = true; } });
     if (!changed) return; clearTimeout(ro._t);
-    ro._t = setTimeout(function () { if (S.tab === "journal") { var st = stats(filtered(), viewCap(), viewMoves()); renderEquity(st); renderHist(st.rs); } if (S.tab === "annonces") renderEco(); }, 80);
+    ro._t = setTimeout(function () { if (S.tab === "journal") { var st = stats(filtered(), viewCap(), viewMoves()); renderEquity(st); renderHist(st.rs); } if (S.tab === "annonces") renderEco(); if (S.tab === "accueil") drawHomeEq(S.hmR7); }, 80);
   });
-  ro.observe($("eq-chart")); ro.observe($("r-hist")); ro.observe($("eco-recap"));
+  ro.observe($("eq-chart")); ro.observe($("r-hist")); ro.observe($("eco-recap")); ro.observe($("hm-eq"));
 } catch (e) {}
 
 /* ---------------- bandeau de séance et horloges ---------------- */
@@ -1956,10 +2341,10 @@ var timers = {};
 function reload(table) {
   clearTimeout(timers[table]);
   timers[table] = setTimeout(function () {
-    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; renameLegacy(); S.selSig = ""; if (S.tab === "journal") renderJournal(); renderSession(); }).catch(loadErr);
+    if (table === "trades") fetchAll("trades", "date").then(function (rows) { S.trades = rows.map(fromRow); S.loaded = true; S.useSample = !S.trades.length; renameLegacy(); S.selSig = ""; if (S.tab === "journal") renderJournal(); if (S.tab === "accueil") renderHome(); renderSession(); flushCount(); stRefresh(); }).catch(loadErr);
     if (table === "reglages") S.sb.from("reglages").select("data").eq("id", 1).maybeSingle().then(function (res) { var d = res.data && res.data.data || {}; S.set = Object.assign(JSON.parse(JSON.stringify(DEF)), d); renameLegacy(); S.sample = makeSample(); S.selSig = ""; setTab(S.tab); });
-    if (table === "prop_comptes") fetchAll("prop_comptes", "created_at").then(function (rows) { S.props = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
-    if (table === "payouts") fetchAll("payouts", "date").then(function (rows) { S.payouts = rows; if (S.tab === "propfirms") renderProps(); }).catch(loadErr);
+    if (table === "prop_comptes") fetchAll("prop_comptes", "created_at").then(function (rows) { S.props = rows; if (S.tab === "propfirms") renderProps(); stRefresh(); }).catch(loadErr);
+    if (table === "payouts") fetchAll("payouts", "date").then(function (rows) { S.payouts = rows; if (S.tab === "propfirms") renderProps(); stRefresh(); }).catch(loadErr);
   }, 250);
 }
 function loadErr() { $("status").textContent = "Données inaccessibles : vérifiez que votre e-mail figure dans la table des membres."; }
@@ -1974,9 +2359,9 @@ function startApp(session) {
     ["trades", "reglages", "prop_comptes", "payouts"].forEach(function (t) { channel.on("postgres_changes", { event: "*", schema: "public", table: t }, function () { reload(t); }); });
     channel.subscribe();
   }
-  renderRef(); renderClocks(); loadCal(); setTab(location.hash.slice(1) || "journal");
+  renderRef(); renderClocks(); loadCal(); motionBoot(); setTab(location.hash.slice(1) || "accueil");
 }
-function stopApp() { S.user = null; show("app", false); show("auth", true); if (channel) { S.sb.removeChannel(channel); channel = null; } }
+function stopApp() { if (S.tab === "accueil") homeLeave(); S.tab = ""; S.user = null; show("app", false); show("auth", true); if (channel) { S.sb.removeChannel(channel); channel = null; } }
 
 /* ---------------- connexion ---------------- */
 $("login-form").addEventListener("submit", function (e) {
