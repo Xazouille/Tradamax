@@ -828,7 +828,6 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
 .pg-auth-hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}
 .pg-auth-hero>.tx-logo{width:54px;height:54px;border-radius:15px;font-size:36px}
 .pg-auth-title{font-size:clamp(64px,14.5vw,216px);line-height:.86;letter-spacing:-.04em}
-.pg-auth-lede{margin:0;max-width:44ch;color:var(--c-text-2);font-size:clamp(14px,1.15vw,17px)}
 .pg-auth-card{width:100%;padding:28px 26px 24px;border-radius:var(--r-4);box-shadow:var(--shadow-pop)}
 .pg-auth-head{display:flex;flex-direction:column;gap:4px;margin-bottom:22px}
 .pg-auth-form{display:flex;flex-direction:column;gap:var(--sp-4)}
@@ -837,7 +836,7 @@ body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
 .pg-auth-form>.tx-help{margin:-4px 0}
 /* entrée de l'écran de connexion : le nom monte, la carte suit (CSS seul, coupé par le mouvement réduit) */
 .pg-auth-hero>*{animation:pg-up .8s var(--ease) both}
-.pg-auth-hero>:nth-child(2){animation-delay:.06s} .pg-auth-hero>:nth-child(3){animation-delay:.12s} .pg-auth-hero>:nth-child(4){animation-delay:.2s}
+.pg-auth-hero>:nth-child(2){animation-delay:.06s} .pg-auth-hero>:nth-child(3){animation-delay:.12s}
 .pg-auth-card{animation:pg-up .8s .28s var(--ease) both}
 @keyframes pg-up{from{opacity:0;transform:translateY(18px)}}
 @media (max-width:860px){.pg-auth-in{grid-template-columns:minmax(0,1fr);max-width:480px}.pg-auth-hero{gap:12px}.pg-auth-hero>.tx-logo{display:none}}
@@ -938,7 +937,6 @@ body{font-variant-numeric:tabular-nums}
       <span class="tx-logo" aria-hidden="true">T</span>
       <span class="tx-eyebrow">Outil interne de la SAS</span>
       <h1 class="tx-display pg-auth-title">Tradamax</h1>
-      <p class="pg-auth-lede">Journal des trades, charte de risque, prop firms et annonces économiques, partagés en direct entre les deux associés.</p>
     </div>
     <div class="tx-panel pg-auth-card">
       <div class="pg-auth-head"><h2 class="tx-title">Connexion</h2><span class="tx-sub">Accès réservé aux associés de la SAS.</span></div>
