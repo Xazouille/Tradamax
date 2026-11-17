@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tradamax Design Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap">
+<script>try{var t=localStorage.getItem("tradamax-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<style>
+html,body{margin:0}
+*{box-sizing:border-box}
+img{max-width:100%}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* Design lab : trois directions pour le hero de la page d'accueil, une par écran, barre de choix flottante en bas.
+   Jetons repris tels quels de index.html (« Salle des marchés »). Seul changement proposé : plus de lueur bleue, l'or est l'unique accent. */
+:root{
+  --c-bg:#F4F3EF; --c-panel:#FFFFFF; --c-panel-2:#F8F7F3; --c-raise:#FFFFFF; --c-hover:#F0EEE8; --c-inset:#ECEAE3; --c-field:#FDFCFA;
+  --c-line:#E7E4DC; --c-line-2:#D5D1C6; --c-ctl:#8C887B;
+  --c-text:#14171C; --c-text-2:#596170; --c-text-3:#626A79;
+  --c-accent:#7D570A; --c-accent-fill:#CFA03C; --c-accent-hi:#EDCF82; --c-accent-lo:#B5832A; --c-on-accent:#1A1304; --c-accent-soft:rgba(207,160,60,.17); --c-focus:#7D570A;
+  --c-pos:#0B7A57; --c-pos-soft:rgba(11,122,87,.10);
+  --c-neg:#C52D3E; --c-neg-soft:rgba(197,45,62,.09);
+  --c-warn:#A24C07; --c-warn-soft:rgba(190,96,12,.12);
+  --c-info:#1D5FAE; --c-info-soft:rgba(29,95,174,.09);
+  --g-gold:linear-gradient(180deg,var(--c-accent-hi),var(--c-accent-fill) 58%,var(--c-accent-lo));
+  --g-sheen:none;
+  --glow-a:rgba(207,160,60,.20); --ring:rgba(125,87,10,.075);
+  --shadow-1:0 1px 2px rgba(20,23,28,.05),0 1px 1px rgba(20,23,28,.03);
+  --shadow-2:0 1px 2px rgba(20,23,28,.05),0 14px 30px -16px rgba(20,23,28,.18);
+  --shadow-pop:0 2px 6px rgba(20,23,28,.08),0 28px 64px -16px rgba(20,23,28,.30);
+  --shadow-gold:inset 0 1px 0 rgba(255,255,255,.55),0 1px 2px rgba(125,87,10,.30),0 8px 18px -8px rgba(207,160,60,.65);
+  --r-1:6px; --r-2:9px; --r-3:14px; --r-4:20px;
+  --f-sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-title:"Instrument Serif","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --gut-l:max(clamp(16px,4vw,56px),env(safe-area-inset-left,0px));
+  --gut-r:max(clamp(16px,4vw,56px),env(safe-area-inset-right,0px));
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --c-bg:#080B10; --c-panel:#10151C; --c-panel-2:#141A23; --c-raise:#1A212C; --c-hover:#1B2330; --c-inset:#0A0E14; --c-field:#0B0F15;
+  --c-line:#1D2530; --c-line-2:#2A3442; --c-ctl:#586880;
+  --c-text:#EEF1F5; --c-text-2:#96A2B4; --c-text-3:#7F8CA0;
+  --c-accent:#E8C06A; --c-accent-fill:#E2B457; --c-accent-hi:#F5DC98; --c-accent-lo:#C28F36; --c-on-accent:#1A1304; --c-accent-soft:rgba(226,180,87,.13); --c-focus:#E2B457;
+  --c-pos:#41CF9F; --c-pos-soft:rgba(65,207,159,.13);
+  --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
+  --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
+  --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
+  --glow-a:rgba(226,180,87,.11); --ring:rgba(226,180,87,.055);
+  --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
+  --shadow-2:inset 0 1px 0 rgba(255,255,255,.04),0 18px 36px -18px rgba(0,0,0,.8);
+  --shadow-pop:inset 0 1px 0 rgba(255,255,255,.06),0 30px 70px -14px rgba(0,0,0,.85);
+  --shadow-gold:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.5),0 8px 22px -8px rgba(226,180,87,.5);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --c-bg:#080B10; --c-panel:#10151C; --c-panel-2:#141A23; --c-raise:#1A212C; --c-hover:#1B2330; --c-inset:#0A0E14; --c-field:#0B0F15;
+  --c-line:#1D2530; --c-line-2:#2A3442; --c-ctl:#586880;
+  --c-text:#EEF1F5; --c-text-2:#96A2B4; --c-text-3:#7F8CA0;
+  --c-accent:#E8C06A; --c-accent-fill:#E2B457; --c-accent-hi:#F5DC98; --c-accent-lo:#C28F36; --c-on-accent:#1A1304; --c-accent-soft:rgba(226,180,87,.13); --c-focus:#E2B457;
+  --c-pos:#41CF9F; --c-pos-soft:rgba(65,207,159,.13);
+  --c-neg:#F4647A; --c-neg-soft:rgba(244,100,122,.14);
+  --c-warn:#F59A4A; --c-warn-soft:rgba(245,154,74,.14);
+  --c-info:#74AEF5; --c-info-soft:rgba(116,174,245,.13);
+  --g-sheen:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0) 46%);
+  --glow-a:rgba(226,180,87,.11); --ring:rgba(226,180,87,.055);
+  --shadow-1:inset 0 1px 0 rgba(255,255,255,.035),0 1px 2px rgba(0,0,0,.45);
+  --shadow-2:inset 0 1px 0 rgba(255,255,255,.04),0 18px 36px -18px rgba(0,0,0,.8);
+  --shadow-pop:inset 0 1px 0 rgba(255,255,255,.06),0 30px 70px -14px rgba(0,0,0,.85);
+  --shadow-gold:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.5),0 8px 22px -8px rgba(226,180,87,.5);
+  color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
+body{background:var(--c-bg);color:var(--c-text);font-family:var(--f-sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body::before,body::after{content:"";position:fixed;z-index:-1;pointer-events:none}
+body::before{inset:0;background:radial-gradient(1100px 560px at 8% -14%,var(--glow-a),transparent 62%)}
+body::after{top:0;right:0;width:min(760px,100vw);height:620px;background:repeating-radial-gradient(circle at 100% 0,transparent 0 21px,var(--ring) 22px,transparent 23px);-webkit-mask-image:radial-gradient(circle at 100% 0,#000 0,transparent 68%);mask-image:radial-gradient(circle at 100% 0,#000 0,transparent 68%)}
+html.lenis,html.lenis body{height:auto}
+.lenis:not(.lenis-autoToggle).lenis-stopped{overflow:clip}
+::selection{background:color-mix(in srgb,var(--c-accent-fill) 32%,transparent)}
+:focus-visible{outline:2px solid var(--c-focus);outline-offset:2px}
+button{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{text-wrap:balance}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* composants repris du système tx- */
+.tx-ico{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tx-label{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-2);font-weight:500}
+.tx-label .tx-ico{width:14px;height:14px}
+.tx-num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em}
+.tx-pos{color:var(--c-pos)} .tx-neg{color:var(--c-neg)}
+.tx-sub{font-size:12px;color:var(--c-text-2)}
+.tx-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--c-accent)}
+.tx-eyebrow::before{content:"";width:18px;height:1px;background:currentColor;opacity:.75}
+.tx-logo{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--g-gold);color:var(--c-on-accent);box-shadow:var(--shadow-gold);font-family:var(--f-title);font-size:25px;line-height:1}
+.tx-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:0 16px;border:1px solid var(--c-line-2);background-color:var(--c-raise);background-image:var(--g-sheen);color:var(--c-text);border-radius:var(--r-2);font-family:var(--f-sans);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none;box-shadow:var(--shadow-1);transition:background-color .15s var(--ease),border-color .15s var(--ease),filter .15s var(--ease),transform .08s}
+.tx-btn:hover{background-color:var(--c-hover);border-color:var(--c-ctl)}
+.tx-btn:active{transform:translateY(1px)}
+.tx-btn.is-primary{background:var(--g-gold);border-color:var(--c-accent-lo);color:var(--c-on-accent);font-weight:600;box-shadow:var(--shadow-gold)}
+.tx-btn.is-primary:hover{filter:brightness(1.06) saturate(1.06)}
+.tx-btn.is-ghost{border-color:transparent;background:transparent;box-shadow:none;color:var(--c-text-2)}
+.tx-btn.is-ghost:hover{background:var(--c-hover);color:var(--c-text)}
+.tx-btn.is-icon{padding:0;width:38px}
+.tx-btn.is-lg{min-height:46px;padding:0 22px;font-size:14px;border-radius:11px}
+@media (pointer:coarse){.tx-btn{min-height:42px}.tx-btn.is-icon{width:42px}}
+.tx-badge{display:inline-flex;align-items:center;min-height:22px;padding:0 9px;border-radius:var(--r-1);font-size:12px;font-weight:500;border:1px solid var(--c-line);color:var(--c-text-2);background:var(--c-panel-2);white-space:nowrap}
+.tx-delta{display:inline-flex;align-items:center;min-height:22px;padding:0 9px;border-radius:999px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:12px;font-weight:500;white-space:nowrap;color:var(--c-text-2);background:var(--c-panel-2)}
+.tx-delta.is-pos{color:var(--c-pos);background:var(--c-pos-soft)}
+.tx-delta.is-neg{color:var(--c-neg);background:var(--c-neg-soft)}
+.tx-kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 0;font-size:13px;margin:0}
+.tx-kv dt{display:flex;align-items:baseline;gap:8px;color:var(--c-text-2);min-width:0}
+.tx-kv dt::after{content:"";flex:1;min-width:12px;margin-right:8px;border-bottom:1px dotted var(--c-line-2);transform:translateY(-3px)}
+.tx-kv dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* structure commune */
+.lab-dir{overflow-x:clip}
+.wrap{width:100%;max-width:1440px;margin-inline:auto;padding-left:var(--gut-l);padding-right:var(--gut-r)}
+.brand{display:inline-flex;align-items:center;gap:10px;color:var(--c-text);text-decoration:none}
+.brand .tx-logo{width:32px;height:32px;border-radius:9px;font-size:22px}
+.brand-name{font-family:var(--f-title);font-size:26px;line-height:1;letter-spacing:-.01em}
+.clocks{display:flex;gap:20px;font-size:12px;color:var(--c-text-2);white-space:nowrap}
+.clocks b{margin-left:7px;font-family:var(--f-mono);font-weight:500;color:var(--c-text);font-variant-numeric:tabular-nums}
+
+/* fiche de la direction, en bas de chaque proposition */
+.lab-notes{padding-block:clamp(56px,8vw,112px) calc(120px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:24px clamp(24px,4vw,64px);border-top:1px solid var(--c-line)}
+.lab-notes-h h2{font-family:var(--f-title);font-weight:400;font-size:clamp(32px,3.4vw,46px);line-height:1;letter-spacing:-.01em;margin:10px 0 12px}
+.lab-notes-h p{color:var(--c-text-2);max-width:42ch}
+.lab-notes dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 32px;margin:0}
+.lab-notes dl>div{border-top:1px solid var(--c-line-2);padding-top:12px;min-width:0}
+.lab-notes dd{margin:8px 0 0;font-size:14px;line-height:1.55;max-width:58ch}
+@media (max-width:820px){.lab-notes{grid-template-columns:minmax(0,1fr)}.lab-notes dl{grid-template-columns:minmax(0,1fr)}}
+
+/* barre de choix flottante */
+.lab-bar{position:fixed;z-index:50;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px;border-radius:16px;background:color-mix(in srgb,var(--c-panel) 86%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border:1px solid var(--c-line-2);box-shadow:var(--shadow-2);max-width:calc(100vw - 20px)}
+.lab-bar-tag{padding:0 8px 0 10px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-2);font-weight:500;white-space:nowrap}
+.lab-seg{display:flex;gap:2px;padding:3px;background:var(--c-inset);border:1px solid var(--c-line);border-radius:12px}
+.lab-seg button{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;min-height:34px;padding:0 12px;border-radius:9px;color:var(--c-text-2);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:color .15s var(--ease),background-color .15s var(--ease)}
+.lab-seg button b{font-family:var(--f-mono);font-weight:500;font-size:12px;color:var(--c-text-3)}
+.lab-seg button:hover{color:var(--c-text)}
+.lab-seg button[aria-pressed="true"]{background-color:var(--c-raise);background-image:var(--g-sheen);color:var(--c-text);box-shadow:var(--shadow-1),0 0 0 1px var(--c-line-2)}
+.lab-seg button[aria-pressed="true"] b{color:var(--c-accent)}
+@media (max-width:760px){.lab-bar-tag{display:none}}
+@media (max-width:420px){.lab-seg button{padding:0 9px;gap:6px}.lab-bar .tx-btn.is-icon{width:36px}.lab-bar{gap:4px;padding:5px}}
+@media (pointer:coarse){.lab-seg button{min-height:40px}}
+
+/* ======================= A : tableau de bord ======================= */
+.A-nav{display:flex;align-items:center;gap:16px;padding-block:18px}
+.A-links{margin-inline:auto;display:flex;gap:2px;padding:3px;background:var(--c-inset);border:1px solid var(--c-line);border-radius:12px}
+.A-links a{padding:7px 14px;border-radius:9px;font-size:13px;font-weight:500;color:var(--c-text-2);text-decoration:none;transition:color .15s var(--ease),background-color .15s var(--ease)}
+.A-links a:hover{color:var(--c-text)}
+.A-links a[aria-current]{background-color:var(--c-raise);background-image:var(--g-sheen);color:var(--c-text);box-shadow:var(--shadow-1),0 0 0 1px var(--c-line-2)}
+.A-nav .clocks{margin-left:auto}
+.A-links+.clocks{margin-left:0}
+@media (max-width:980px){.A-links{display:none}}
+@media (max-width:520px){.A-nav .clocks{display:none}}
+.A-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px 40px;padding-block:clamp(28px,5vw,72px) clamp(24px,3vw,40px)}
+.A-headl{min-width:0;max-width:980px}
+.A-title{font-family:var(--f-title);font-weight:400;font-size:clamp(46px,7vw,112px);line-height:.96;letter-spacing:-.022em;margin-top:16px}
+.A-title em{font-style:italic;color:var(--c-accent)}
+.A-lede{max-width:54ch;color:var(--c-text-2);font-size:clamp(15px,1.15vw,17px);margin-top:20px}
+.A-side{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.A-date{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 14px;border:1px solid var(--c-line-2);border-radius:var(--r-2);background-color:var(--c-raise);background-image:var(--g-sheen);font-size:13px;color:var(--c-text);white-space:nowrap}
+.A-date .tx-ico{color:var(--c-text-2)}
+.A-stage{perspective:1700px;padding-bottom:clamp(40px,7vw,96px)}
+.A-tilt{transform-origin:50% 0;will-change:transform}
+.A-screen{border-radius:24px;padding:12px;background:var(--c-inset);border:1px solid var(--c-line);box-shadow:var(--shadow-pop)}
+.A-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 6px 12px}
+.A-bar-t{display:inline-flex;align-items:center;gap:10px;font-family:var(--f-title);font-size:22px;line-height:1}
+.A-bar-t .tx-logo{width:24px;height:24px;border-radius:7px;font-size:16px;box-shadow:none}
+.A-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
+.A-card{position:relative;display:flex;flex-direction:column;gap:14px;min-width:0;padding:18px;border-radius:16px;background-color:var(--c-panel);background-image:var(--g-sheen);border:1px solid var(--c-line);box-shadow:var(--shadow-1);transition:border-color .2s var(--ease)}
+.A-card:hover{border-color:var(--c-line-2)}
+.A-ch{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.A-arrow{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:50%;border:1px solid var(--c-line-2);color:var(--c-text-2);transition:color .2s var(--ease),border-color .2s var(--ease),transform .2s var(--ease)}
+.A-arrow .tx-ico{width:14px;height:14px}
+.A-card:hover .A-arrow{color:var(--c-accent);border-color:var(--c-accent-fill);transform:rotate(45deg)}
+.A-big{font-family:var(--f-mono);font-size:clamp(30px,2.7vw,42px);font-weight:300;letter-spacing:-.04em;line-height:1.05}
+.A-mid{font-family:var(--f-mono);font-size:30px;font-weight:300;letter-spacing:-.03em;line-height:1.05}
+.A-kv{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-top:auto}
+.A-note{display:flex;gap:10px;align-items:flex-start;margin-top:auto;padding:10px 12px;border-radius:10px;background:var(--c-panel-2);border:1px solid var(--c-line);font-size:12px;color:var(--c-text-2);line-height:1.45}
+.A-note .tx-ico{margin-top:1px;color:var(--c-accent)}
+.A-note b{color:var(--c-text);font-weight:600}
+.A-k{grid-column:span 3}
+.A-heat{grid-column:span 3;grid-row:span 2}
+.A-chart{grid-column:span 6}
+.A-cmp{grid-column:span 3}
+.A-gold{grid-column:span 3}
+.A-mix{grid-column:span 6}
+.A-score{grid-column:span 3}
+/* activité : une case par jour, intensité d'or selon le nombre de trades */
+.A-legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11px;color:var(--c-text-2)}
+.A-legend span{display:inline-flex;align-items:center;gap:6px}
+.A-legend i{width:10px;height:10px;border-radius:3px}
+.A-hm{display:grid;grid-template-columns:auto repeat(5,minmax(0,1fr));gap:5px;align-items:center}
+.A-hm .rl,.A-hm .cl{font-family:var(--f-mono);font-size:11px;color:var(--c-text-3)}
+.A-hm .rl{padding-right:4px}
+.A-hm .cl{text-align:center}
+.A-hm .c{aspect-ratio:1.35;border-radius:6px}
+.h0{background:repeating-linear-gradient(135deg,var(--c-line-2) 0 1px,transparent 1px 5px);box-shadow:inset 0 0 0 1px var(--c-line)}
+.h1{background:color-mix(in srgb,var(--c-accent-fill) 26%,var(--c-panel))}
+.h2{background:color-mix(in srgb,var(--c-accent-fill) 58%,var(--c-panel))}
+.h3{background:var(--g-gold);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.A-split{display:flex;gap:4px;height:6px}
+.A-split i{height:100%;width:var(--w);border-radius:3px;transform-origin:0 50%}
+.A-split i:nth-child(1){background:color-mix(in srgb,var(--c-accent-fill) 50%,var(--c-panel))}
+.A-split i:nth-child(2){background:var(--g-gold)}
+.A-split i:nth-child(3){background:var(--c-line-2)}
+.A-split-l{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.A-split-l b{display:block;font-family:var(--f-mono);font-weight:400;font-size:20px;letter-spacing:-.03em}
+.A-split-l span{font-size:12px;color:var(--c-text-2)}
+/* courbe de capital */
+.A-chart-v{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;margin-top:6px}
+.A-eq{display:block;width:100%;height:224px;overflow:visible}
+.A-eq .g{stroke:var(--c-line);stroke-width:1}
+.A-eq .zero{stroke:var(--c-line-2)}
+.A-eq .ax{font-family:var(--f-mono);font-size:11px;fill:var(--c-text-3)}
+.A-eq .line{fill:none;stroke:var(--c-accent-fill);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.A-eq .area{fill:url(#A-area)}
+.A-eq .cap{fill:color-mix(in srgb,var(--c-text) 7%,transparent);stroke:var(--c-line-2)}
+.A-eq .dot{fill:var(--c-panel);stroke:var(--c-accent-fill);stroke-width:2}
+.A-eq .halo{fill:var(--c-accent-fill);opacity:.22}
+.A-eq .pill{fill:var(--c-text)}
+.A-eq .pill-t{font-family:var(--f-mono);font-size:12px;font-weight:500;fill:var(--c-bg)}
+/* gagnants et perdants */
+.A-cmp-n{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.A-cmp-n>div{display:flex;flex-direction:column;gap:2px}
+.A-cmp-b{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.A-cmp-b .col{display:flex;flex-direction:column-reverse;gap:4px}
+.A-cmp-b i{height:7px;border-radius:3px;background:var(--c-inset);box-shadow:inset 0 0 0 1px var(--c-line);transform-origin:0 50%}
+.A-cmp-b .pos i.on{background:var(--c-pos);box-shadow:none}
+.A-cmp-b .neg i.on{background:var(--c-neg);box-shadow:none}
+/* note de séance : la seule carte en or */
+.A-gold{background:var(--g-gold);border-color:var(--c-accent-lo);color:var(--c-on-accent);box-shadow:var(--shadow-gold);overflow:hidden}
+.A-gold::after{content:"";position:absolute;top:-60%;right:-50%;width:120%;aspect-ratio:1;pointer-events:none;background:repeating-radial-gradient(circle at 100% 0,transparent 0 13px,rgba(26,19,4,.07) 14px,transparent 15px);-webkit-mask-image:radial-gradient(circle at 100% 0,#000,transparent 70%);mask-image:radial-gradient(circle at 100% 0,#000,transparent 70%)}
+.A-chip{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;min-height:26px;padding:0 10px;border-radius:999px;border:1px solid rgba(26,19,4,.28);font-size:12px;font-weight:500}
+.A-chip .tx-ico{width:14px;height:14px}
+.A-gold-t{font-size:clamp(19px,1.55vw,23px);line-height:1.25;font-weight:500;letter-spacing:-.015em;position:relative}
+.A-pill{display:inline-block;padding:0 9px;border-radius:999px;background:rgba(26,19,4,.88);color:var(--c-accent-hi);font-size:.86em;line-height:1.35}
+.A-segs{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;margin-top:auto}
+.A-segs i{height:16px;border-radius:4px;background:rgba(26,19,4,.14)}
+.A-segs i.on{background:rgba(26,19,4,.82)}
+/* répartition par marché */
+.A-select{display:inline-flex;align-items:center;gap:8px;min-height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--c-line-2);font-size:12px;color:var(--c-text-2)}
+.A-select::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg)}
+.A-mix-in{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px 28px;align-items:center}
+.A-donut{position:relative;width:168px;aspect-ratio:1;max-width:100%}
+.A-donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.A-donut circle{fill:none;stroke-width:15}
+.A-donut .s1{stroke:var(--c-accent-fill)}
+.A-donut .s2{stroke:color-mix(in srgb,var(--c-accent-fill) 52%,var(--c-panel))}
+.A-donut .s3{stroke:var(--c-line-2)}
+.A-donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.A-mix .sw{width:9px;height:9px;border-radius:50%;flex:none;align-self:center}
+.sw.s1{background:var(--c-accent-fill)} .sw.s2{background:color-mix(in srgb,var(--c-accent-fill) 52%,var(--c-panel))} .sw.s3{background:var(--c-line-2)}
+.A-mix .tx-kv{font-size:14px;gap:14px 0}
+/* score : arc segmenté */
+.A-gauge{position:relative;margin-block:auto}
+.A-gauge svg{display:block;width:100%;max-width:260px;margin-inline:auto;overflow:visible}
+.A-gauge line{stroke-width:10;stroke-linecap:round;stroke:var(--c-inset)}
+.A-gauge line.on{stroke:var(--c-accent-fill)}
+.A-gauge-c{position:absolute;left:0;right:0;bottom:2px;display:flex;flex-direction:column;align-items:center}
+@media (max-width:1100px){
+  .A-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .A-k{grid-column:span 2;order:-2}
+  .A-chart{grid-column:span 6;order:-1}
+  .A-heat{grid-column:span 3;grid-row:auto}
+  .A-cmp,.A-gold,.A-score{grid-column:span 3}
+  .A-score{order:1}
+  .A-mix{grid-column:span 6;order:2}
+}
+@media (max-width:640px){
+  .A-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .A-k:first-child{grid-column:span 2}
+  .A-k{grid-column:span 1}
+  .A-chart,.A-heat,.A-cmp,.A-gold,.A-score,.A-mix{grid-column:span 2}
+  .A-screen{padding:8px;border-radius:18px}
+  .A-card{padding:14px}
+  .A-mix-in{grid-template-columns:minmax(0,1fr);justify-items:center}
+  .A-mix .tx-kv{width:100%}
+  .A-k .A-big{font-size:26px}
+}
+
+/* ======================= B : monumental ======================= */
+.B-top{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px;padding-block:18px}
+.B-top .tx-btn{justify-self:end}
+@media (max-width:640px){.B-top{grid-template-columns:minmax(0,1fr) auto}.B-top .clocks{display:none}}
+.B-hero{padding-top:clamp(16px,3vw,48px)}
+.B-meta{position:relative;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 16px;padding-top:14px}
+.B-rule{position:absolute;left:0;right:0;top:0;height:1px;background:var(--c-line-2);transform-origin:0 50%}
+.B-meta .tx-num{font-size:12px;color:var(--c-text-2)}
+.B-title{font-family:var(--f-title);font-weight:400;font-size:clamp(60px,17.2vw,290px);line-height:.84;letter-spacing:-.04em;margin-top:clamp(18px,3vw,44px)}
+.B-title .ln{display:block;padding-bottom:.05em}
+.B-title .ln2{text-align:right;padding-right:.04em}
+.B-title em{font-style:italic;color:var(--c-accent);padding-right:.04em}
+.B-foot{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;align-items:end;padding-block:clamp(28px,4vw,56px) clamp(48px,7vw,104px)}
+.B-lede{grid-column:1/span 5;font-size:clamp(15px,1.2vw,18px);color:var(--c-text-2);max-width:44ch}
+.B-lede strong{color:var(--c-text);font-weight:500}
+.B-next{grid-column:6/span 4;display:flex;flex-direction:column;gap:6px;padding-left:20px;border-left:1px solid var(--c-line-2)}
+.B-cd{font-family:var(--f-mono);font-size:clamp(30px,3vw,44px);font-weight:300;letter-spacing:-.03em;line-height:1}
+.B-next .tx-sub{font-size:13px}
+.B-cta{grid-column:10/span 3;justify-self:end;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:900px){.B-lede{grid-column:1/-1}.B-next{grid-column:1/span 7}.B-cta{grid-column:8/span 5;align-self:end}}
+@media (max-width:560px){.B-next,.B-cta{grid-column:1/-1}.B-cta{justify-self:start;justify-content:flex-start}}
+/* compteurs à rouleaux, comme un tableau d'affichage */
+.odo{display:inline-block;height:1.08em;line-height:1.08;overflow:hidden;vertical-align:bottom}
+.odo-s{display:flex;flex-direction:column;transform:translateY(calc(var(--i,0) * -1.08em))}
+.odo-s.is-anim{transition:transform var(--t,.5s) cubic-bezier(.2,.8,.2,1)}
+.odo-s>span{display:block;height:1.08em}
+.odo-sep{display:inline-block}
+/* règle des R */
+.B-ruler{border-block:1px solid var(--c-line)}
+.B-ruler-in{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:24px clamp(24px,5vw,72px);align-items:center;padding-block:clamp(36px,5vw,64px)}
+.B-ruler-f{font-size:clamp(20px,2vw,28px);letter-spacing:-.015em;margin:10px 0 8px}
+.B-ruler-f i{font-family:var(--f-title);font-size:1.5em;color:var(--c-accent);line-height:.8}
+.B-scale{position:relative;height:120px;margin-inline:12px}
+.B-axis{position:absolute;left:0;right:0;top:72px;height:1px;background:var(--c-line-2)}
+.B-tick{position:absolute;top:66px;width:1px;height:13px;background:var(--c-line-2)}
+.B-tick.is-major{top:60px;height:25px;background:var(--c-ctl)}
+.B-tick.is-zero{top:52px;height:41px;background:var(--c-text-2)}
+.B-tl{position:absolute;top:96px;transform:translateX(-50%);font-family:var(--f-mono);font-size:11px;color:var(--c-text-3);white-space:nowrap}
+.B-mark{position:absolute;top:0;left:var(--p,50%);height:80px;width:0}
+.B-mark::before{content:"";position:absolute;left:-1px;top:30px;width:2px;height:43px;background:var(--g-gold);border-radius:1px}
+.B-mark::after{content:"";position:absolute;left:-6px;top:67px;width:12px;height:12px;border-radius:50%;background:var(--g-gold);box-shadow:var(--shadow-gold)}
+.B-read{position:absolute;top:0;transform:translateX(calc(var(--p,50%) * -1));font-size:24px;font-weight:400;letter-spacing:-.03em}
+@media (max-width:820px){.B-ruler-in{grid-template-columns:minmax(0,1fr)}}
+.B-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding-block:clamp(48px,7vw,96px)}
+.B-stat{display:flex;flex-direction:column;gap:12px;padding:0 clamp(12px,2vw,28px);border-left:1px solid var(--c-line);min-width:0}
+.B-stat:first-child{border-left:0;padding-left:0}
+.B-n{font-family:var(--f-mono);font-weight:300;font-size:clamp(56px,7.4vw,120px);letter-spacing:-.05em;line-height:1}
+.B-stat p{font-size:14px;color:var(--c-text-2);max-width:26ch}
+@media (max-width:760px){.B-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:36px 0}.B-stat:nth-child(3){border-left:0;padding-left:0}}
+
+/* ======================= C : cadran ======================= */
+.C-top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
+.C-top .tx-num{font-size:12px;color:var(--c-text-2)}
+.C-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"copy dial" "steps dial";column-gap:clamp(24px,5vw,88px)}
+.C-copy{grid-area:copy;padding-block:clamp(28px,6vw,96px) clamp(32px,5vw,72px);display:flex;flex-direction:column;gap:22px;align-items:flex-start}
+.C-title{font-family:var(--f-title);font-weight:400;font-size:clamp(48px,6.4vw,104px);line-height:.95;letter-spacing:-.022em}
+.C-title em{font-style:italic;color:var(--c-accent)}
+.C-lede{font-size:clamp(15px,1.15vw,17px);color:var(--c-text-2);max-width:46ch}
+.C-wins{list-style:none;margin:0;padding:0;width:100%;max-width:440px;border-top:1px solid var(--c-line)}
+.C-wins li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:16px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--c-line);font-size:14px}
+.C-wins .ny{font-size:12px;color:var(--c-text-3)}
+.C-wins .pa{font-size:14px;color:var(--c-text);min-width:8ch;text-align:right}
+.C-cta{display:flex;gap:8px;flex-wrap:wrap}
+.C-dialcol{grid-area:dial;min-width:0}
+.C-sticky{position:sticky;top:max(16px,calc(50vh - 290px));padding-block:clamp(16px,3vw,40px)}
+.C-dial{position:relative;width:100%;max-width:580px;aspect-ratio:1;margin-inline:auto}
+.C-dial svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.d-ring{fill:none;stroke:var(--c-line);stroke-width:1}
+.d-ring.is-c{stroke:var(--c-line-2)}
+.d-tick{stroke:var(--c-line-2);stroke-width:1.25;stroke-linecap:round}
+.d-tick.is-h{stroke:var(--c-ctl)}
+.d-tick.is-3{stroke:var(--c-text-2);stroke-width:1.75}
+.d-lbl{font-family:var(--f-mono);font-size:13px;fill:var(--c-text-3)}
+.d-arc{fill:none;stroke:url(#C-gold);stroke-width:13}
+.d-arc-bg{fill:none;stroke:var(--c-inset);stroke-width:13}
+.d-wl{font-family:var(--f-sans);font-size:12.5px;font-weight:500;fill:var(--c-text)}
+.d-ann circle{fill:var(--c-warn)}
+.d-ann .halo{fill:var(--c-warn-soft)}
+.d-ann text{font-family:var(--f-mono);font-size:11.5px;fill:var(--c-warn)}
+.d-tr line{stroke-width:3;stroke-linecap:round}
+.d-tr .p{stroke:var(--c-pos)} .d-tr .n{stroke:var(--c-neg)}
+.d-needle line{stroke:var(--c-text);stroke-width:1.5}
+.d-needle .tip{fill:var(--c-accent-fill)}
+.d-needle .tip-h{fill:var(--c-accent-fill);opacity:.22}
+.d-ann,.d-win,.d-tr{transition:opacity .45s var(--ease)}
+.C-dial[data-step="0"] .d-ann,.C-dial[data-step="0"] .d-tr{opacity:.5}
+.C-dial[data-step="1"] .d-win,.C-dial[data-step="1"] .d-tr{opacity:.22}
+.C-dial[data-step="2"] .d-ann,.C-dial[data-step="2"] .d-tr{opacity:.22}
+.C-dial[data-step="3"] .d-ann{opacity:.22}
+.C-dial[data-step="3"] .d-win{opacity:.45}
+.C-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.C-time{font-family:var(--f-mono);font-weight:300;font-size:clamp(30px,3.6vw,50px);letter-spacing:-.04em;line-height:1}
+.C-time small{font-size:.42em;color:var(--c-text-3);letter-spacing:0;margin-left:2px}
+.C-ny{font-size:12px;color:var(--c-text-2)}
+.C-ny b{font-family:var(--f-mono);font-weight:500;color:var(--c-text);margin-left:4px}
+.C-st{margin-top:4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--c-accent);font-weight:500}
+.C-steps{grid-area:steps;display:flex;flex-direction:column}
+.C-step{min-height:66vh;display:flex;flex-direction:column;justify-content:center;gap:14px;padding-block:32px;border-top:1px solid var(--c-line);transition:opacity .4s var(--ease)}
+.C-step h2{font-family:var(--f-title);font-weight:400;font-size:clamp(32px,3.2vw,48px);line-height:1;letter-spacing:-.012em}
+.C-step p{color:var(--c-text-2);max-width:46ch;font-size:15px}
+.C-step ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.C-step li{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--c-line-2);color:var(--c-text-2)}
+.C-key{display:inline-flex;align-items:center;gap:8px}
+.C-key i{width:9px;height:9px;border-radius:50%;flex:none}
+@media (min-width:901px){.C-steps.is-live .C-step{opacity:.38}.C-steps.is-live .C-step.is-on{opacity:1}}
+@media (max-width:900px){
+  .C-body{grid-template-columns:minmax(0,1fr);grid-template-areas:"copy" "dial" "steps"}
+  .C-sticky{position:static}
+  .C-dial{max-width:420px}
+  .C-step{min-height:0;padding-block:36px}
+  .C-center{width:44%}
+}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="A-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--c-accent-fill);stop-opacity:.26"/><stop offset="1" style="stop-color:var(--c-accent-fill);stop-opacity:0"/></linearGradient>
+    <linearGradient id="C-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--c-accent-hi)"/><stop offset=".58" style="stop-color:var(--c-accent-fill)"/><stop offset="1" style="stop-color:var(--c-accent-lo)"/></linearGradient>
+  </defs>
+  <symbol id="i-journal" viewBox="0 0 24 24"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-annonces" viewBox="0 0 24 24"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-seance" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 7v5l3 2"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM8 12l3 3l5-6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 11v5M12 8v.5"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 3v18M12 7l5 0M12 12h9M12 17h7"/></symbol>
+  <symbol id="i-backtest" viewBox="0 0 24 24"><path d="M7 3v4M7 17v4M17 6v3M17 18v3M5 7h4v10H5zM15 9h4v9h-4z"/></symbol>
+  <symbol id="i-versement" viewBox="0 0 24 24"><path d="M3 7h18v10H3zM12 10a2 2 0 1 0 0 4a2 2 0 0 0 0-4zM6.5 10v4M17.5 10v4"/></symbol>
+  <symbol id="i-fleche" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></symbol>
+  <symbol id="i-bas" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-rejouer" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></symbol>
+  <symbol id="i-connexion" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M14 16l4-4-4-4M18 12H8"/></symbol>
+</svg>
+
+<!-- ======================= DIRECTION A : TABLEAU DE BORD ======================= -->
+<div class="lab-dir A" id="dir-tableau" data-dir="tableau" role="region" aria-label="Direction A, tableau de bord">
+  <header class="wrap A-nav">
+    <a class="brand" href="#tableau"><span class="tx-logo" aria-hidden="true">T</span><span class="brand-name">Tradamax</span></a>
+    <nav class="A-links" aria-label="Sections de la page"><a href="#tableau" aria-current="true">L'outil</a><a href="#tableau">La charte</a><a href="#tableau">La séance</a><a href="#tableau">Le backtest</a></nav>
+    <div class="clocks" data-clock></div>
+  </header>
+  <div class="wrap A-head">
+    <div class="A-headl">
+      <span class="tx-eyebrow" data-in>Outil interne de la SAS</span>
+      <h1 class="A-title" data-split>La séance entière,<br><em>sur un seul écran.</em></h1>
+      <p class="A-lede" data-in>Journal des trades, charte de risque, prop firms et annonces économiques, partagés en direct entre les deux associés.</p>
+    </div>
+    <div class="A-side" data-in>
+      <span class="A-date"><svg class="tx-ico" aria-hidden="true"><use href="#i-annonces"/></svg><span data-today>mardi 17 novembre</span></span>
+      <button class="tx-btn is-primary" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-connexion"/></svg>Se connecter</button>
+    </div>
+  </div>
+  <div class="wrap A-stage">
+    <div class="A-tilt">
+      <div class="A-screen">
+        <div class="A-bar"><span class="A-bar-t"><span class="tx-logo" aria-hidden="true">T</span>Journal de trading</span><span class="tx-badge">Données d'exemple</span></div>
+        <div class="A-grid">
+          <article class="A-card A-k">
+            <div class="A-ch"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-versement"/></svg>Résultat du mois</span><span class="A-arrow" aria-hidden="true"><svg class="tx-ico"><use href="#i-fleche"/></svg></span></div>
+            <div class="A-kv"><span class="A-big tx-pos" data-count="1366" data-sign="1" data-unit="&nbsp;€">+1&#8239;366&nbsp;€</span><span class="tx-delta is-pos">+3,2 %</span></div>
+          </article>
+          <article class="A-card A-k">
+            <div class="A-ch"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-backtest"/></svg>R moyen par trade</span><span class="A-arrow" aria-hidden="true"><svg class="tx-ico"><use href="#i-fleche"/></svg></span></div>
+            <div class="A-kv"><span class="A-big tx-pos" data-count="0.62" data-dec="2" data-sign="1" data-unit="&nbsp;R">+0,62&nbsp;R</span><span class="tx-delta is-pos">+0,08</span></div>
+          </article>
+          <article class="A-card A-k">
+            <div class="A-ch"><span class="tx-label"><svg class="tx-ico" aria-hidden="true"><use href="#i-ok"/></svg>Respect du plan</span><span class="A-arrow" aria-hidden="true"><svg class="tx-ico"><use href="#i-fleche"/></svg></span></div>
+            <div class="A-kv"><span class="A-big" data-count="91" data-unit="&nbsp;%">91&nbsp;%</span><span class="tx-delta">−4 pts</span></div>
+          </article>
+          <article class="A-card A-heat">
+            <div class="A-ch"><span class="tx-label">Activité par jour</span><span class="A-arrow" aria-hidden="true"><svg class="tx-ico"><use href="#i-fleche"/></svg></span></div>
+            <div class="A-legend" aria-hidden="true"><span><i class="h0"></i>Aucun trade</span><span><i class="h1"></i>1</span><span><i class="h2"></i>2</span><span><i class="h3"></i>3 et plus</span></div>
+            <div class="A-hm" id="A-hm" role="img" aria-label="Nombre de trades par jour ouvré sur sept semaines, données d'exemple"></div>
+            <div class="A-split" aria-hidden="true"><i style="--w:28%"></i><i style="--w:60%"></i><i style="--w:12%"></i></div>
+            <div class="A-split-l"><div><b>28&nbsp;%</b><span>Londres</span></div><div><b>60&nbsp;%</b><span>NY AM</span></div><div><b>12&nbsp;%</b><span>NY PM</span></div></div>
+            <p class="A-note"><svg class="tx-ico" aria-hidden="true"><use href="#i-info"/></svg><span><b>Lecture.</b> La fenêtre NY AM concentre 60 % des trades. Les vendredis sont les jours les plus chargés.</span></p>
+          </article>
+          <article class="A-card A-chart">
+            <div class="A-ch">
+              <div><span class="tx-label">Courbe de capital</span><div class="A-chart-v"><span class="A-big tx-pos" data-count="1366" data-sign="1" data-unit="&nbsp;€">+1&#8239;366&nbsp;€</span><span class="tx-sub">22 trades · 7 semaines</span></div></div>
+              <span class="A-arrow" aria-hidden="true"><svg class="tx-ico"><use href="#i-fleche"/></svg></span>
+            </div>
+            <svg class="A-eq" id="A-eq" role="img" aria-label="Courbe de capital d'exemple : de 0 à +1 366 € en 22 trades, plus bas à −60 €"></svg>
+          </article>
+          <article class="A-card A-cmp">
+            <div class="A-ch"><span class="tx-label">Gagnants et perdants</span></div>
+            <div class="A-cmp-n"><div><span class="A-mid tx-pos" data-count="14">14</span><span class="tx-sub">gagnants</span></div><div><span class="A-mid tx-neg" data-count="8">8</span><span class="tx-sub">perdants</span></div></div>
+            <div class="A-cmp-b" id="A-cmp" aria-hidden="true"><div class="col pos"></div><div class="col neg"></div></div>
+            <p class="A-note"><svg class="tx-ico" aria-hidden="true"><use href="#i-info"/></svg><span><b>Réussite 64 %.</b> Les pertes restent contenues à −1 R.</span></p>
+          </article>
+          <article class="A-card A-gold">
+            <span class="A-chip"><svg class="tx-ico" aria-hidden="true"><use href="#i-seance"/></svg>Note de séance</span>
+            <p class="A-gold-t">La fenêtre NY AM porte <span class="A-pill tx-num">64&nbsp;%</span> du résultat du mois, avec le plan respecté à chaque trade.</p>
+            <div class="A-segs" id="A-segs" aria-hidden="true"></div>
+          </article>
+          <article class="A-card A-mix">
+            <div class="A-ch"><span class="tx-label">Répartition par marché</span><span class="A-select">Ce mois</span></div>
+            <div class="A-mix-in">
+              <div class="A-donut">
+                <svg viewBox="0 0 120 120" role="img" aria-label="Répartition d'exemple : XAUUSD 48 %, DAX 31 %, Nasdaq 21 %"><circle class="s1" cx="60" cy="60" r="50" pathLength="100"/><circle class="s2" cx="60" cy="60" r="50" pathLength="100"/><circle class="s3" cx="60" cy="60" r="50" pathLength="100"/></svg>
+                <div class="A-donut-c"><span class="A-mid" data-count="22">22</span><span class="tx-sub">trades</span></div>
+              </div>
+              <dl class="tx-kv"><dt><i class="sw s1"></i>XAUUSD</dt><dd>48&nbsp;%</dd><dt><i class="sw s2"></i>DAX</dt><dd>31&nbsp;%</dd><dt><i class="sw s3"></i>Nasdaq</dt><dd>21&nbsp;%</dd></dl>
+            </div>
+            <p class="A-note"><svg class="tx-ico" aria-hidden="true"><use href="#i-info"/></svg><span><b>Note.</b> L'or représente près de la moitié des trades du mois.</span></p>
+          </article>
+          <article class="A-card A-score">
+            <div class="A-ch"><span class="tx-label">Score de la checklist</span><span class="A-arrow" aria-hidden="true"><svg class="tx-ico"><use href="#i-fleche"/></svg></span></div>
+            <div class="A-gauge"><svg id="A-gauge" viewBox="0 0 240 142" aria-hidden="true"></svg><div class="A-gauge-c"><span class="A-big" data-count="82" data-unit="&nbsp;%">82&nbsp;%</span><span class="tx-sub">moyenne du mois</span></div></div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+  <section class="wrap lab-notes" aria-labelledby="n-a">
+    <div class="lab-notes-h"><span class="tx-label">Direction A · d'après votre capture</span><h2 id="n-a">Tableau de bord</h2><p>Le titre, puis l'outil lui-même, présenté en bento comme dans la capture. L'or remplace le violet ; une seule carte est en or.</p></div>
+    <dl>
+      <div><dt class="tx-label">Mise en page</dt><dd>Titre à gauche, date et bouton à droite, puis un écran de l'application en grille de cartes de tailles variées : chiffres, activité, courbe, répartition, score.</dd></div>
+      <div><dt class="tx-label">Typographie</dt><dd>Instrument Serif autour de 7 vw pour le titre. Tous les chiffres en IBM Plex Mono tabulaire, fins et grands, comme dans l'application.</dd></div>
+      <div><dt class="tx-label">Animation</dt><dd>Les lignes du titre montent, les cartes s'assemblent une à une, la courbe se trace, les chiffres comptent. L'écran se redresse quand on fait défiler.</dd></div>
+      <div><dt class="tx-label">À savoir</dt><dd>La plus proche de l'application, donc la plus cohérente, mais la plus chargée. Sur une page publique, les chiffres restent des exemples affichés comme tels.</dd></div>
+    </dl>
+  </section>
+</div>
+
+<!-- ======================= DIRECTION B : MONUMENTAL ======================= -->
+<div class="lab-dir B" id="dir-monumental" data-dir="monumental" role="region" aria-label="Direction B, typographie monumentale" hidden>
+  <header class="wrap B-top">
+    <a class="brand" href="#monumental"><span class="tx-logo" aria-hidden="true">T</span><span class="brand-name">Tradamax</span></a>
+    <div class="clocks" data-clock data-sec></div>
+    <button class="tx-btn is-ghost" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-connexion"/></svg>Se connecter</button>
+  </header>
+  <div class="wrap B-hero">
+    <div class="B-meta"><span class="B-rule" aria-hidden="true"></span><span class="tx-eyebrow" data-in>Outil interne de la SAS</span><span class="tx-num" data-in><span data-today data-year>mardi 17 novembre 2026</span> · XAUUSD · DAX · Nasdaq</span></div>
+    <h1 class="B-title" data-split><span class="ln">Chaque trade</span><span class="ln ln2"><em>mesuré</em> en R.</span></h1>
+    <div class="B-foot">
+      <p class="B-lede" data-in><strong>Le résultat divisé par le risque engagé.</strong> Tradamax tient le journal, la charte de risque et les fenêtres de séance de la SAS, pour les deux associés.</p>
+      <div class="B-next" data-in>
+        <span class="tx-label" id="B-next-l">Prochaine fenêtre dans</span>
+        <span class="B-cd" id="B-cd" aria-describedby="B-next-l">03:13:22</span>
+        <span class="tx-sub" id="B-next-h">NY AM · 16:00 à Paris</span>
+      </div>
+      <div class="B-cta" data-in><button class="tx-btn is-primary is-lg" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-connexion"/></svg>Se connecter</button></div>
+    </div>
+  </div>
+  <div class="B-ruler">
+    <div class="wrap B-ruler-in">
+      <div>
+        <span class="tx-label">L'unité de mesure</span>
+        <p class="B-ruler-f"><i>R</i> = résultat ÷ risque engagé</p>
+        <p class="tx-sub">Un stop touché vaut −1 R. Un trade qui rapporte trois fois le risque vaut +3 R. Faites défiler pour déplacer le curseur.</p>
+      </div>
+      <div class="B-scale" id="B-scale" role="img" aria-label="Échelle des résultats de −1 R à +3 R">
+        <div class="B-axis"></div>
+        <div class="B-mark" id="B-mark"><span class="B-read tx-num tx-pos" id="B-read">+1,00&nbsp;R</span></div>
+      </div>
+    </div>
+  </div>
+  <section class="wrap B-stats" aria-label="Tradamax en chiffres">
+    <div class="B-stat"><span class="B-n" data-odo="3">3</span><p>marchés suivis par défaut : l'or, le DAX et le Nasdaq.</p></div>
+    <div class="B-stat"><span class="B-n" data-odo="3">3</span><p>fenêtres d'une heure par séance, à l'heure de New York.</p></div>
+    <div class="B-stat"><span class="B-n" data-odo="2">2</span><p>associés, un seul journal partagé en direct.</p></div>
+    <div class="B-stat"><span class="B-n" data-odo="0" data-unit="&#8239;€">0&#8239;€</span><p>d'abonnement : publication et base de données gratuites.</p></div>
+  </section>
+  <section class="wrap lab-notes" aria-labelledby="n-b">
+    <div class="lab-notes-h"><span class="tx-label">Direction B</span><h2 id="n-b">Monumental</h2><p>Une seule phrase géante, beaucoup de vide, et les chiffres qui roulent comme sur un tableau d'affichage de salle des marchés.</p></div>
+    <dl>
+      <div><dt class="tx-label">Mise en page</dt><dd>Titre pleine largeur sur deux lignes décalées, puis trois blocs courts : la promesse, le compte à rebours de la prochaine fenêtre, le bouton.</dd></div>
+      <div><dt class="tx-label">Typographie</dt><dd>Instrument Serif autour de 17 vw, une seule italique dorée. Tout le reste reste petit : Geist pour le texte, Plex Mono pour les heures et les chiffres.</dd></div>
+      <div><dt class="tx-label">Animation</dt><dd>Les lettres roulent en place, le compte à rebours tourne chaque seconde, une règle de −1 R à +3 R suit le défilement, les chiffres clés tournent à leur apparition.</dd></div>
+      <div><dt class="tx-label">À savoir</dt><dd>La plus « Awwwards » et la plus sobre en contenu. Le titre doit rester très court. Aucun chiffre de trading n'est montré : tout est vrai et public.</dd></div>
+    </dl>
+  </section>
+</div>
+
+<!-- ======================= DIRECTION C : CADRAN ======================= -->
+<div class="lab-dir C" id="dir-cadran" data-dir="cadran" role="region" aria-label="Direction C, cadran de séance" hidden>
+  <header class="wrap C-top">
+    <a class="brand" href="#cadran"><span class="tx-logo" aria-hidden="true">T</span><span class="brand-name">Tradamax</span></a>
+    <span class="tx-num" data-today data-year>mardi 17 novembre 2026</span>
+  </header>
+  <div class="wrap C-body">
+    <div class="C-copy">
+      <span class="tx-eyebrow" data-in>Paris · New York</span>
+      <h1 class="C-title" data-split>Deux fuseaux,<br><em>une</em> séance.</h1>
+      <p class="C-lede" data-in>Les fenêtres de trading sont définies à l'heure de New York et affichées à l'heure de Paris, changements d'heure compris. Le cadran avance en direct.</p>
+      <ul class="C-wins" id="C-wins" aria-label="Fenêtres du jour" data-in>
+        <li><span>Londres</span><span class="tx-num ny">3h–4h NY</span><span class="tx-num pa">9h–10h</span></li>
+        <li><span>NY AM</span><span class="tx-num ny">10h–11h NY</span><span class="tx-num pa">16h–17h</span></li>
+        <li><span>NY PM</span><span class="tx-num ny">14h–15h NY</span><span class="tx-num pa">20h–21h</span></li>
+      </ul>
+      <div class="C-cta" data-in>
+        <button class="tx-btn is-primary is-lg" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-connexion"/></svg>Se connecter</button>
+        <a class="tx-btn is-ghost is-lg" href="#cadran" data-goto="C-steps"><svg class="tx-ico" aria-hidden="true"><use href="#i-bas"/></svg>Le déroulé d'une séance</a>
+      </div>
+    </div>
+    <div class="C-dialcol">
+      <div class="C-sticky">
+        <div class="C-dial" id="C-dial" data-step="0">
+          <svg viewBox="-24 -24 448 448" role="img" aria-label="Cadran de 24 heures à l'heure de Paris, avec les trois fenêtres de trading du jour et l'heure actuelle">
+            <g class="d-rings"></g><g class="d-ticks"></g><g class="d-win"></g><g class="d-ann"></g><g class="d-tr"></g><g class="d-needle"></g>
+          </svg>
+          <div class="C-center" aria-live="off">
+            <span class="tx-label">Paris</span>
+            <span class="C-time" id="C-time">12:47<small>:05</small></span>
+            <span class="C-ny">New York<b id="C-ny">06:47</b></span>
+            <span class="C-st" id="C-st">NY AM dans 3 h 13</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="C-steps" id="C-steps">
+      <article class="C-step" data-step="1">
+        <span class="tx-label">Avant la séance</span>
+        <h2>Les annonces se placent sur le cadran.</h2>
+        <p>Les annonces fortes du jour, USD et EUR, apparaissent à leur heure de Paris. Celles qui tombent dans une fenêtre sont signalées avant que vous ne preniez position.</p>
+        <ul><li><span class="C-key"><i style="background:var(--c-warn)"></i>Annonce à risque (exemple)</span></li></ul>
+      </article>
+      <article class="C-step" data-step="2">
+        <span class="tx-label">Pendant la séance</span>
+        <h2>Trois fenêtres, recalculées chaque jour.</h2>
+        <p>Londres, NY AM et NY PM durent une heure. Leur heure de Paris change avec les changements d'heure, à des dates différentes des deux côtés de l'Atlantique.</p>
+        <ul><li>Londres</li><li>NY AM</li><li>NY PM</li></ul>
+      </article>
+      <article class="C-step" data-step="3">
+        <span class="tx-label">Après la séance</span>
+        <h2>Chaque trade rejoint le journal.</h2>
+        <p>Le trade se range dans sa fenêtre, avec son résultat en R. Le drawdown et la charte de risque sont recalculés aussitôt.</p>
+        <ul><li><span class="C-key"><i style="background:var(--c-pos)"></i>Gain (exemple)</span></li><li><span class="C-key"><i style="background:var(--c-neg)"></i>Perte (exemple)</span></li></ul>
+      </article>
+    </div>
+  </div>
+  <section class="wrap lab-notes" aria-labelledby="n-c">
+    <div class="lab-notes-h"><span class="tx-label">Direction C</span><h2 id="n-c">Cadran</h2><p>Les anneaux gravés du fond actuel deviennent un vrai cadran de 24 heures, qui avance en direct.</p></div>
+    <dl>
+      <div><dt class="tx-label">Mise en page</dt><dd>Deux colonnes : le texte et les fenêtres du jour à gauche, le cadran à droite. Le cadran reste en place pendant que trois étapes de la séance défilent.</dd></div>
+      <div><dt class="tx-label">Typographie</dt><dd>Instrument Serif autour de 6,5 vw pour le titre, comme le nom des pages de l'application. Le cadran et les heures sont en Plex Mono.</dd></div>
+      <div><dt class="tx-label">Animation</dt><dd>Les anneaux se tracent, l'aiguille rejoint l'heure de Paris puis avance chaque seconde. Chaque étape allume la partie du cadran dont elle parle.</dd></div>
+      <div><dt class="tx-label">À savoir</dt><dd>La plus propre à Tradamax : elle reprend les anneaux, les horloges et les fenêtres de l'application. Les heures sont vraies, calculées avec les fuseaux. Plus de travail sur téléphone.</dd></div>
+    </dl>
+  </section>
+</div>
+
+<nav class="lab-bar" aria-label="Choix de la direction">
+  <span class="lab-bar-tag">Design lab</span>
+  <div class="lab-seg" role="group" aria-label="Direction">
+    <button type="button" data-go="tableau" aria-pressed="true"><b>A</b>Tableau</button>
+    <button type="button" data-go="monumental" aria-pressed="false"><b>B</b>Monumental</button>
+    <button type="button" data-go="cadran" aria-pressed="false"><b>C</b>Cadran</button>
+  </div>
+  <button class="tx-btn is-ghost is-icon" type="button" id="lab-replay" aria-label="Rejouer l'animation" title="Rejouer l'animation"><svg class="tx-ico" aria-hidden="true"><use href="#i-rejouer"/></svg></button>
+  <button class="tx-btn is-ghost is-icon" type="button" id="lab-theme" aria-label="Basculer entre thème clair et thème sombre" title="Thème clair ou sombre"><svg class="tx-ico" aria-hidden="true"><use href="#i-theme"/></svg></button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  document.documentElement.lang = "fr";
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function h(tag, cls, text, parent) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+
+  var REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var G = !!window.gsap && !REDUCED;
+  if (G && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+  if (G && window.SplitText) gsap.registerPlugin(SplitText);
+
+  /* ---------- chiffres au format français ---------- */
+  var NF = {};
+  function nf(d) { return NF[d] || (NF[d] = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d })); }
+  function fmt(v, dec, sign, unit) { var pre = v < 0 ? "−" : (sign && v > 0 ? "+" : ""); return pre + nf(dec).format(Math.abs(v)) + (unit || ""); }
+
+  /* ---------- heures : toujours avec Intl et les fuseaux, jamais un décalage fixe ---------- */
+  var WIN = [{ label: "Londres", ny: "3h–4h NY", s: 180, e: 240 }, { label: "NY AM", ny: "10h–11h NY", s: 600, e: 660 }, { label: "NY PM", ny: "14h–15h NY", s: 840, e: 900 }];
+  var WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var fNYp = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23", weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  var fPAp = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hourCycle: "h23", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  var fPA = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
+  var fNY = new Intl.DateTimeFormat("fr-FR", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" });
+  var fDay = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" });
+  var fDayY = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  var fWd = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "long" });
+  var fNYs = new Intl.DateTimeFormat("en-GB", { timeZone: "America/New_York", hourCycle: "h23", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  function parts(f, d) { var p = {}; f.formatToParts(d).forEach(function (x) { p[x.type] = x.value; }); return p; }
+  function ny(d) { var p = parts(fNYp, d); return { wd: WD.indexOf(p.weekday), min: (+p.hour % 24) * 60 + +p.minute, sec: +p.second }; }
+  function parisMin(d) { var p = parts(fPAp, d); return (+p.hour % 24) * 60 + +p.minute + +p.second / 60; }
+  function nyAt(base, delta, target) { var d = new Date(base + delta * 60000), diff = target - ny(d).min; if (diff > 720) diff -= 1440; if (diff < -720) diff += 1440; return new Date(d.getTime() + diff * 60000); }
+  function nextWin(now) {
+    var base = Math.floor(now.getTime() / 60000) * 60000, p = ny(now), i, k;
+    if (p.wd >= 1 && p.wd <= 5) for (i = 0; i < WIN.length; i++) if (p.min >= WIN[i].s && p.min < WIN[i].e) return { w: WIN[i], live: true, at: nyAt(base, WIN[i].e - p.min, WIN[i].e) };
+    for (k = 0; k < 8; k++) { var dd = (p.wd + k) % 7; if (dd === 0 || dd === 6) continue;
+      for (i = 0; i < WIN.length; i++) { var delta = k * 1440 + WIN[i].s - p.min; if (delta > 0) return { w: WIN[i], live: false, at: nyAt(base, delta, WIN[i].s), days: k }; } }
+    return null;
+  }
+  /* début et fin des fenêtres du jour (jour de New York), en heure de Paris */
+  function todayWins(now) {
+    var base = Math.floor(now.getTime() / 60000) * 60000, m = ny(now).min;
+    return WIN.map(function (w) { var a = nyAt(base, w.s - m, w.s), b = nyAt(base, w.e - m, w.e); return { w: w, a: a, b: b, pa: parisMin(a), pb: parisMin(b) }; });
+  }
+  function hShort(d) { var t = fPA.format(d); return t.replace(/^0/, "").replace(":00", "h").replace(":", "h"); }
+  function two(n) { return String(n).padStart(2, "0"); }
+  function waitText(min, d) { if (min < 60) return "dans " + min + " min"; if (min < 1440) return "dans " + Math.floor(min / 60) + " h " + two(min % 60); return fWd.format(d); }
+
+  /* ---------- compteurs ---------- */
+  function countUp(el, delay) {
+    var to = parseFloat(el.dataset.count), dec = +(el.dataset.dec || 0), sign = el.dataset.sign === "1", unit = el.dataset.unit || "";
+    var final = fmt(to, dec, sign, unit);
+    if (!G) { el.textContent = final; return; }
+    var o = { v: 0 };
+    gsap.to(o, { v: to, duration: 1.6, delay: delay || 0, ease: "power3.out", onUpdate: function () { el.textContent = fmt(o.v, dec, sign && o.v > 0, unit); }, onComplete: function () { el.textContent = final; } });
+  }
+  /* rouleaux : chaque chiffre est une bande 0-9 répétée trois fois */
+  function odoBuild(el, str) {
+    el.textContent = "";
+    var out = [];
+    str.split("").forEach(function (ch) {
+      if (/\d/.test(ch)) {
+        var d = h("span", "odo", null, el), s = h("span", "odo-s", null, d);
+        d.setAttribute("aria-hidden", "true");
+        for (var r = 0; r < 30; r++) h("span", null, String(r % 10), s);
+        out.push(s);
+      } else { var sp = h("span", "odo-sep", ch, el); sp.setAttribute("aria-hidden", "true"); }
+    });
+    h("span", "sr", str, el);
+    return out;
+  }
+  function odoSet(strips, str, base, anim, dur, stagger) {
+    var digits = str.replace(/\D/g, "").split("").map(Number);
+    strips.forEach(function (s, i) {
+      s.classList.toggle("is-anim", !!anim);
+      s.style.setProperty("--t", (dur || .5) + "s");
+      s.style.transitionDelay = anim && stagger ? (i * stagger) + "s" : "0s";
+      s.style.setProperty("--i", base + digits[i]);
+    });
+  }
+
+  /* ---------- horloges et dates ---------- */
+  function renderStatic() {
+    var now = new Date();
+    $$("[data-today]").forEach(function (e) { e.textContent = (e.hasAttribute("data-year") ? fDayY : fDay).format(now); });
+    var tw = todayWins(now);
+    $$("#C-wins li").forEach(function (li, i) { var t = tw[i]; li.querySelector(".pa").textContent = hShort(t.a) + "–" + hShort(t.b); });
+  }
+  function renderClocks(now) {
+    $$("[data-clock]").forEach(function (box) {
+      var sec = box.hasAttribute("data-sec");
+      var pa = sec ? parts(fPAp, now) : null, ny_ = sec ? parts(fNYs, now) : null;
+      var a = sec ? two(+pa.hour % 24) + ":" + pa.minute + ":" + pa.second : fPA.format(now);
+      var b = sec ? two(+ny_.hour % 24) + ":" + ny_.minute + ":" + ny_.second : fNY.format(now);
+      if (!box.firstChild) { var s1 = h("span", null, "Paris", box), s2 = h("span", null, "New York", box); h("b", null, a, s1); h("b", null, b, s2); }
+      else { var bs = box.querySelectorAll("b"); bs[0].textContent = a; bs[1].textContent = b; }
+    });
+  }
+
+  /* ---------- B : compte à rebours de la prochaine fenêtre ---------- */
+  var bStrips = null, bLast = "";
+  function renderCountdown(now) {
+    var cd = $("#B-cd"), nw = nextWin(now);
+    if (!cd || !nw) return;
+    var s = Math.max(0, Math.round((nw.at - now) / 1000)), str;
+    if (s >= 86400) str = fWd.format(nw.at);
+    else str = two(Math.floor(s / 3600)) + ":" + two(Math.floor(s / 60) % 60) + ":" + two(s % 60);
+    $("#B-next-l").textContent = nw.live ? "Fenêtre en cours, fin dans" : "Prochaine fenêtre dans";
+    $("#B-next-h").textContent = nw.w.label + " · " + (nw.live ? "jusqu'à " : "") + fPA.format(nw.at) + " à Paris";
+    if (!/\d\d:\d\d:\d\d/.test(str)) { bStrips = null; bLast = ""; cd.textContent = str; return; }
+    if (!bStrips || bLast.length !== str.length) { bStrips = odoBuild(cd, str); odoSet(bStrips, str, 10, false); }
+    else { odoSet(bStrips, str, 10, true, .45); cd.lastChild.textContent = str; }
+    bLast = str;
+  }
+
+  /* ---------- C : cadran de 24 heures ---------- */
+  var C0 = 200;
+  function pt(r, deg) { var a = deg * Math.PI / 180; return [C0 + r * Math.sin(a), C0 - r * Math.cos(a)]; }
+  function arcD(r, d1, d2) { var p1 = pt(r, d1), p2 = pt(r, d2); return "M" + p1[0].toFixed(2) + " " + p1[1].toFixed(2) + " A" + r + " " + r + " 0 " + (d2 - d1 > 180 ? 1 : 0) + " 1 " + p2[0].toFixed(2) + " " + p2[1].toFixed(2); }
+  function degOf(min) { return min / 1440 * 360; }
+  var needleReady = false;
+  function buildDial() {
+    var svg = $("#C-dial svg"); if (!svg || svg.dataset.built) return; svg.dataset.built = "1";
+    var gR = $(".d-rings", svg), gT = $(".d-ticks", svg), gW = $(".d-win", svg), gA = $(".d-ann", svg), gTr = $(".d-tr", svg), gN = $(".d-needle", svg);
+    for (var r = 92; r <= 196; r += 8) svgEl("circle", { "class": "d-ring" + (r === 196 ? " is-c" : ""), cx: C0, cy: C0, r: r, pathLength: 1 }, gR);
+    svgEl("circle", { "class": "d-ring is-c", cx: C0, cy: C0, r: 84, pathLength: 1 }, gR);
+    for (var q = 0; q < 96; q++) {
+      var deg = q * 3.75, isH = q % 4 === 0, is3 = q % 12 === 0, len = is3 ? 15 : isH ? 9 : 4, a = pt(196, deg), b = pt(196 - len, deg);
+      svgEl("line", { "class": "d-tick" + (isH ? " is-h" : "") + (is3 ? " is-3" : ""), x1: a[0].toFixed(2), y1: a[1].toFixed(2), x2: b[0].toFixed(2), y2: b[1].toFixed(2) }, gT);
+      if (is3) { var l = pt(212, deg), t = svgEl("text", { "class": "d-lbl", x: l[0].toFixed(1), y: (l[1] + 4.5).toFixed(1), "text-anchor": "middle" }, gT); t.textContent = (q / 4) + "h"; }
+    }
+    var now = new Date(), tw = todayWins(now), base = Math.floor(now.getTime() / 60000) * 60000, m = ny(now).min;
+    svgEl("circle", { "class": "d-arc-bg", cx: C0, cy: C0, r: 166, opacity: .6 }, gW);
+    tw.forEach(function (t) {
+      var d1 = degOf(t.pa), d2 = degOf(t.pb < t.pa ? t.pb + 1440 : t.pb);
+      svgEl("path", { "class": "d-arc", d: arcD(166, d1, d2), pathLength: 1 }, gW);
+      var lp = pt(138, (d1 + d2) / 2), tx = svgEl("text", { "class": "d-wl", x: lp[0].toFixed(1), y: (lp[1] + 4).toFixed(1), "text-anchor": "middle" }, gW);
+      tx.textContent = t.w.label;
+    });
+    /* exemples : annonces (8h30 et 10h00 à New York) et trades placés dans les fenêtres */
+    [{ s: 510, n: "" }, { s: 600, n: "" }].forEach(function (an) {
+      var at = nyAt(base, an.s - m, an.s), d = degOf(parisMin(at)), p = pt(184, d), lp = pt(100, d);
+      svgEl("circle", { "class": "halo", cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 10 }, gA);
+      svgEl("circle", { cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 4.5 }, gA);
+      var tt = svgEl("text", { x: lp[0].toFixed(1), y: (lp[1] + 4).toFixed(1), "text-anchor": "middle" }, gA); tt.textContent = fPA.format(at);
+    });
+    [[0, 12, "p"], [0, 41, "n"], [1, 6, "p"], [1, 33, "p"], [2, 19, "n"]].forEach(function (x) {
+      var d = degOf(tw[x[0]].pa + x[1]), a = pt(154, d), b = pt(178, d);
+      svgEl("line", { "class": x[2], x1: a[0].toFixed(1), y1: a[1].toFixed(1), x2: b[0].toFixed(1), y2: b[1].toFixed(1) }, gTr);
+    });
+    var n1 = pt(88, 0), n2 = pt(194, 0);
+    svgEl("line", { x1: n1[0], y1: n1[1], x2: n2[0], y2: n2[1] }, gN);
+    svgEl("circle", { "class": "tip-h", cx: n2[0], cy: n2[1], r: 11 }, gN);
+    svgEl("circle", { "class": "tip", cx: n2[0], cy: n2[1], r: 5 }, gN);
+  }
+  function setNeedle(deg) { var n = $(".d-needle"); if (!n) return; if (window.gsap) gsap.set(n, { rotation: deg, svgOrigin: "200 200" }); else n.setAttribute("transform", "rotate(" + deg + " 200 200)"); }
+  function renderDial(now) {
+    var tEl = $("#C-time"); if (!tEl) return;
+    var p = parts(fPAp, now);
+    tEl.textContent = two(+p.hour % 24) + ":" + p.minute; h("small", null, ":" + p.second, tEl);
+    $("#C-ny").textContent = fNY.format(now);
+    var nw = nextWin(now);
+    if (nw) $("#C-st").textContent = nw.live ? nw.w.label + " en cours" : nw.w.label + " " + waitText(Math.round((nw.at - now) / 60000), nw.at);
+    if (needleReady) setNeedle(degOf(parisMin(now)));
+  }
+
+  /* ---------- A : graphiques ---------- */
+  var EQ = [0, -60, 170, 95, 330, 610, 520, 760, 900, 740, 1070, 1180, 1010, 920, 820, 680, 830, 970, 860, 1150, 1290, 1366];
+  function drawEquity() {
+    var svg = $("#A-eq"); if (!svg) return;
+    var W = Math.max(260, svg.clientWidth || 600), H = 224, padR = 50, padT = 40, padB = 26, x0 = 4, min = -250, max = 1500, hi = 11;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.textContent = "";
+    var X = function (i) { return x0 + (W - padR - x0 - 8) * i / (EQ.length - 1); }, Y = function (v) { return padT + (H - padT - padB) * (1 - (v - min) / (max - min)); };
+    [0, 500, 1000, 1500].forEach(function (v) {
+      svgEl("line", { "class": "g" + (v === 0 ? " zero" : ""), x1: x0, x2: W - padR + 4, y1: Y(v).toFixed(1), y2: Y(v).toFixed(1) }, svg);
+      var t = svgEl("text", { "class": "ax", x: W - padR + 10, y: (Y(v) + 4).toFixed(1) }, svg); t.textContent = v ? fmt(v, 0, true) : "0";
+    });
+    [[0, "02/10"], [7, "23/10"], [14, "03/11"], [21, "14/11"]].forEach(function (l) { var t = svgEl("text", { "class": "ax", x: X(l[0]).toFixed(1), y: H - 4, "text-anchor": l[0] === 0 ? "start" : l[0] === 21 ? "end" : "middle" }, svg); t.textContent = l[1]; });
+    var dl = EQ.map(function (v, i) { return (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); }).join(" ");
+    svgEl("rect", { "class": "cap", x: (X(hi) - 9).toFixed(1), y: (Y(EQ[hi]) - 4).toFixed(1), width: 18, height: (H - padB - Y(EQ[hi]) + 4).toFixed(1), rx: 9 }, svg);
+    svgEl("path", { "class": "area", d: dl + " L" + X(EQ.length - 1).toFixed(1) + " " + Y(min) + " L" + X(0) + " " + Y(min) + " Z" }, svg);
+    svgEl("path", { "class": "line", d: dl, pathLength: 1, "stroke-dasharray": 1 }, svg);
+    var px = X(hi), py = Y(EQ[hi]), lbl = fmt(EQ[hi], 0, true, "\u00a0€"), pw = 82;
+    svgEl("rect", { "class": "pill", x: (px - pw / 2).toFixed(1), y: (py - 36).toFixed(1), width: pw, height: 24, rx: 12 }, svg);
+    var pt_ = svgEl("text", { "class": "pill-t", x: px.toFixed(1), y: (py - 20).toFixed(1), "text-anchor": "middle" }, svg); pt_.textContent = lbl;
+    svgEl("circle", { "class": "dot", cx: px.toFixed(1), cy: py.toFixed(1), r: 4 }, svg);
+    var ex = X(EQ.length - 1), ey = Y(EQ[EQ.length - 1]);
+    svgEl("circle", { "class": "halo", cx: ex.toFixed(1), cy: ey.toFixed(1), r: 9 }, svg);
+    svgEl("circle", { "class": "dot", cx: ex.toFixed(1), cy: ey.toFixed(1), r: 4.5 }, svg);
+  }
+  var HM = [[1, 2, 0, 3, 1], [2, 0, 1, 2, 3], [3, 1, 2, 0, 1], [0, 2, 3, 1, 2], [1, 3, 0, 2, 4], [2, 1, 2, 0, 3], [3, 2, 1, 2, 2]];
+  function buildA() {
+    var hm = $("#A-hm");
+    if (hm && !hm.firstChild) {
+      h("span", "rl", "", hm); ["Lun", "Mar", "Mer", "Jeu", "Ven"].forEach(function (d) { h("span", "cl", d, hm); });
+      HM.forEach(function (row, w) { h("span", "rl", "S" + (40 + w), hm); row.forEach(function (v) { h("i", "c h" + Math.min(v, 3), null, hm); }); });
+    }
+    var cmp = $("#A-cmp");
+    if (cmp && !cmp.querySelector("i")) { [[".pos", 6], [".neg", 4]].forEach(function (c) { var col = $(c[0], cmp); for (var i = 0; i < 10; i++) h("i", i < c[1] ? "on" : "", null, col); }); }
+    var segs = $("#A-segs");
+    if (segs && !segs.firstChild) for (var i = 0; i < 12; i++) h("i", i < 8 ? "on" : "", null, segs);
+    var gs = $("#A-gauge");
+    if (gs && !gs.firstChild) {
+      var N = 19, on = Math.round(N * .82);
+      for (var k = 0; k < N; k++) { var deg = -100 + 200 * k / (N - 1), a = deg * Math.PI / 180, cx = 120, cy = 118, r1 = 82, r2 = 104;
+        svgEl("line", { "class": k < on ? "on" : "", x1: (cx + r1 * Math.sin(a)).toFixed(1), y1: (cy - r1 * Math.cos(a)).toFixed(1), x2: (cx + r2 * Math.sin(a)).toFixed(1), y2: (cy - r2 * Math.cos(a)).toFixed(1) }, gs); }
+    }
+    var dn = $$(".A-donut circle"), segsD = [48, 31, 21], acc = 0, gap = 1.6;
+    dn.forEach(function (c, i) { c.setAttribute("stroke-dasharray", (segsD[i] - gap) + " " + (100 - segsD[i] + gap)); c.setAttribute("stroke-dashoffset", String(-acc)); acc += segsD[i]; });
+    drawEquity();
+  }
+
+  /* ---------- B : règle des R ---------- */
+  function buildB() {
+    var sc = $("#B-scale"); if (!sc || sc.dataset.built) return; sc.dataset.built = "1";
+    for (var i = 0; i <= 16; i++) {
+      var r = -1 + i * .25, p = (i / 16 * 100) + "%", t = h("span", "B-tick" + (r === 0 ? " is-zero" : (r % 1 === 0 ? " is-major" : "")), null, sc); t.style.left = p;
+      if (r % 1 === 0) { var l = h("span", "B-tl", r === 0 ? "0" : fmt(r, 0, true, "\u00a0R"), sc); l.style.left = p; }
+    }
+    setR(1);
+  }
+  function setR(r) {
+    var m = $("#B-mark"), rd = $("#B-read"); if (!m) return;
+    m.style.setProperty("--p", ((r + 1) / 4 * 100) + "%");
+    var q = Math.round(r * 4) / 4;
+    rd.textContent = fmt(q, 2, true, "\u00a0R");
+    rd.className = "B-read tx-num" + (q > 0 ? " tx-pos" : q < 0 ? " tx-neg" : "");
+  }
+
+  /* ---------- défilement doux ---------- */
+  var lenis = null;
+  if (G && window.Lenis) {
+    lenis = new Lenis({ lerp: .1, smoothWheel: true });
+    if (window.ScrollTrigger) lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
+    gsap.ticker.lagSmoothing(0);
+  }
+
+  /* ---------- animations propres à chaque direction ---------- */
+  function splitLines(el) { return window.SplitText ? new SplitText(el, { type: "lines", mask: "lines" }).lines : [el]; }
+  var INIT = {
+    tableau: function (root) {
+      buildA();
+      var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.from(splitLines($("[data-split]", root)), { yPercent: 110, duration: 1.1, stagger: .12, ease: "expo.out" })
+        .from($$("[data-in]", root), { y: 16, opacity: 0, duration: .8, stagger: .08 }, "-=.8")
+        .from($(".A-screen", root), { y: 70, opacity: 0, duration: 1.1, ease: "expo.out" }, "-=.7")
+        .from($$(".A-card", root), { y: 26, opacity: 0, scale: .97, duration: .8, stagger: { each: .06, from: "start" } }, "-=.85")
+        .from($$("#A-hm .c", root), { scale: .4, opacity: 0, duration: .4, stagger: { each: .012, grid: "auto", from: "start" } }, "-=.6")
+        .fromTo($(".A-eq .line", root), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.6, ease: "power2.inOut" }, "<")
+        .from($$(".A-eq .area, .A-eq .pill, .A-eq .pill-t, .A-eq .cap, .A-eq .dot, .A-eq .halo", root), { opacity: 0, duration: .6 }, "-=.6")
+        .from($$(".A-split i, .A-cmp-b i", root), { scaleX: 0, duration: .7, stagger: .02 }, "<-.8")
+        .from($$("#A-gauge line", root), { opacity: 0, duration: .3, stagger: .035 }, "<")
+        .from($$("#A-segs i", root), { opacity: 0, y: 6, duration: .3, stagger: .04 }, "<")
+        .fromTo($$(".A-donut circle", root), { strokeDasharray: "0 100" }, { strokeDasharray: function (i, c) { return c.getAttribute("stroke-dasharray"); }, duration: 1.2, stagger: .15, ease: "power2.out" }, "<");
+      $$("[data-count]", root).forEach(function (e, i) { countUp(e, .9 + i * .05); });
+      if (window.ScrollTrigger) gsap.fromTo($(".A-tilt", root), { rotateX: 14, scale: .95 }, { rotateX: 0, scale: 1, ease: "none", scrollTrigger: { trigger: $(".A-stage", root), start: "top 95%", end: "top 15%", scrub: .6 } });
+    },
+    monumental: function (root) {
+      buildB();
+      var title = $("[data-split]", root), chars = window.SplitText ? new SplitText(title, { type: "lines,chars", mask: "lines" }).chars : [title];
+      var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.from($(".B-rule", root), { scaleX: 0, duration: 1.2, ease: "expo.inOut" })
+        .from(chars, { yPercent: 118, duration: 1.2, stagger: .028, ease: "expo.out" }, "-=.7")
+        .from($$("[data-in]", root), { y: 14, opacity: 0, duration: .8, stagger: .08 }, "-=.9");
+      if (window.ScrollTrigger) {
+        gsap.to(title, { yPercent: -10, ease: "none", scrollTrigger: { trigger: $(".B-hero", root), start: "top top", end: "bottom top", scrub: true } });
+        var o = { r: -1 }; setR(-1);
+        gsap.to(o, { r: 3, ease: "none", onUpdate: function () { setR(o.r); }, scrollTrigger: { trigger: $(".B-ruler", root), start: "top 85%", end: "bottom 30%", scrub: .5 } });
+        $$("[data-odo]", root).forEach(function (el, i) {
+          var str = el.dataset.odo, unit = el.dataset.unit || "", strips = odoBuild(el, str);
+          if (unit) h("span", "odo-sep", unit, el).setAttribute("aria-hidden", "true");
+          odoSet(strips, str, 0, false);
+          ScrollTrigger.create({ trigger: el, start: "top 88%", once: true, onEnter: function () { odoSet(strips, str, 20, true, 1.8 + i * .15, .1); } });
+        });
+      }
+    },
+    cadran: function (root) {
+      buildDial();
+      var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      var words = window.SplitText ? new SplitText($("[data-split]", root), { type: "words" }).words : [$("[data-split]", root)];
+      tl.from(words, { opacity: 0, y: 18, filter: "blur(10px)", duration: 1, stagger: .09 })
+        .from($$("[data-in]", root), { y: 14, opacity: 0, duration: .8, stagger: .08 }, "-=.6")
+        .fromTo($$(".d-ring", root), { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.4, stagger: .05, ease: "power2.inOut" }, 0)
+        .from($$(".d-tick", root), { opacity: 0, duration: .25, stagger: .008 }, .3)
+        .from($$(".d-lbl", root), { opacity: 0, duration: .4, stagger: .05 }, 1)
+        .fromTo($$(".d-arc", root), { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .9, stagger: .15, ease: "power2.out" }, 1.1)
+        .from($$(".d-wl, .d-ann > *, .d-tr > *", root), { opacity: 0, duration: .6, stagger: .06 }, 1.4)
+        .from($(".C-center", root), { opacity: 0, scale: .92, duration: .8 }, .9);
+      needleReady = false;
+      var target = degOf(parisMin(new Date()));
+      tl.fromTo($(".d-needle", root), { rotation: 0, svgOrigin: "200 200" }, { rotation: target, svgOrigin: "200 200", duration: 2, ease: "expo.inOut", onComplete: function () { needleReady = true; } }, .8);
+      if (window.ScrollTrigger) {
+        var dial = $("#C-dial", root), steps = $("#C-steps", root); steps.classList.add("is-live");
+        $$(".C-step", root).forEach(function (st) {
+          ScrollTrigger.create({ trigger: st, start: "top 62%", end: "bottom 62%", onToggle: function (self) { if (self.isActive) { dial.dataset.step = st.dataset.step; $$(".C-step", root).forEach(function (x) { x.classList.toggle("is-on", x === st); }); } } });
+        });
+        ScrollTrigger.create({ trigger: steps, start: "top 62%", onLeaveBack: function () { dial.dataset.step = "0"; $$(".C-step", root).forEach(function (x) { x.classList.remove("is-on"); }); } });
+      }
+    }
+  };
+  /* sans animation (mouvement réduit ou bibliothèques indisponibles) : tout est posé directement */
+  function staticInit(id) {
+    if (id === "tableau") buildA();
+    if (id === "monumental") buildB();
+    if (id === "cadran") { buildDial(); needleReady = true; }
+    $$("[data-count]").forEach(function (e) { countUp(e); });
+  }
+
+  /* ---------- choix de la direction ---------- */
+  var DIRS = ["tableau", "monumental", "cadran"], cur = null, ctx = null;
+  function show(id, force) {
+    if (DIRS.indexOf(id) < 0) id = "tableau";
+    if (id === cur && !force) return;
+    if (ctx) { ctx.revert(); ctx = null; }
+    cur = id;
+    $$(".lab-dir").forEach(function (s) { s.hidden = s.dataset.dir !== id; });
+    $$(".lab-seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.go === id)); });
+    var d = $("#C-dial"); if (d) d.dataset.step = "0";
+    if (lenis) lenis.scrollTo(0, { immediate: true }); window.scrollTo(0, 0);
+    var root = $("#dir-" + id);
+    if (G) { ctx = gsap.context(function () { INIT[id](root); }, root); if (window.ScrollTrigger) ScrollTrigger.refresh(); }
+    else staticInit(id);
+    tick();
+  }
+  function tick() { var now = new Date(); renderClocks(now); renderCountdown(now); renderDial(now); }
+
+  $$(".lab-seg button").forEach(function (b) { b.addEventListener("click", function () { if (location.hash !== "#" + b.dataset.go) location.hash = b.dataset.go; else show(b.dataset.go); }); });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+  $("#lab-replay").addEventListener("click", function () { show(cur, true); });
+  $("#lab-theme").addEventListener("click", function () {
+    var root = document.documentElement, dark = root.dataset.theme ? root.dataset.theme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("tradamax-theme", root.dataset.theme); } catch (e) {}
+  });
+  $$("[data-goto]").forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); var t = document.getElementById(a.dataset.goto); if (!t) return; if (lenis) lenis.scrollTo(t, { offset: -24 }); else t.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth" }); }); });
+  var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { if (cur === "tableau") drawEquity(); }, 150); });
+
+  renderStatic();
+  setInterval(tick, 1000);
+  var start = function () { show(location.hash.slice(1), true); };
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(start, start); else start();
+})();
+</script>
+</body>
+</html>
