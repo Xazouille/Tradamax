@@ -65,7 +65,7 @@ Chiffres au format français (`Intl.NumberFormat("fr-FR")`), signe moins typogra
 | `--fs-4` | 15 px | Titre de panneau (`tx-title`) |
 | `--fs-5` | 22 px | Chiffre clé d'une tuile ou du bandeau de séance |
 | `--fs-6` | 34 px | Chiffre principal d'un écran (`tx-hero`), un seul par panneau |
-| — | 30 à 44 px | Nom de la page (`tx-display`), un seul par écran |
+| — | 30 à 44 px | Nom de la page (`tx-display`), un seul par écran. Seule exception : le grand titre de l'accueil (42 à 104 px, `pg-head is-hero`) |
 
 Graisses : 400 texte, 500 étiquette et bouton, 600 titre de panneau. Les grands chiffres sont fins (300 pour `tx-hero`, 400 pour un chiffre clé) et resserrés : c'est leur taille qui les met en avant, pas leur graisse. Pas de capitales hors étiquettes.
 
@@ -82,6 +82,8 @@ Graisses : 400 texte, 500 étiquette et bouton, 600 titre de panneau. Les grands
 - Les survols et les changements d'état durent 0,15 s (`--ease`).
 - Une jauge ou une barre se remplit à l'affichage ; une courbe se trace (attribut `pathLength="1"` sur le trait). Ces animations ne jouent qu'une fois et n'apportent aucune information.
 - `prefers-reduced-motion` coupe toutes les animations et transitions.
+- **L'accueil est la seule page animée au défilement.** GSAP 3.15.0 (avec ScrollTrigger et SplitText) et Lenis 1.3.27 y sont chargés à la demande depuis jsDelivr, puis retirés quand on change d'onglet. L'entrée se joue une fois : lignes du titre qui montent, plateau puis cartes qui s'assemblent, cases et barres qui se remplissent, chiffres clés qui comptent depuis zéro, courbe qui se trace. Au défilement, le plateau du bento se redresse. Les autres pages restent sobres : survols et transitions courtes uniquement.
+- Une propriété animée par GSAP ne porte jamais de `transition` CSS (sinon l'animation reste bloquée sur son état de départ).
 
 ## Composants
 
@@ -153,9 +155,10 @@ Icônes : uniquement celles de la planche en tête de `index.html` (`<svg class=
 
 Les classes `pg-` décrivent la mise en page propre à Tradamax (elles ne sont pas des composants réutilisables). Elles sont en fin du `<style>` de `index.html`.
 
-- **Rail** (`pg-rail`, à partir de 900 px) : logo, Journal, Prop firms, Annonces, Backtest, et Réglages en bas. **Barre du bas** (`pg-tabbar`, sous 900 px) : les mêmes entrées. Un bouton d'onglet porte `data-tab` ; Réglages ouvre une fenêtre de saisie (`#btn-settings` ou `data-open="settings"`).
+- **Rail** (`pg-rail`, à partir de 900 px) : logo, Accueil, Journal, Prop firms, Annonces, Backtest, et Réglages en bas. **Barre du bas** (`pg-tabbar`, sous 900 px) : Accueil, Journal, Prop firms, Annonces, Backtest ; Réglages passe alors dans la barre du haut (bouton à icône `pg-only-sm`). Un bouton d'onglet porte `data-tab` ; Réglages ouvre une fenêtre de saisie (`#btn-settings` ou `data-open="settings"`).
 - **Barre du haut** (`pg-top`) : heures de Paris et de New York sur ordinateur, logo sur téléphone, utilisateur, thème, déconnexion.
 - **En-tête de page** (`pg-head`, commun à tous les onglets) : la date en sur-titre, le nom de la page (`#page-title`, mis à jour par `setTab`), et les actions de l'onglet (`pg-actions` avec `data-for="journal"`, `data-for="propfirms"`…).
+- **Accueil** (onglet par défaut après connexion, direction A du `design-lab/`) : l'en-tête passe en grand (`pg-head is-hero`, titre sur deux lignes avec une italique dorée, phrase d'introduction `pg-lede`, bouton « Nouveau trade »), puis le bandeau de séance, puis « Le mois en cours » sur un plateau en creux (`pg-tray`) en bento (`pg-bento` > `pg-bn`, cartes de tailles variées) : résultat du mois, R moyen, respect du plan (avec l'écart sur le mois précédent, neutre), activité par jour sur sept semaines (`pg-heat`, intensité d'or = nombre de trades, ce n'est ni un gain ni une perte), courbe des sept semaines (pastille sur le plus haut qui suit le pointeur), gagnants et perdants, note du mois (`pg-bn-gold`, la seule carte en or de l'écran), répartition par marché (`pg-donut`), palier de drawdown du compte réel (`pg-arc`, arc dans la couleur de l'état, jamais en or). Le sélecteur `#hm-acc` choisit le compte réel ou tous les comptes ; le drawdown reste toujours celui du compte réel. Les flèches rondes (`pg-bn-go`, `data-go`) mènent au journal.
 - **Bandeau de séance** (`#session`, sous l'en-tête, sur toutes les pages) : drawdown et résultat du jour calculés sur les trades enregistrés (jamais sur les exemples), prochaine fenêtre Silver Bullet calculée avec `Intl`, prochaine annonce forte USD ou EUR du jour. Rafraîchi toutes les 30 secondes.
 - **Journal des trades** (`pg-log`) : tableau sur ordinateur, fiche compacte sur trois lignes sous 640 px.
 - **Annonces** : compte rendu avec une frise de la journée en heure de Paris (fenêtres Silver Bullet en creux, annonces en points de couleur, trait « maintenant »), puis la liste détaillée.

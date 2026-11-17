@@ -20,7 +20,7 @@ Repères techniques :
 
 ## Architecture actuelle (V1)
 
-- **Site statique**, sans étape de build : `index.html` (structure + CSS), `app.js` (logique et rendu, JavaScript sans framework), `backtest.js` (robot de backtest : fonctions pures, règles dans `RULES`, version à changer à chaque modification des règles), `config.js` (URL et clé publique Supabase). Graphiques de la revue : Lightweight Charts 4.2.3, chargé à la demande depuis jsDelivr.
+- **Site statique**, sans étape de build : `index.html` (structure + CSS), `app.js` (logique et rendu, JavaScript sans framework), `backtest.js` (robot de backtest : fonctions pures, règles dans `RULES`, version à changer à chaque modification des règles), `config.js` (URL et clé publique Supabase). Graphiques de la revue : Lightweight Charts 4.2.3, chargé à la demande depuis jsDelivr. Animations de l'accueil : GSAP 3.15.0 et Lenis 1.3.27, chargés à la demande depuis jsDelivr sur cette seule page. `design-lab/` garde les trois directions visuelles proposées le 17/11/2026 (la A a été retenue).
 - **Supabase** : authentification e-mail, base Postgres, stockage des captures (bucket privé `captures`) et des bougies M1 du backtest (bucket privé `historique` : un fichier gzip par marché et par mois de New York, plus `_index.json`), mises à jour en direct (realtime).
 - **Publication** : GitHub Pages via `.github/workflows/publier.yml`, qui lance `build.sh` (copie des fichiers + téléchargement du calendrier économique Forex Factory dans `site/data/calendar.json`), au push et chaque jour à 4h UTC.
 - **Design** : règles dans `DESIGN.md`, composants visibles sur la page cachée `#styleguide`.
