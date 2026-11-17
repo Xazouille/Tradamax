@@ -2092,7 +2092,7 @@ function homeMotion(intro) {
       var lines = new SplitText($("page-title"), { type: "lines", mask: "lines" }).lines;
       var tl = gsap.timeline({ delay: H.delay || 0, defaults: { ease: "power3.out" } });
       tl.from(lines, { yPercent: 110, duration: 1.05, stagger: .1, ease: "expo.out" })
-        .from([$("page-lede"), head.querySelector('.pg-actions[data-for="accueil"]')], { y: 14, opacity: 0, duration: .7, stagger: .08 }, "-=.75")
+        .from(head.querySelector('.pg-actions[data-for="accueil"]'), { y: 14, opacity: 0, duration: .7, stagger: .08 }, "-=.75")
         .from(q(".pg-tray"), { y: 56, opacity: 0, duration: 1, ease: "expo.out" }, "-=.6")
         .from(q(".pg-bn"), { y: 22, opacity: 0, duration: .7, stagger: .05 }, "-=.8")
         .from(q("#hm-heat .c"), { scale: .4, opacity: 0, duration: .35, stagger: .008 }, "-=.5")
@@ -2202,7 +2202,7 @@ function pageEnter(t) {
     items.forEach(function (e) { (e.getBoundingClientRect().top < vh - 40 ? above : below).push(e); });
     var tl = gsap.timeline({ delay: delay, defaults: { ease: "power3.out" } });
     tl.from(lines, { yPercent: 110, duration: .95, stagger: .09, ease: "expo.out" })
-      .from([$("page-date"), $("page-lede"), head.querySelector('.pg-actions[data-for="' + t + '"]')], { y: 16, opacity: 0, duration: .7, stagger: .07 }, "-=.85")
+      .from([$("page-date"), head.querySelector('.pg-actions[data-for="' + t + '"]')], { y: 16, opacity: 0, duration: .7, stagger: .07 }, "-=.85")
       .from("#session > div", { y: 30, opacity: 0, duration: .75, stagger: .07 }, "-=.65")
       .from(tab, { y: 70, opacity: 0, duration: 1, ease: "expo.out" }, "-=.7")
       .from(above, { y: 40, opacity: 0, duration: .8, stagger: { amount: .45 } }, "-=.9");
@@ -2246,13 +2246,6 @@ var TABS = ["accueil", "journal", "propfirms", "annonces", "backtest", "stylegui
 var TITLES = { accueil: "Accueil", journal: "Journal de trading", propfirms: "Comptes prop firm", annonces: "Annonces économiques", backtest: "Backtest", styleguide: "Guide de style" };
 /* nom de la page en grand : une italique dorée par titre (l'accueil a son titre sur deux lignes, construit à part) */
 var HEADS = { journal: ["Journal de ", "trading"], propfirms: ["Comptes ", "prop firm"], annonces: ["Annonces ", "économiques"], backtest: ["Backtest ", "du robot"], styleguide: ["Guide de ", "style"] };
-var LEDES = {
-  accueil: "Le point sur le mois en cours : résultat, discipline et risque, mis à jour en direct pour les deux associés.",
-  journal: "Chaque trade enregistré, sa courbe, sa discipline et son calendrier. Filtrez par période, par compte et par marché.",
-  propfirms: "Challenges achetés, comptes financés et versements reçus. Montants convertis en euros au taux des Réglages.",
-  annonces: "Les annonces économiques à l'heure de Paris, et celles qui tombent dans vos fenêtres de trading.",
-  backtest: "Le robot applique les règles de la stratégie aux bougies d'une minute importées depuis MT5. Simulation sur le passé uniquement : aucun ordre n'est passé."
-};
 function setTab(t) {
   if (TABS.indexOf(t) < 0) t = "accueil";
   var same = t === S.tab, home = t === "accueil";
@@ -2261,9 +2254,9 @@ function setTab(t) {
   document.querySelectorAll("[data-tab]").forEach(function (b) { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   TABS.forEach(function (k) { $("tab-" + k).hidden = k !== t; });
   var head = $("page-head"), title = $("page-title");
-  head.classList.toggle("is-hero", t !== "styleguide"); head.classList.toggle("is-home", home); $("page-lede").hidden = t === "styleguide";
+  head.classList.toggle("is-hero", t !== "styleguide"); head.classList.toggle("is-home", home);
   if (!same) {
-    title.textContent = ""; $("page-lede").textContent = LEDES[t] || "";
+    title.textContent = "";
     if (home) { title.appendChild(document.createTextNode("La séance entière,")); title.appendChild(el("br")); title.appendChild(el("em", { text: "sur un seul écran." })); }
     else { title.appendChild(document.createTextNode(HEADS[t][0])); title.appendChild(el("em", { text: HEADS[t][1] })); }
   }

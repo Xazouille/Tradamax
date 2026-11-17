@@ -698,11 +698,11 @@ code{font-family:var(--f-mono);font-size:.92em}
    Seule page animée au défilement : GSAP et Lenis y sont chargés à la demande, jamais ailleurs. */
 @media (min-width:900px){.pg-only-sm{display:none}}
 @media (max-width:480px){.pg-who #who{display:none}}
-.pg-head.is-hero{padding-top:clamp(8px,2.6vw,40px);padding-bottom:var(--sp-2);gap:var(--sp-5) var(--sp-6)}
+.pg-head.is-hero{padding-top:0;padding-bottom:var(--sp-2);gap:var(--sp-5) var(--sp-6)}
+.pg-head.is-hero .tx-eyebrow{font-size:13px;margin-bottom:4px} /* date un peu plus grande, collée au titre */
 .pg-head.is-hero>div:first-child{min-width:0;max-width:1000px}
 .pg-head.is-hero .tx-display{font-size:clamp(44px,5.4vw,92px);line-height:.96;letter-spacing:-.024em}
 .pg-head.is-home .tx-display{font-size:clamp(42px,6.2vw,104px)}
-.pg-lede{margin:var(--sp-4) 0 0;max-width:56ch;color:var(--c-text-2);font-size:clamp(14px,1.1vw,16px)}
 body.pg-pre-home #page-head,body.pg-pre-home #tab-accueil{opacity:0}
 .pg-home-stage{perspective:1700px;padding-bottom:var(--sp-5);overflow-x:clip;overflow-clip-margin:24px}
 .pg-home-tilt{transform-origin:50% 0}
@@ -981,7 +981,7 @@ body{font-variant-numeric:tabular-nums}
       </header>
 
       <div class="pg-head" id="page-head">
-        <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de trading</h1><p class="pg-lede" id="page-lede" hidden>Le point sur le mois en cours : résultat, discipline et risque, mis à jour en direct pour les deux associés.</p></div>
+        <div><span class="tx-eyebrow" id="page-date"></span><h1 class="tx-display" id="page-title">Journal de trading</h1></div>
         <div class="pg-actions" data-for="accueil" hidden>
           <button class="tx-btn is-ghost" type="button" data-go="journal"><svg class="tx-ico" aria-hidden="true"><use href="#i-journal"/></svg>Ouvrir le journal</button>
           <button class="tx-btn is-primary" id="btn-add-home" type="button"><svg class="tx-ico" aria-hidden="true"><use href="#i-plus"/></svg>Nouveau trade</button>
