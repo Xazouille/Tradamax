@@ -663,6 +663,13 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-ov-l{stroke:var(--c-text-2);stroke-width:1.5;stroke-dasharray:5 4}
 .pg-ov-t{font:500 11px var(--f-sans);fill:var(--c-text-2)}
 .pg-ov-dot{fill:var(--c-text);stroke:var(--c-panel);stroke-width:2}
+.pg-ov-trend{stroke:var(--c-text-2);stroke-width:1.5;fill:none}
+.pg-ov-trend.is-pos{stroke:var(--c-pos)} .pg-ov-trend.is-neg{stroke:var(--c-neg)}
+.pg-ov-tdot{fill:var(--c-text-2)} .pg-ov-tdot.is-pos{fill:var(--c-pos)} .pg-ov-tdot.is-neg{fill:var(--c-neg)}
+.pg-rv-badge{position:absolute;left:10px;top:10px;z-index:4;pointer-events:none;padding:4px 10px;border-radius:999px;font-size:var(--fs-2);font-weight:600;color:var(--c-text-2);background:color-mix(in srgb,var(--c-panel) 88%,transparent);border:1px solid var(--c-line-2);box-shadow:var(--shadow-1)}
+.pg-rv-badge.is-pos{color:var(--c-pos);border-color:color-mix(in srgb,var(--c-pos) 45%,transparent)}
+.pg-rv-badge.is-neg{color:var(--c-neg);border-color:color-mix(in srgb,var(--c-neg) 45%,transparent)}
+.tx-legend i.pg-lg-trend{width:14px;height:2px;border-radius:2px;background:var(--c-pos)}
 .pg-ov-dot.is-pos{fill:var(--c-pos)} .pg-ov-dot.is-neg{fill:var(--c-neg)} .pg-ov-dot.is-be{fill:var(--c-text-2)}
 .tx-legend i.pg-lg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-text)}
 .tx-legend i.pg-lg-ob{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-info) 22%,transparent);box-shadow:inset 0 0 0 1px var(--c-info)}
@@ -1513,7 +1520,7 @@ code{font-family:var(--f-mono);font-size:.92em}
     <div class="pg-rv-body">
       <div class="pg-rv-bar">
         <div class="tx-seg" id="rv-tf" role="group" aria-label="Unité de temps du graphique"></div>
-        <div class="tx-legend" style="margin:0"><span><i class="pg-lg-ob"></i>OB</span><span><i class="pg-lg-z"></i>FVG</span><span><i class="pg-lg-z2"></i>IFVG</span><span><i class="pg-lg-zc"></i>Superposition</span><span><i class="pg-lg-l"></i>Liquidité prise</span><span><i class="pg-lg-dot"></i>Entrée et sortie (après l'avis)</span><span>Heure de New York</span></div>
+        <div class="tx-legend" style="margin:0"><span><i class="pg-lg-ob"></i>OB</span><span><i class="pg-lg-z"></i>FVG</span><span><i class="pg-lg-z2"></i>IFVG</span><span><i class="pg-lg-zc"></i>Superposition</span><span><i class="pg-lg-l"></i>Liquidité prise</span><span><i class="pg-lg-trend"></i>Trait de tendance</span><span><i class="pg-lg-dot"></i>Entrée et sortie (après l'avis)</span><span>Heure de New York</span></div>
       </div>
       <div class="pg-rv-chart" id="rv-chart" role="img" aria-label="Graphique du setup"></div>
       <div class="pg-rv-robot" id="rv-robot"></div>

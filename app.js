@@ -1685,7 +1685,23 @@ function rvChart() {
     series.setData(B.t.map(function (t, k) { return { time: wall[k], open: B.o[k], high: B.h[k], low: B.l[k], close: B.c[k] }; }));
     function pl(price, color, title, style) { series.createPriceLine({ price: price, color: color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title: title }); }
     if (showTrade) { pl(su.entry, col.text, "Entrée", 0); pl(su.stop, col.neg, "Stop", 2); pl(su.tp, col.pos, "Objectif", 2); }
-    if (su.trend && su.trend.level != null) pl(su.trend.level, col.text2, "Tendance " + tfLabel(su.trend.tf), 3);
+    if (su.trend && su.trend.level != null) pl(su.trend.level, col.text2, "Cassure " + tfLabel(su.trend.tf), 3);
+    /* tendance : étiquette sur le graphique, et trait reliant les deux derniers creux montants (ou sommets descendants) de l'unité de tendance, connus au moment du setup */
+    var tr = su.trend, trDir = tr ? tr.dir : 0, trCls = trDir > 0 ? "is-pos" : trDir < 0 ? "is-neg" : "";
+    if (tr) box.appendChild(el("div", { class: "pg-rv-badge " + trCls, text: "Tendance " + tfLabel(tr.tf) + " : " + (trDir > 0 ? "haussière" : trDir < 0 ? "baissière" : "pas encore de cassure") }));
+    var trPts = null, trImp = false;
+    if (trDir) {
+      var TB = BT.aggregate(m, tr.tf, Math.max(0, startI - 80 * tr.tf), endI), pts = [], K2 = 2;
+      for (var j2 = K2; j2 + K2 < TB.t.length; j2++) {
+        if (TB.t[j2] > su.tS) break; var okp = true;
+        for (var x2 = j2 - K2; x2 <= j2 + K2; x2++) { if (x2 === j2) continue; if (trDir > 0 ? TB.l[x2] <= TB.l[j2] : TB.h[x2] >= TB.h[j2]) { okp = false; break; } }
+        if (okp) pts.push({ t: TB.t[j2], v: trDir > 0 ? TB.l[j2] : TB.h[j2] });
+      }
+      /* la paire la plus récente de creux montants (ou de sommets descendants), en remontant aussi loin qu'il faut */
+      for (var j3 = pts.length - 1; j3 >= 1 && !trPts; j3--) for (var q2 = j3 - 1; q2 >= 0; q2--) if (trDir > 0 ? pts[q2].v < pts[j3].v : pts[q2].v > pts[j3].v) { trPts = [pts[q2], pts[j3]]; break; }
+      /* tendance qui vient de tourner, sans droite de soutien possible : segment du dernier creux (ou sommet) à la cassure de structure */
+      if (!trPts && tr.t != null && tr.level != null) { var pb = null; for (var q3 = pts.length - 1; q3 >= 0; q3--) if (pts[q3].t <= tr.t) { pb = pts[q3]; break; } if (pb) { trPts = [pb, { t: tr.t - tr.tf, v: tr.level }]; trImp = true; } }
+    }
     else pl(su.stop, col.neg, "Stop prévu", 2);
     function barAt(t) { var k = lastLE(B.t, Math.floor(t / tf) * tf); return k < 0 ? null : wall[k]; }
     var mk = [], up = su.dir > 0, tSw = barAt(su.tS);
@@ -1706,7 +1722,8 @@ function rvChart() {
     var eDot = svgEl("circle", { class: "pg-ov-dot", r: 0 }), xDot = svgEl("circle", { class: "pg-ov-dot " + xk, r: 0 });
     function dot(c, show, t, price) { var x = show ? xAt(t) : null, y = show ? series.priceToCoordinate(price) : null; if (x == null || y == null || x < 0 || x > ts.width()) { c.setAttribute("r", 0); return; } c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", 4.5); }
     obT.textContent = "OB " + tfLabel(su.obTf);
-    [obR].concat(zRs, zcR ? [zcR] : [], [lv, obT], zTs, [eDot, xDot]).forEach(function (x) { ov.appendChild(x); });
+    var tl = svgEl("line", { class: "pg-ov-trend " + trCls, opacity: 0 }), tDots = [svgEl("circle", { class: "pg-ov-tdot " + trCls, r: 0 }), svgEl("circle", { class: "pg-ov-tdot " + trCls, r: 0 })];
+    [obR].concat(zRs, zcR ? [zcR] : [], [lv, obT], zTs, [tl], tDots, [eDot, xDot]).forEach(function (x) { ov.appendChild(x); });
     var tEnd = rv.revealed ? B.t[B.t.length - 1] : su.tD - 1, ts = chart.timeScale();
     function xAt(t) { var k = lastLE(B.t, t); return ts.logicalToCoordinate(k < 0 ? -1 : k); }
     function box2(r, label, t0, t1, top, bot) {
@@ -1726,6 +1743,16 @@ function rvChart() {
       if (lx0 != null && lx1 != null && ly != null) { lv.setAttribute("x1", Math.max(0, lx0)); lv.setAttribute("x2", Math.min(ts.width(), lx1)); lv.setAttribute("y1", ly); lv.setAttribute("y2", ly); }
       dot(eDot, rv.revealed && showTrade && su.tE, su.tE - 1, su.entry);
       dot(xDot, rv.revealed && out && out.kind !== "fin", out && out.t, out && out.price);
+      if (trPts) { /* trait de tendance prolongé jusqu'au bord droit */
+        /* un point antérieur à la fenêtre affichée est placé par extrapolation (à gauche du graphique), pour que la droite le traverse */
+        var xT = function (t) { return t < B.t[0] ? ts.logicalToCoordinate((t - B.t[0]) / tf) : xAt(t); };
+        var ax = xT(trPts[0].t), bx = xT(trPts[1].t), ay = series.priceToCoordinate(trPts[0].v), by2 = series.priceToCoordinate(trPts[1].v), W2 = ts.width();
+        if (ax != null && bx != null && ay != null && by2 != null && bx > ax) {
+          var ex = trImp ? bx : W2, ey = trImp ? by2 : ay + (by2 - ay) * (W2 - ax) / (bx - ax);
+          tl.setAttribute("x1", ax); tl.setAttribute("y1", ay); tl.setAttribute("x2", ex); tl.setAttribute("y2", ey); tl.setAttribute("opacity", 1);
+          [[ax, ay], [bx, by2]].forEach(function (p, i) { tDots[i].setAttribute("cx", p[0]); tDots[i].setAttribute("cy", p[1]); tDots[i].setAttribute("r", p[0] >= 0 && p[0] <= W2 ? 3 : 0); });
+        } else { tl.setAttribute("opacity", 0); tDots.forEach(function (d) { d.setAttribute("r", 0); }); }
+      }
       rvRaf = requestAnimationFrame(frame);
     }
     frame();
