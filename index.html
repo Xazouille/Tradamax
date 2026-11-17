@@ -634,8 +634,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-hi-res .tx-help{margin:0}
 .pg-progress{height:6px;border-radius:999px;background:var(--c-inset);overflow:hidden}
 .pg-progress i{display:block;height:100%;width:0;border-radius:999px;background:var(--c-pos);transition:width .2s var(--ease)}
-.pg-btrun{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:var(--sp-3);align-items:end}
-@media (max-width:1000px) and (min-width:641px){.pg-btrun{grid-template-columns:repeat(2,minmax(0,1fr))}.pg-btrun>.tx-btn{grid-column:1/-1}}
+.pg-btrun{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:var(--sp-3);align-items:end}
+@media (max-width:1180px) and (min-width:641px){.pg-btrun{grid-template-columns:repeat(3,minmax(0,1fr))}.pg-btrun>.tx-btn{grid-column:1/-1}}
 .pg-btrun+.tx-help{margin:var(--sp-3) 0 0}
 .pg-btrun+.tx-help:empty{display:none}
 @media (max-width:640px){.pg-btrun{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pg-btrun>:first-child,.pg-btrun>.tx-btn{grid-column:1/-1}}
@@ -657,6 +657,9 @@ code{font-family:var(--f-mono);font-size:.92em}
 .pg-rv-chart>.tx-empty{position:absolute;inset:0;display:grid;place-content:center;border:0}
 .pg-ov-ob{fill:color-mix(in srgb,var(--c-info) 13%,transparent);stroke:color-mix(in srgb,var(--c-info) 60%,transparent);stroke-width:1}
 .pg-ov-z{fill:color-mix(in srgb,var(--c-warn) 18%,transparent);stroke:color-mix(in srgb,var(--c-warn) 70%,transparent);stroke-width:1}
+.pg-ov-z.is-ifvg{fill:url(#pg-hatch)}
+.pg-ov-hatch{stroke:color-mix(in srgb,var(--c-warn) 75%,transparent);stroke-width:1.2}
+.pg-ov-zc{fill:color-mix(in srgb,var(--c-warn) 38%,transparent);stroke:none}
 .pg-ov-l{stroke:var(--c-text-2);stroke-width:1.5;stroke-dasharray:5 4}
 .pg-ov-t{font:500 11px var(--f-sans);fill:var(--c-text-2)}
 .pg-ov-dot{fill:var(--c-text);stroke:var(--c-panel);stroke-width:2}
@@ -664,6 +667,8 @@ code{font-family:var(--f-mono);font-size:.92em}
 .tx-legend i.pg-lg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-text)}
 .tx-legend i.pg-lg-ob{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-info) 22%,transparent);box-shadow:inset 0 0 0 1px var(--c-info)}
 .tx-legend i.pg-lg-z{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-warn) 26%,transparent);box-shadow:inset 0 0 0 1px var(--c-warn)}
+.tx-legend i.pg-lg-z2{width:14px;height:10px;border-radius:3px;background:repeating-linear-gradient(135deg,var(--c-warn) 0 1px,transparent 1px 4px);box-shadow:inset 0 0 0 1px var(--c-warn)}
+.tx-legend i.pg-lg-zc{width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--c-warn) 55%,transparent)}
 .tx-legend i.pg-lg-l{background:repeating-linear-gradient(90deg,var(--c-text-2) 0 4px,transparent 4px 7px)}
 .pg-rv-robot{display:flex;flex-direction:column;gap:6px;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-2);background:var(--c-panel-2);border:1px solid var(--c-line);font-size:var(--fs-3);color:var(--c-text-2)}
 .pg-rv-robot b{color:var(--c-text);font-weight:600}
@@ -960,6 +965,13 @@ code{font-family:var(--f-mono);font-size:.92em}
           <option value="both">FVG et IFVG</option>
           <option value="fvg">FVG seulement</option>
           <option value="ifvg">IFVG seulement</option>
+          <option value="overlap">FVG et IFVG superposés seulement</option>
+        </select></div>
+        <div class="tx-field"><label for="bt-trend">Tendance</label><select class="tx-input" id="bt-trend">
+          <option value="15">Structure M15 (recommandé)</option>
+          <option value="60">Structure H1</option>
+          <option value="240">Structure H4</option>
+          <option value="0">Sans filtre de tendance</option>
         </select></div>
         <button class="tx-btn is-primary" id="bt-go" type="button">Lancer</button>
       </div>
@@ -1503,7 +1515,7 @@ code{font-family:var(--f-mono);font-size:.92em}
     <div class="pg-rv-body">
       <div class="pg-rv-bar">
         <div class="tx-seg" id="rv-tf" role="group" aria-label="Unité de temps du graphique"></div>
-        <div class="tx-legend" style="margin:0"><span><i class="pg-lg-ob"></i>OB</span><span><i class="pg-lg-z"></i>FVG ou IFVG</span><span><i class="pg-lg-l"></i>Liquidité prise</span><span><i class="pg-lg-dot"></i>Entrée et sortie (après l'avis)</span><span>Heure de New York</span></div>
+        <div class="tx-legend" style="margin:0"><span><i class="pg-lg-ob"></i>OB</span><span><i class="pg-lg-z"></i>FVG</span><span><i class="pg-lg-z2"></i>IFVG</span><span><i class="pg-lg-zc"></i>Superposition</span><span><i class="pg-lg-l"></i>Liquidité prise</span><span><i class="pg-lg-dot"></i>Entrée et sortie (après l'avis)</span><span>Heure de New York</span></div>
       </div>
       <div class="pg-rv-chart" id="rv-chart" role="img" aria-label="Graphique du setup"></div>
       <div class="pg-rv-robot" id="rv-robot"></div>
@@ -1544,6 +1556,7 @@ code{font-family:var(--f-mono);font-size:.92em}
         <option value="est">UTC−5 toute l'année</option>
       </select></div>
       <div class="tx-field c4"><label for="hi-file">Fichiers (.csv ou .zip, plusieurs à la fois pour un même marché)</label><input class="tx-file" id="hi-file" type="file" multiple accept=".csv,.txt,.zip,text/csv,application/zip"></div>
+      <div class="tx-field c4" id="hi-replace-f" hidden><label class="tx-check"><input type="checkbox" id="hi-replace"> Remplacer les données déjà importées pour ce marché</label><span class="tx-help" id="hi-replace-h"></span></div>
       <div class="c4 pg-hi-res" id="hi-res" role="status" aria-live="polite"></div>
     </div>
     <p class="tx-help is-error pg-err" id="hi-err" role="alert" hidden></p>

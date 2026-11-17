@@ -58,12 +58,12 @@ Les captures d'écran de l'ancien journal ne sont pas transférées : rajoutez c
 2. Dans MT5 : **Affichage > Symboles** (Ctrl + U), onglet **Barres**, choisissez le symbole, la période **M1** et les dates, **Demander**, puis **Exporter les barres**.
 3. Dans Tradamax, onglet **Backtest** : **Importer des bougies MT5**, choisissez le marché et le fichier. Vérifiez la ligne « Reprise après le week-end » : elle doit être identique toute l'année (sinon, changez « Heure du serveur MT5 »). Puis **Importer**.
 
-Un nouvel export plus tard complète simplement les mois déjà importés.
+Un nouvel export plus tard complète simplement les mois déjà importés. Si un import a été fait avec une mauvaise « Heure du serveur », réimportez les mêmes fichiers en cochant **Remplacer les données déjà importées pour ce marché**.
 
 MT5 ne garde souvent que quelques mois de bougies M1. Pour plusieurs années, téléchargez-les sur **histdata.com** (gratuit, sans compte) : *Download > ASCII > 1 Minute Bar Quotes*, puis le marché (`XAUUSD` pour l'or, `GRXEUR` pour le DAX, `NSXUSD` pour le Nasdaq) et l'année. Importez directement les archives .zip, plusieurs années d'un coup : Tradamax reconnaît le format, le marché et l'heure, et range ces données à part (« XAUUSD (HistData) »), sans les mélanger aux prix de votre courtier. Les fichiers Dukascopy sont aussi reconnus.
 
 4. Collez aussi `supabase/migrations/2026-11-16_backtest-avis.sql` et `supabase/migrations/2026-11-16_backtest-controles.sql` (même méthode) : ils créent la table des avis et celle des tests de contrôle.
-5. **Lancer le backtest** : choisissez le marché et la période, puis **Lancer**. Le robot applique les règles de la stratégie (simulation sur le passé, aucun ordre passé).
+5. **Lancer le backtest** : choisissez le marché, la période, les zones d'entrée (FVG, IFVG, les deux, ou seulement quand ils se superposent) et la tendance (structure M15, H1, H4 ou sans filtre), puis **Lancer**. Le robot applique les règles de la stratégie (simulation sur le passé, aucun ordre passé) et ne prend que les trades dans le sens de la tendance choisie.
 6. **Revue des setups** : ouvrez chaque setup, regardez le graphique et répondez « Je le prends », « Je le prends, mais autrement » ou « Je ne le prends pas » avec la raison. Le résultat s'affiche après votre réponse. **Exporter les avis** produit le fichier à donner à Claude Code pour corriger les règles. Un avis donné par erreur s'efface depuis sa fenêtre (« Effacer cet avis ») ; « Effacer mes avis » efface tous ceux que vous avez donnés, sans toucher à ceux de l'autre associé.
 7. **Période de contrôle** : le backtest et la revue s'arrêtent à fin 2024. Les mois à partir de janvier 2025 sont réservés au **Test de contrôle**, qui ne se lance qu'une fois par marché et par version des règles, quand elles sont définitives. Son résultat reste enregistré et ne peut pas être effacé depuis le site.
 

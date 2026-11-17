@@ -1296,11 +1296,12 @@ $("btn-hi").addEventListener("click", function () {
   var sel = $("hi-market"), names = S.set.markets.slice(); sel.textContent = "";
   Object.keys(S.hiIdx ? S.hiIdx.markets : {}).forEach(function (m) { m = m.replace(SRC_RE, ""); if (names.indexOf(m) < 0) names.push(m); });
   names.forEach(function (m) { sel.appendChild(el("option", { value: m, text: m })); });
-  $("hi-file").value = ""; S.hiRaw = null; S.hiA = null; hiSyncTz(); $("hi-res").textContent = ""; hiErr(""); $("hi-go").disabled = true;
+  $("hi-file").value = ""; S.hiRaw = null; S.hiA = null; hiSyncTz(); $("hi-res").textContent = ""; hiErr(""); $("hi-go").disabled = true; $("hi-replace").checked = false; $("hi-replace-f").hidden = true;
   show("ov-histo", true); sel.focus();
 });
 $("hi-market").addEventListener("change", function () { hiSyncTz(); hiAutoTz(); hiShow(); });
 $("hi-tz").addEventListener("change", function () { S.hiTzAuto = null; hiShow(); });
+$("hi-replace").addEventListener("change", hiShow);
 /* heure du serveur choisie automatiquement : celle où la reprise après le week-end tombe le plus souvent à la même heure de New York
    (les changements d'heure européens et américains ne tombent pas le même jour : seul le bon réglage reste stable toute l'année) */
 function hiAutoTz() {
@@ -1340,7 +1341,9 @@ function hiShow() {
   row("Bougies M1", nf0.format(a.n));
   row("Première (heure de New York)", hiDate(a.first));
   row("Dernière (heure de New York)", hiDate(a.last));
-  row("Mois concernés", ks.length + (already ? ", dont " + already + " déjà importé" + (already > 1 ? "s" : "") + " (complété" + (already > 1 ? "s" : "") + ")" : ""));
+  var nOld = Object.keys(idxM).length, replace = $("hi-replace").checked;
+  row("Mois concernés", ks.length + (already ? ", dont " + already + " déjà importé" + (already > 1 ? "s" : "") + (replace ? " (remplacés)" : " (complétés)") : ""));
+  $("hi-replace-f").hidden = !nOld; $("hi-replace-h").textContent = nOld ? "Ce marché a déjà " + nOld + " mois importés. Par défaut, l'import les complète. Cochez pour tout remplacer, par exemple si l'heure du serveur était fausse : les " + nOld + " mois actuels seront effacés." : "";
   row("Trous de plus de 4 h en semaine", a.gaps ? nf0.format(a.gaps) + " (jours fériés ou séances courtes)" : "Aucun");
   if (raw.flats) row("Bougies plates retirées", nf0.format(raw.flats) + " (marché fermé)");
   if (raw.skipped || a.dup) row("Lignes ignorées", nf0.format(raw.skipped + a.dup) + (a.dup ? " (dont " + nf0.format(a.dup) + " en double)" : ""));
@@ -1373,16 +1376,21 @@ $("hi-go").addEventListener("click", function () {
   var bar = el("i"), prog = el("div", { class: "pg-progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(ks.length), "aria-valuenow": "0", "aria-label": "Envoi des mois" }, [bar]), txt = el("p", { class: "tx-help", text: "Préparation…" });
   res.appendChild(prog); res.appendChild(txt);
   b.disabled = true; $("hi-cancel").disabled = true; $("hi-file").disabled = true; S.hiImporting = true; hiErr("");
-  var idx, entry;
+  var idx, entry, replace = $("hi-replace").checked, oldMonths = [];
   function step() { bar.style.width = (done / ks.length * 100) + "%"; prog.setAttribute("aria-valuenow", String(done)); txt.textContent = "Envoi : " + done + " mois sur " + ks.length; }
   function saveIdx() { entry.updated = new Date().toISOString(); idx.markets[mk] = entry; return hiSaveIndex(idx); }
   hiLoadIndex().then(function (x) {
-    idx = x; entry = idx.markets[mk] || { slug: hiSlug(mk), months: {} }; entry.slug = entry.slug || hiSlug(mk); entry.months = entry.months || {}; entry.tz = zone; step();
+    idx = x; entry = idx.markets[mk] || { slug: hiSlug(mk), months: {} }; entry.slug = entry.slug || hiSlug(mk); entry.months = entry.months || {}; entry.tz = zone;
+    if (replace) { oldMonths = Object.keys(entry.months); entry.months = {}; } /* remplacer : on repart de zéro, sans fusionner avec l'ancien */
+    step();
     var chain = Promise.resolve();
     ks.forEach(function (k) { chain = chain.then(function () { return hiWriteMonth(entry, k, a).then(function (info) { entry.months[k] = info; done++; step(); }); }); });
     return chain.then(saveIdx, function (err) { return (done ? saveIdx() : Promise.resolve()).then(function () { throw err; }); });
   }).then(function () {
-    txt.className = "tx-help is-ok"; txt.textContent = "Import terminé : " + ks.length + " mois de " + mk + " enregistrés.";
+    var gone = oldMonths.filter(function (k) { return !a.months[k]; }); /* anciens mois absents du nouvel import : supprimés */
+    return gone.length ? S.sb.storage.from(HI_BUCKET).remove(gone.map(function (k) { return entry.slug + "/" + k + ".csv.gz"; })) : null;
+  }).then(function () {
+    txt.className = "tx-help is-ok"; txt.textContent = "Import terminé : " + ks.length + " mois de " + mk + " enregistrés" + (replace ? ", les anciennes données remplacées" : "") + ".";
     toast("Bougies de " + mk + " importées"); S.hiRaw = null; S.hiA = null; $("hi-file").value = ""; $("hi-tz").disabled = false;
   }, function (e) {
     hiErr((done ? done + " mois sur " + ks.length + " ont été enregistrés. " : "") + hiErrText(e) + " Relancez l'import : les mois déjà envoyés seront simplement complétés.");
@@ -1442,7 +1450,14 @@ function btFillMonths() {
 }
 $("bt-market").addEventListener("change", btFillMonths);
 $("bt-zones").addEventListener("change", function () { renderCtl(); });
-function rulesLabel() { return BT.RULES.version + BT.ZONES[$("bt-zones").value]; }
+function rulesLabel() { return BT.RULES.version + BT.ZONES[$("bt-zones").value] + BT.TRENDS[$("bt-trend").value]; }
+$("bt-trend").addEventListener("change", function () { renderCtl(); });
+function zoneName(z) { return z.type === "FVG+IFVG" ? "FVG et IFVG superposés" : z.type; }
+function trendText(su) {
+  var tr = su.trend; if (!tr) return "";
+  if (!tr.dir) return "Tendance " + tfLabel(tr.tf) + " : pas encore de cassure de structure.";
+  return "Tendance " + tfLabel(tr.tf) + " : " + (tr.dir > 0 ? "haussière" : "baissière") + " depuis le " + nyShort(tr.t) + " (clôture " + (tr.dir > 0 ? "au-dessus de " : "sous ") + nf2.format(tr.level) + "), " + (tr.ok ? "dans le sens du setup." : "contre le setup.");
+}
 function btLoad(m, keys, onProg) {
   var e = S.hiIdx.markets[m], T = [], O = [], H = [], L = [], C = [], done = 0, chain = Promise.resolve();
   keys.forEach(function (k) {
@@ -1469,7 +1484,7 @@ $("bt-go").addEventListener("click", function () {
   btLoad(m, keys, function (d) { st.textContent = "Chargement des bougies : " + d + " mois sur " + keys.length + "…"; }).then(function (data) {
     if (!data.t.length) throw new Error("vide");
     st.textContent = "Calcul du backtest sur " + nf0.format(data.t.length) + " bougies…";
-    return new Promise(function (ok) { setTimeout(function () { ok({ data: data, res: BT.run(data, { market: m, zones: $("bt-zones").value }) }); }, 40); });
+    return new Promise(function (ok) { setTimeout(function () { ok({ data: data, res: BT.run(data, { market: m, zones: $("bt-zones").value, trend: $("bt-trend").value }) }); }, 40); });
   }).then(function (x) {
     S.bt = { market: m, from: from, to: to, m: x.data, res: x.res }; S.rvShown = 30;
     st.className = "tx-help is-ok";
@@ -1487,8 +1502,9 @@ function btRender() {
   kpi(k, "Taux de réussite", s.wr == null ? "—" : pct(s.wr), "", s.n ? s.win + " gagnants · " + s.loss + " perdants · " + s.be + " à zéro" : "—");
   kpi(k, "Résultat", s.n ? rfmt(s.sum) : "—", cls(s.sum), s.avg == null ? "—" : "R moyen " + rfmt(s.avg));
   kpi(k, "Drawdown max", s.n ? "−" + nf2.format(s.maxdd) + " R" : "—", "", "Plus longue série de pertes : " + s.worst);
+  var tsel = $("bt-trend").value; kpi(k, "Tendance", tsel === "0" ? "Aucune" : tfLabel(+tsel), "", tsel === "0" ? "Tous les sens pris" : (s.byReason.T || 0) + " setups contre la tendance écartés");
   var rb = $("bt-reasons"); rb.textContent = "";
-  var rs = Object.assign({ A1: r.counts.A1 }, s.byReason), labels = Object.assign({ A1: "Pas de FVG ni d'IFVG dans les 5 bougies" }, BT.REASONS);
+  var rs = s.byReason, labels = BT.REASONS;
   Object.keys(rs).filter(function (c) { return rs[c]; }).sort(function (a, b) { return rs[b] - rs[a]; }).forEach(function (c) {
     rb.appendChild(el("div", { class: "it" }, [el("span", { text: labels[c] || c }), el("span", { class: "tx-sub tx-num", text: c }), el("span", { class: "tx-num", text: nf0.format(rs[c]) })]));
   });
@@ -1496,7 +1512,7 @@ function btRender() {
   function trow(label, o) { tb.appendChild(el("tr", {}, [el("td", { "data-l": "Unité", text: label }), el("td", { class: "r tx-num", "data-l": "Trades", text: o ? String(o.n) : "0" }), el("td", { class: "r tx-num", "data-l": "Réussite", text: o && o.n ? pct(o.win / o.n, 0) : "—" }), el("td", { class: "r tx-num " + (o ? cls(o.sum) : ""), "data-l": "Résultat", text: o ? rfmt(o.sum) : "—" })])); }
   BT.RULES.sweepTfs.forEach(function (tf) { trow("Prise de liquidité " + tfLabel(tf), s.byTf[tf]); });
   BT.RULES.obTfs.forEach(function (tf) { trow("OB " + tfLabel(tf), s.byObTf[tf]); });
-  ["FVG", "IFVG"].forEach(function (z) { trow("Zone " + z, s.byZone[z]); });
+  ["FVG", "IFVG", "FVG+IFVG"].forEach(function (z) { trow("Zone " + (z === "FVG+IFVG" ? "FVG et IFVG superposés" : z), s.byZone[z]); });
   rvRender();
 }
 
@@ -1519,7 +1535,7 @@ function rvRender() {
     var a = S.avis[su.id];
     var tr = el("tr", { tabindex: "0", "aria-label": sideLabel(su.dir) + " du " + nyShort(su.tS) + ", " + robotText(su) + (a ? ", avis : " + AVIS[a.avis] : ", à revoir") }, [
       el("td", { class: "tx-num", "data-l": "Date", text: nyShort(su.tS) }),
-      el("td", { "data-l": "Sens", text: sideLabel(su.dir) }),
+      el("td", { "data-l": "Sens", text: sideLabel(su.dir) + (su.trend && su.trend.dir ? (su.trend.ok ? " · avec la tendance" : " · contre la tendance") : "") }),
       el("td", { "data-l": "Unités", text: "OB " + tfLabel(su.obTf) + " · " + tfLabel(su.tf) }),
       el("td", { "data-l": "Robot" }, [el("span", { class: "tx-badge " + (su.taken ? "is-info" : "is-plain"), title: robotText(su), text: su.taken ? "Pris" : "Annulé (" + su.reason + ")" })]),
       el("td", { "data-l": "Avis" }, [a ? el("span", { class: "tx-badge " + (a.avis === "refuse" ? "is-neg" : a.avis === "autrement" ? "is-warn" : "is-pos"), text: AVIS[a.avis] + (mine(a) ? " · vous" : "") }) : el("span", { class: "tx-dim", text: "À revoir" })]),
@@ -1546,7 +1562,7 @@ function rvShow() {
   var rv = S.rv, su = rv.list[rv.i], a = S.avis[su.id];
   rv.su = su; rv.tf = su.tf; rv.revealed = !!a; rv.dirty = false;
   $("rv-title").textContent = sideLabel(su.dir) + " " + S.bt.market + " · " + nyShort(su.tS);
-  $("rv-sub").textContent = "OB " + tfLabel(su.obTf) + " (" + su.ob.n + " bougie" + (su.ob.n > 1 ? "s" : "") + ") · prise de liquidité " + tfLabel(su.tf) + " · " + su.zone.type + " · heures de New York";
+  $("rv-sub").textContent = "OB " + tfLabel(su.obTf) + " (" + su.ob.n + " bougie" + (su.ob.n > 1 ? "s" : "") + ") · prise de liquidité " + tfLabel(su.tf) + " · " + zoneName(su.zone) + " · heures de New York";
   $("rv-pos").textContent = (rv.i + 1) + " / " + rv.list.length;
   var seg = $("rv-tf"); seg.textContent = "";
   [su.tf, su.obTf].filter(function (v, i, a2) { return a2.indexOf(v) === i; }).forEach(function (tf) {
@@ -1562,6 +1578,10 @@ function rvShow() {
     robot.appendChild(el("b", { text: "Le robot n'a pas pris ce setup." }));
     robot.appendChild(el("span", { text: "Raison : " + (BT.REASONS[su.reason] || su.reason) + " (règle " + su.reason + ")." }));
   }
+  /* ce que le robot a vu, pour que le trader puisse le contredire point par point */
+  var z = su.zone, seen = "OB " + tfLabel(su.obTf) + " de " + su.ob.n + " bougie" + (su.ob.n > 1 ? "s" : "") + (su.ob.fvg ? ", suivi d'un FVG" : ", sans FVG dans son déplacement") + " · creux pris : " + (su.dir > 0 ? "plus bas" : "plus haut") + (su.depth >= 2000 ? " depuis plus de 2 000 bougies " + tfLabel(su.tf) : " des " + su.depth + " bougies " + tfLabel(su.tf) + " précédentes") + " · " + zoneName(z) + (z.size != null ? " de " + nf2.format(z.size) + " ATR" : "") + (z.parts ? " (FVG " + nf2.format(z.parts[0].size) + " ATR, IFVG " + nf2.format(z.parts[1].size) + " ATR)" : z.age != null ? " (FVG inversé formé " + z.age + " bougie" + (z.age > 1 ? "s" : "") + " plus tôt)" : "") + ".";
+  robot.appendChild(el("span", { class: "tx-sub", text: seen }));
+  robot.appendChild(el("span", { class: "tx-sub", text: trendText(su) }));
   var cancelled = !su.taken;
   $("rv-q").textContent = cancelled ? "L'auriez-vous pris ?" : "Prenez-vous ce trade ?";
   $("rv-l-pris").textContent = cancelled ? "Je l'aurais pris" : "Je le prends";
@@ -1609,7 +1629,7 @@ function rvSave() {
   if (av === "autrement" && !note) { err.textContent = "Dites en quelques mots ce que vous feriez autrement."; err.hidden = false; return; }
   err.hidden = true;
   var row = { setup_id: su.id, marche: S.bt.market, regles: S.bt.res.rules, robot: su.taken ? "pris" : "annulé " + su.reason, avis: av, raison: av === "refuse" ? (raison || null) : null, note: note || null, r_robot: su.out ? r2(su.out.r) : null,
-    details: { date_ny: nyShort(su.tS), sens: sideLabel(su.dir), unite_liquidite: tfLabel(su.tf), unite_ob: tfLabel(su.obTf), bougies_ob: su.ob.n, zone: su.zone.type, raison_robot: su.taken ? null : BT.REASONS[su.reason], entree: r2(su.entry), stop: r2(su.stop), objectif: r2(su.tp), sortie: su.out ? su.out.kind : null },
+    details: { date_ny: nyShort(su.tS), sens: sideLabel(su.dir), unite_liquidite: tfLabel(su.tf), unite_ob: tfLabel(su.obTf), bougies_ob: su.ob.n, ob_fvg: su.ob.fvg ? "oui" : "non", profondeur_creux: su.depth, zone: su.zone.type, taille_zone_atr: r2(su.zone.size), tendance: su.trend && su.trend.dir ? (su.trend.dir > 0 ? "haussière" : "baissière") + " " + tfLabel(su.trend.tf) + (su.trend.ok ? " (avec)" : " (contre)") : "indéterminée", raison_robot: su.taken ? null : BT.REASONS[su.reason], entree: r2(su.entry), stop: r2(su.stop), objectif: r2(su.tp), sortie: su.out ? su.out.kind : null },
     updated_at: new Date().toISOString() };
   if (S.user && S.user.id) row.auteur = S.user.id; /* l'auteur de l'avis : pour effacer seulement les siens */
   var b = $("rv-save"); b.disabled = true;
@@ -1665,6 +1685,7 @@ function rvChart() {
     series.setData(B.t.map(function (t, k) { return { time: wall[k], open: B.o[k], high: B.h[k], low: B.l[k], close: B.c[k] }; }));
     function pl(price, color, title, style) { series.createPriceLine({ price: price, color: color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title: title }); }
     if (showTrade) { pl(su.entry, col.text, "Entrée", 0); pl(su.stop, col.neg, "Stop", 2); pl(su.tp, col.pos, "Objectif", 2); }
+    if (su.trend && su.trend.level != null) pl(su.trend.level, col.text2, "Tendance " + tfLabel(su.trend.tf), 3);
     else pl(su.stop, col.neg, "Stop prévu", 2);
     function barAt(t) { var k = lastLE(B.t, Math.floor(t / tf) * tf); return k < 0 ? null : wall[k]; }
     var mk = [], up = su.dir > 0, tSw = barAt(su.tS);
@@ -1675,12 +1696,17 @@ function rvChart() {
     chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, dec - 45), to: Math.max(last, dec) + 8 });
     /* zones : OB, FVG/IFVG et niveau de liquidité pris, recalculés à chaque image (zoom, défilement) */
     var ov = svgEl("svg", { class: "pg-rv-ov", "aria-hidden": "true" }); box.appendChild(ov);
-    var obR = svgEl("rect", { class: "pg-ov-ob", rx: 2 }), zR = svgEl("rect", { class: "pg-ov-z", rx: 2 }), lv = svgEl("line", { class: "pg-ov-l" }), obT = svgEl("text", { class: "pg-ov-t" }), zT = svgEl("text", { class: "pg-ov-t" });
+    var defs = svgEl("defs", {}), pat = svgEl("pattern", { id: "pg-hatch", patternUnits: "userSpaceOnUse", width: 6, height: 6 }); pat.appendChild(svgEl("path", { d: "M0 6L6 0", class: "pg-ov-hatch" })); defs.appendChild(pat); ov.appendChild(defs);
+    var obR = svgEl("rect", { class: "pg-ov-ob", rx: 2 }), lv = svgEl("line", { class: "pg-ov-l" }), obT = svgEl("text", { class: "pg-ov-t" });
+    /* la zone d'entrée : un FVG, un IFVG (hachuré), ou les deux superposés (la partie commune en plein) */
+    var parts = su.zone.parts || [su.zone], zRs = parts.map(function (pz) { return svgEl("rect", { class: "pg-ov-z" + (pz.type === "IFVG" ? " is-ifvg" : ""), rx: 2 }); });
+    var zTs = parts.map(function (pz) { var t = svgEl("text", { class: "pg-ov-t" }); t.textContent = pz.type + " " + tfLabel(su.tf); return t; });
+    var zcR = su.zone.common ? svgEl("rect", { class: "pg-ov-zc", rx: 2 }) : null, zcT = svgEl("text", { class: "pg-ov-t" });
     var out = su.out, xk = out ? (out.kind === "tp" ? "is-pos" : out.kind === "sl" ? "is-neg" : "is-be") : "";
     var eDot = svgEl("circle", { class: "pg-ov-dot", r: 0 }), xDot = svgEl("circle", { class: "pg-ov-dot " + xk, r: 0 });
     function dot(c, show, t, price) { var x = show ? xAt(t) : null, y = show ? series.priceToCoordinate(price) : null; if (x == null || y == null || x < 0 || x > ts.width()) { c.setAttribute("r", 0); return; } c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", 4.5); }
-    obT.textContent = "OB " + tfLabel(su.obTf); zT.textContent = su.zone.type + " " + tfLabel(su.tf);
-    [obR, zR, lv, obT, zT, eDot, xDot].forEach(function (x) { ov.appendChild(x); });
+    obT.textContent = "OB " + tfLabel(su.obTf);
+    [obR].concat(zRs, zcR ? [zcR] : [], [lv, obT], zTs, [eDot, xDot]).forEach(function (x) { ov.appendChild(x); });
     var tEnd = rv.revealed ? B.t[B.t.length - 1] : su.tD - 1, ts = chart.timeScale();
     function xAt(t) { var k = lastLE(B.t, t); return ts.logicalToCoordinate(k < 0 ? -1 : k); }
     function box2(r, label, t0, t1, top, bot) {
@@ -1694,7 +1720,8 @@ function rvChart() {
       if (rvChartObj !== chart) return;
       if ($("ov-review").hidden) { rvDestroy(); return; }
       box2(obR, obT, su.ob.t0, tEnd, su.ob.top, su.ob.bot);
-      box2(zR, zT, su.zone.t0, tEnd, su.zone.top, su.zone.bot);
+      parts.forEach(function (pz, i) { box2(zRs[i], zTs[i], pz.t0, tEnd, pz.top, pz.bot); });
+      if (zcR) box2(zcR, zcT, Math.max(parts[0].t0, parts[1].t0), tEnd, su.zone.common.top, su.zone.common.bot);
       var lx0 = xAt(su.tL), lx1 = xAt(su.tS), ly = series.priceToCoordinate(su.L);
       if (lx0 != null && lx1 != null && ly != null) { lv.setAttribute("x1", Math.max(0, lx0)); lv.setAttribute("x2", Math.min(ts.width(), lx1)); lv.setAttribute("y1", ly); lv.setAttribute("y2", ly); }
       dot(eDot, rv.revealed && showTrade && su.tE, su.tE - 1, su.entry);
@@ -1702,7 +1729,7 @@ function rvChart() {
       rvRaf = requestAnimationFrame(frame);
     }
     frame();
-    box.setAttribute("aria-label", "Graphique " + tfLabel(tf) + " jusqu'à " + (rv.revealed ? "la fin du trade" : "la décision du robot") + " : OB " + tfLabel(su.obTf) + " entre " + nf2.format(su.ob.bot) + " et " + nf2.format(su.ob.top) + ", liquidité prise à " + nf2.format(su.L) + ", " + su.zone.type + " entre " + nf2.format(su.zone.bot) + " et " + nf2.format(su.zone.top) + (showTrade ? ", entrée " + nf2.format(su.entry) + ", stop " + nf2.format(su.stop) + ", objectif " + nf2.format(su.tp) : "") + ".");
+    box.setAttribute("aria-label", "Graphique " + tfLabel(tf) + " jusqu'à " + (rv.revealed ? "la fin du trade" : "la décision du robot") + " : OB " + tfLabel(su.obTf) + " entre " + nf2.format(su.ob.bot) + " et " + nf2.format(su.ob.top) + ", liquidité prise à " + nf2.format(su.L) + ", " + zoneName(su.zone) + " entre " + nf2.format(su.zone.bot) + " et " + nf2.format(su.zone.top) + (showTrade ? ", entrée " + nf2.format(su.entry) + ", stop " + nf2.format(su.stop) + ", objectif " + nf2.format(su.tp) : "") + ".");
   }
 }
 
@@ -1748,7 +1775,7 @@ $("bt-ctl-yes").addEventListener("click", function () {
   btLoad(m, ks, function (d) { st.textContent = "Chargement des bougies de contrôle : " + d + " mois sur " + ks.length + "…"; }).then(function (data) {
     if (!data.t.length) throw new Error("vide");
     st.textContent = "Calcul du test de contrôle…";
-    return new Promise(function (ok) { setTimeout(function () { ok(BT.run(data, { market: m, zones: $("bt-zones").value })); }, 40); });
+    return new Promise(function (ok) { setTimeout(function () { ok(BT.run(data, { market: m, zones: $("bt-zones").value, trend: $("bt-trend").value })); }, 40); });
   }).then(function (res) {
     var s = res.stats, row = { id: ctlId(m), marche: m, regles: res.rules, periode: mLong(ks[0]) + " à " + mLong(ks[ks.length - 1]),
       resultat: { n: s.n, setups: res.setups.length, win: s.win, loss: s.loss, be: s.be, wr: s.wr, sum: r2(s.sum), avg: s.avg == null ? null : Math.round(s.avg * 1000) / 1000, maxdd: r2(s.maxdd), worst: s.worst } };
@@ -1809,7 +1836,7 @@ $("bt-wipe-yes").addEventListener("click", function () {
 });
 $("bt-export").addEventListener("click", function () {
   var rows = Object.keys(S.avis).map(function (k) { return S.avis[k]; }); if (!rows.length) return;
-  var cols = ["setup_id", "marche", "regles", "date_ny", "sens", "unite_liquidite", "unite_ob", "bougies_ob", "zone", "robot", "raison_robot", "avis", "raison", "note", "entree", "stop", "objectif", "sortie", "r_robot"];
+  var cols = ["setup_id", "marche", "regles", "date_ny", "sens", "tendance", "unite_liquidite", "unite_ob", "bougies_ob", "ob_fvg", "profondeur_creux", "zone", "taille_zone_atr", "robot", "raison_robot", "avis", "raison", "note", "entree", "stop", "objectif", "sortie", "r_robot"];
   function q(v) { v = v == null ? "" : String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   var lines = [cols.join(";")].concat(rows.map(function (r) {
     var d = r.details || {}, f = { setup_id: r.setup_id, marche: r.marche, regles: r.regles, robot: r.robot, avis: r.avis, raison: raisonLabel(r.raison), note: r.note, r_robot: r.r_robot };
